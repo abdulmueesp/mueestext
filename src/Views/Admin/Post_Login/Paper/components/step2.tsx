@@ -217,7 +217,7 @@ const Step2: React.FC<Step2Props> = ({ sections, setSections }) => {
     return (
         <div className="space-y-6">
             {/* Sections */}
-            {sections.map((section, sectionIndex) => (
+            {sections.map((section,) => (
                 <div key={section.id} className="bg-white rounded-lg p-4 md:p-6 shadow-sm border border-gray-200">
                     {/* Section Header */}
                     <div className="flex items-center justify-between mb-4">

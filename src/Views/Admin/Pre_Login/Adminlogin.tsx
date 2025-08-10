@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { message } from '../../../Components/common/message/message';
 
@@ -26,10 +26,7 @@ const LoginPage = ({ onLogin }:any) => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    message.success('Google login successful! Welcome to Dashboard.');
-    onLogin();
-  };
+
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">

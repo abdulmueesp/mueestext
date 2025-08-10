@@ -94,9 +94,6 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
         handleChange('paperType', type);
     };
 
-    const handlePaperFormatChange = (format: string) => {
-        handleChange('paperFormat', format);
-    };
 
     const handleHeaderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleChange('pdfHeader', e.target.value);

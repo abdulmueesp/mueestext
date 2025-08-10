@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Eye, Download, FileText, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Download, FileText, X, ChevronLeft} from 'lucide-react';
 
 interface Question {
     id: number;
@@ -209,7 +209,7 @@ const Step3: React.FC<Step3Props> = ({ step1Data, sections, onPrevStep }) => {
                     </div>
 
                     <div class="space-y-8">
-                        ${sections.map((section, sectionIndex) => `
+                        ${sections.map((section,) => `
                             <div class="section">
                                 <div class="text-center mb-4">
                                     <h4 class="text-lg font-bold">${section.name}</h4>
@@ -244,16 +244,7 @@ const Step3: React.FC<Step3Props> = ({ step1Data, sections, onPrevStep }) => {
         `;
     };
 
-    const handlePrint = () => {
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-        
-        printWindow.document.write(generatePDFContent());
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-    };
+   
 
     const handleDownloadPDF = () => {
         const printWindow = window.open('', '_blank');
@@ -326,7 +317,7 @@ const Step3: React.FC<Step3Props> = ({ step1Data, sections, onPrevStep }) => {
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Sections Overview</h3>
                 
                 <div className="space-y-4">
-                    {sections.map((section, index) => (
+                    {sections.map((section,) => (
                         <div key={section.id} className="border border-gray-200 rounded-lg p-4">
                             <div className="flex justify-between items-center mb-3">
                                 <h4 className="font-medium text-blue-600">{section.name}</h4>
@@ -459,7 +450,7 @@ const Step3: React.FC<Step3Props> = ({ step1Data, sections, onPrevStep }) => {
 
                                 {/* Sections and Questions */}
                                 <div className="space-y-8">
-                                    {sections.map((section, sectionIndex) => (
+                                    {sections.map((section,) => (
                                         <div key={section.id} className="section">
                                             <div className="text-center mb-4">
                                                 <h4 className="text-lg font-bold">{section.name}</h4>

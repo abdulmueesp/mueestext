@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Step1 from './components/step1';
 import Step2 from './components/step2';
