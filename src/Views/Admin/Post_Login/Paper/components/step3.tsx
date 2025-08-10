@@ -530,7 +530,7 @@ interface Step3Props {
 const Step3: React.FC<Step3Props> = ({ step1Data, sections, onPrevStep }) => {
     const [showPreview, setShowPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [downloadMethod, setDownloadMethod] = useState<'print' | 'share' | 'copy'>('print');
+    // const [downloadMethod, setDownloadMethod] = useState<'print' | 'share' | 'copy'>('print');
     const pdfRef = useRef<HTMLDivElement>(null);
 
     // Calculate totals
@@ -737,7 +737,7 @@ const Step3: React.FC<Step3Props> = ({ step1Data, sections, onPrevStep }) => {
         try {
             if (isMobile) {
                 // For mobile devices, offer multiple options
-                setDownloadMethod('share');
+                // setDownloadMethod('share');
                 await handleMobileDownload();
             } else {
                 // Desktop - use traditional print method
