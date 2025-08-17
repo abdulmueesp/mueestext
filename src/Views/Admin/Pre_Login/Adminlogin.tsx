@@ -55,13 +55,13 @@ const LoginPage = ({ onLogin }: any) => {
 
   return (
     <div
-      className="min-h-screen pb-4 pl-4 pr-4 pt-7 "
+      className="min-h-screen pb-4 pl-4 pr-4 pt-7 overflow-hidden "
       style={{
         backgroundColor: lightPrimaryColor,
         fontFamily: 'Montserrat-SemiBold, sans-serif'
       }}
     >
-      <div className="bg-white rounded-lg shadow-2xl p-4 w-full max-w-lg mx-auto lg:max-w-xl xl:max-w-2xl">
+      <div className="bg-white rounded-lg shadow-2xl p-4 w-full max-w-lg mx-auto lg:max-w-xl xl:max-w-2xl overflow-y-auto">
         {/* Header */}
         <div className="text-center mb-4">
           <h1
