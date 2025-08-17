@@ -7,7 +7,6 @@ import { message } from '../../../../Components/common/message/message';
 
 const Paper = () => {
     const [currentStep, setCurrentStep] = useState(0);
-     // Add sections state to store Step 2 data
     const [sections, setSections] = useState<any[]>([
         { id: 1, name: 'Section A', questions: [] }
     ]);
