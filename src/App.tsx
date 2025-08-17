@@ -1,26 +1,34 @@
 
 
 import { useState } from "react"
+import { useSelector } from "react-redux"
+import { RootState } from "@/store"
 import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
+import OtpForm from "./Views/Admin/Pre_Login/otp"
 import MainRouter from "./Router/MainRouter"
 import { message } from "./Components/common/message/message"
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
+  const [showOtp, setShowOtp] = useState(false);
 
   const handleLogin = () => {
-    setIsLoggedIn(true);
+    setShowOtp(true);
   };
 
   const handleLogout = () => {
+    setShowOtp(false); // Reset OTP state so logout goes to login page
     message.success('Logged out successfully!');
-    setIsLoggedIn(false);
   };
 
   return (
     <>
-      {!isLoggedIn ? (
-        <LoginPage onLogin={handleLogin} />
+      {!isAuthenticated ? (
+        !showOtp ? (
+          <LoginPage onLogin={handleLogin} />
+        ) : (
+          <OtpForm />
+        )
       ) : (
         <MainRouter onLogout={handleLogout} />
       )}

@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { setPhoneNumber } from '@/store/slices/userSlice';
 
 const LoginPage = ({ onLogin }: any) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumberState] = useState('');
   const [errors, setErrors] = useState<{ phoneNumber?: string }>({});
+  const dispatch = useDispatch();
 
   const validatePhoneNumber = (phone: string) => {
     if (!phone) {
@@ -25,13 +28,15 @@ const LoginPage = ({ onLogin }: any) => {
     }
 
     setErrors({});
+    
+    dispatch(setPhoneNumber(phoneNumber));
     console.log('Phone number:', phoneNumber);
     if (onLogin) onLogin();
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setPhoneNumber(value);
+    setPhoneNumberState(value);
 
     // Clear error when user starts typing
     if (errors.phoneNumber) {
@@ -195,7 +200,7 @@ const LoginPage = ({ onLogin }: any) => {
                 color: '#666666',
               }}
             >
-              You can use these account details to log in on both myCBSEguide and Examin8. Any changes to these details will impact both the Sites.
+              You can use these account details to log in on both myWeb and Examin. Any changes to these details will impact both the Sites.
               <br />
               By continuing, you acknowledge that you are 18 years and above, and you accept our{' '}
               <a

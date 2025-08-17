@@ -1,0 +1,41 @@
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface UserState {
+  phoneNumber: string;
+  role: 'admin' | 'user' | null;
+  isAuthenticated: boolean;
+  isProfileCompleted: boolean;
+}
+
+const initialState: UserState = {
+  phoneNumber: '',
+  role: null,
+  isAuthenticated: false,
+  isProfileCompleted: false,
+};
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {
+    setPhoneNumber: (state, action: PayloadAction<string>) => {
+      state.phoneNumber = action.payload;
+    },
+    setRole: (state, action: PayloadAction<'admin' | 'user'>) => {
+      state.role = action.payload;
+      state.isAuthenticated = true;
+    },
+    setProfileCompleted: (state, action: PayloadAction<boolean>) => {
+      state.isProfileCompleted = action.payload;
+    },
+    logout: (state) => {
+      state.phoneNumber = '';
+      state.role = null;
+      state.isAuthenticated = false;
+      state.isProfileCompleted = false;
+    },
+  },
+});
+
+export const { setPhoneNumber, setRole, setProfileCompleted, logout } = userSlice.actions;
+export default userSlice.reducer;

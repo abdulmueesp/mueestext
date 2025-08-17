@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import {
     Home,
@@ -17,6 +18,9 @@ import {
     UserCheck,
     Bell, FilePlus
 } from 'lucide-react';
+import { menuData } from '@/data/menuData';
+import { logout } from '@/store/slices/userSlice';
+import { RootState } from '@/store';
 
 interface AdminLayoutProps {
     onLogout: () => void;
@@ -28,8 +32,13 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
     const [activeMenu, setActiveMenu] = useState('dashboard');
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
+    const { role } = useSelector((state: RootState) => state.user);
 
     const primaryColor = '#06014f';
+    
+    // Get menu items based on role
+    const menuItems = role ? menuData[role] : [];
 useEffect(() => {
     const timer = setInterval(() => {
         setCurrentTime(new Date());
@@ -55,15 +64,7 @@ useEffect(() => {
         { name: 'History', value: 20, color: '#a855f7' }
     ];
 
-    const menuItems = [
-        { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard' },
-        { id: 'Create Paper', icon: FilePlus, label: 'Create Paper', path: '/paper' },
-        { id: 'exams', icon: FileText, label: 'Exams', path: '#' },
-        { id: 'subjects', icon: BookOpen, label: 'Subjects', path: '#' },
-        { id: 'results', icon: Award, label: 'Results', path: '#' },
-        { id: 'analytics', icon: BarChart3, label: 'Analytics', path: '#' },
-        { id: 'settings', icon: Settings, label: 'Settings', path: '#' }
-    ];
+
 
     // Update active menu based on current location
     React.useEffect(() => {
@@ -77,6 +78,11 @@ useEffect(() => {
         setActiveMenu(item.id);
         setSidebarOpen(false);
         navigate(item.path);
+    };
+
+    const handleLogout = () => {
+        dispatch(logout());
+        onLogout();
     };
 
     const renderDashboardContent = () => (
@@ -274,7 +280,7 @@ useEffect(() => {
 
                     <div className="p-4 border-t border-gray-200">
                         <button
-                            onClick={onLogout}
+                            onClick={handleLogout}
                             className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200"
                         >
                             <LogOut className="w-5 h-5 mr-3" />
