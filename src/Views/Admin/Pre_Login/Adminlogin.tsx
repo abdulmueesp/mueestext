@@ -55,13 +55,15 @@ const LoginPage = ({ onLogin }: any) => {
 
   return (
     <div
-      className="min-h-screen pb-4 pl-4 pr-4 pt-7 overflow-hidden "
+      className="pb-4 pl-4 pr-4 pt-7"
       style={{
         backgroundColor: lightPrimaryColor,
-        fontFamily: 'Montserrat-SemiBold, sans-serif'
+    minHeight: '100dvh', // New dynamic viewport unit
+    boxSizing: 'border-box',
+    overflowX: 'hidden'
       }}
     >
-      <div className="bg-red-600 rounded-lg shadow-2xl p-4 w-full max-w-lg mx-auto lg:max-w-xl xl:max-w-2xl overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-2xl p-4 w-full max-w-lg mx-auto lg:max-w-xl xl:max-w-2xl ">
         {/* Header */}
         <div className="text-center mb-4">
           <h1
