@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import Step1 from './components/step1';
 import Step2 from './components/step2';
 import Step3 from './components/step3';
 import { message } from '../../../../Components/common/message/message';
+
+// Icon components using Unicode symbols
+const ChevronLeft = ({ className, style }: any) => <span className={className} style={style}>‹</span>;
+const ChevronRight = ({ className, style }: any) => <span className={className} style={style}>›</span>;
+const Check = ({ className, style }: any) => <span className={className} style={style}>✓</span>;
 
 const Paper = () => {
     const [currentStep, setCurrentStep] = useState(0);

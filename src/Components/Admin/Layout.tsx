@@ -2,25 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import {
-    Home,
-    Users,
-    BookOpen,
-    FileText,
-    BarChart3,
-    Settings,
-    LogOut,
-    Menu,
-    X,
-    GraduationCap,
-    TrendingUp,
-    Award,
-    UserCheck,
-    Bell, FilePlus
-} from 'lucide-react';
 import { menuData } from '@/data/menuData';
 import { logout } from '@/store/slices/userSlice';
 import { RootState } from '@/store';
+
+// Icon components using Unicode symbols
+const Users = ({ className, style }: any) => <span className={className} style={style}>👥</span>;
+const FileText = ({ className, style }: any) => <span className={className} style={style}>📄</span>;
+const LogOut = ({ className, style }: any) => <span className={className} style={style}>🚪</span>;
+const Menu = ({ className, style }: any) => <span className={className} style={style}>☰</span>;
+const X = ({ className, style }: any) => <span className={className} style={style}>✗</span>;
+const GraduationCap = ({ className, style }: any) => <span className={className} style={style}>🎓</span>;
+const TrendingUp = ({ className, style }: any) => <span className={className} style={style}>📈</span>;
+const Award = ({ className, style }: any) => <span className={className} style={style}>🏆</span>;
+const UserCheck = ({ className, style }: any) => <span className={className} style={style}>✅</span>;
+const Bell = ({ className, style }: any) => <span className={className} style={style}>🔔</span>;
 
 interface AdminLayoutProps {
     onLogout: () => void;

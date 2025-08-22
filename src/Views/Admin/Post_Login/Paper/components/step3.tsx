@@ -1,6 +1,12 @@
 
 import React, { useState, useRef } from 'react';
-import { Eye, Download, FileText, X, ChevronLeft} from 'lucide-react';
+
+// Icon components using Unicode symbols
+const Eye = ({ className, style }: any) => <span className={className} style={style}>👁</span>;
+const Download = ({ className, style }: any) => <span className={className} style={style}>⬇</span>;
+const FileText = ({ className, style }: any) => <span className={className} style={style}>📄</span>;
+const X = ({ className, style }: any) => <span className={className} style={style}>✗</span>;
+const ChevronLeft = ({ className, style }: any) => <span className={className} style={style}>‹</span>;
 
 interface Question {
     id: number;

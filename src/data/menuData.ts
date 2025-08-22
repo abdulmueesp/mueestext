@@ -1,32 +1,21 @@
-import {
-    Home,
-    Users,
-    BookOpen,
-    FileText,
-    BarChart3,
-    Settings,
-    FilePlus,
-    CreditCard,
-    UserCheck,
-    Award,
-    GraduationCap,
-    TrendingUp,
-    Bell,
-    LogOut
-} from 'lucide-react';
+import { BiAward, BiCreditCard, BiHome } from "react-icons/bi";
+import { CiSettings } from "react-icons/ci";
+import { FcSettings } from "react-icons/fc";
+import { FiFilePlus, FiFileText } from "react-icons/fi";
+
 
 export const menuData = {
   admin: [
-    { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard' },
+    { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' },
    
-    { id: 'subscription', icon: CreditCard, label: 'Create Subscription', path: '/subscription' },
-    { id: 'settings', icon: Settings, label: 'Settings', path: '/settings' }
+    { id: 'subscription', icon: BiCreditCard, label: 'Create Subscription', path: '/subscription' },
+    { id: 'settings', icon: FcSettings, label: 'Settings', path: '/settings' }
   ],
   user: [
-    { id: 'dashboard', icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { id: 'Create Paper', icon: FilePlus, label: 'Create Paper', path: '/paper' },
-    { id: 'exams', icon: FileText, label: 'Exams', path: '/exams' },
-    { id: 'results', icon: Award, label: 'Results', path: '/results' },
-    { id: 'settings', icon: Settings, label: 'Settings', path: '/settings' }
+    { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' },
+    { id: 'Create Paper', icon: FiFilePlus, label: 'Create Paper', path: '/paper' },
+    { id: 'exams', icon: FiFileText, label: 'Exams', path: '/exams' },
+    { id: 'results', icon: BiAward, label: 'Results', path: '/results' },
+    { id: 'settings', icon: CiSettings, label: 'Settings', path: '/settings' }
   ]
 };

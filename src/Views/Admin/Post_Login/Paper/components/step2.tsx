@@ -1,6 +1,11 @@
 
 import React, { useState } from 'react';
-import { Plus, Edit, X, ChevronDown } from 'lucide-react';
+
+// Icon components using Unicode symbols
+const Plus = ({ className, style }: any) => <span className={className} style={style}>+</span>;
+const Edit = ({ className, style }: any) => <span className={className} style={style}>✎</span>;
+const X = ({ className, style }: any) => <span className={className} style={style}>✗</span>;
+const ChevronDown = ({ className, style }: any) => <span className={className} style={style}>⌄</span>;
 
 interface Question {
     id: number;
