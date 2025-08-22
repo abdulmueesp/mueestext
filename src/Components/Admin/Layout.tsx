@@ -342,7 +342,7 @@ useEffect(() => {
 </header>
 
                 {/* Main Content Area */}
-                <main className="flex-1 overflow-auto p-6 bg-white">
+                <main className="flex-1 overflow-auto px-3 py-2 bg-white">
                     {location.pathname === '/dashboard' ? (
                         renderDashboardContent()
                     ) : (
