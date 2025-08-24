@@ -83,7 +83,7 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
         }}
         scroll={{ x: 800 }}
         size="middle"
-        bordered
+        // bordered
       />
     </div>
   );
