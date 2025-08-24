@@ -9,6 +9,10 @@ export const menuData = {
     { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' }, 
     { id: 'subscription', icon: BiCreditCard, label: 'Subscription', path: '/subscription' },
     { id: 'users', icon: BiCreditCard, label: 'Users', path: '/users' },
+    { id: 'examgen', icon: BiCreditCard, label: 'Examboard', path: '/examboard' },
+    { id: 'modules', icon: BiCreditCard, label: 'Modules', path: '/modules' },
+    { id: 'courses', icon: BiCreditCard, label: 'Courses', path: '/courses' },
+    { id: 'chapters', icon: BiCreditCard, label: 'Chapters', path: '/chapters' },
     { id: 'settings', icon: FcSettings, label: 'Settings', path: '/settings' }
     
   ],

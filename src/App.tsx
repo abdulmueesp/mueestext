@@ -92,6 +92,10 @@ import Settings from "./Views/Admin/Post_Login/Settings"
 import { message } from "./Components/common/message/message"
 import UsersTable from "./Views/Admin/Post_Login/users"
 import DeatileCard from "./Views/Admin/Post_Login/users/components/deatile"
+import ExamGenerator from "./Views/Admin/Post_Login/ExamGenerator"
+import Modules from "./Views/Admin/Post_Login/Modules"
+import Chapters from "./Views/Admin/Post_Login/Chapters"
+import Courses from "./Views/Admin/Post_Login/Courses"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -137,6 +141,10 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="users" element={<UsersTable />} />
             <Route path="detail/:id" element={<DeatileCard/>} />
+            <Route path="examboard" element={<ExamGenerator />} />
+            <Route path="modules" element={<Modules />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="chapters" element={<Chapters />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
