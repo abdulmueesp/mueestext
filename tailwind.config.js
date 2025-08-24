@@ -5,6 +5,9 @@ export default {
   ],
   theme: {
     extend: {
+       colors: {
+         primary: '#06014f',
+       },
        fontFamily:{
          local1:['Gruppo'],
          local2:['Nunito'],

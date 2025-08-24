@@ -6,10 +6,11 @@ import { FiFilePlus, FiFileText } from "react-icons/fi";
 
 export const menuData = {
   admin: [
-    { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' },
-   
+    { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' }, 
     { id: 'subscription', icon: BiCreditCard, label: 'Create Subscription', path: '/subscription' },
+    { id: 'users', icon: BiCreditCard, label: 'Users', path: '/users' },
     { id: 'settings', icon: FcSettings, label: 'Settings', path: '/settings' }
+    
   ],
   user: [
     { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' },
