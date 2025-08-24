@@ -1,6 +1,7 @@
 
+
 // import { useState } from "react"
-// import { useSelector } from "react-redux"
+// import { useSelector} from "react-redux"
 // import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 // import { RootState } from "@/store"
 // import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
@@ -12,11 +13,13 @@
 // import Subscription from "./Views/Admin/Post_Login/Subscription"
 // import Settings from "./Views/Admin/Post_Login/Settings"
 // import { message } from "./Components/common/message/message"
+// import UsersTable from "./Views/Admin/Post_Login/users"
+// import DeatileCard from "./Views/Admin/Post_Login/users/components/deatile"
 
 // function App() {
 //   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
 //   const [showOtp, setShowOtp] = useState(false);
-//  const navigate = useNavigate();
+//   const navigate = useNavigate(); // ✅ add navigate hook
 
 //   const handleLogin = () => {
 //     setShowOtp(true);
@@ -24,50 +27,60 @@
 
 //   const handleLogout = () => {
 //     setShowOtp(false);
-//      navigate("/", { replace: true });
+//     // probably also dispatch logout action here
 //     message.success('Logged out successfully!');
+//     navigate("/", { replace: true }); // ✅ redirect to login page
 //   };
 
 //   return (
-//     <BrowserRouter>
-//       <Routes>
-//         {/* Not authenticated - show login flow */}
-//         {!isAuthenticated ? (
-//           <Route path="*" element={
-//             !showOtp ? (
-//               <LoginPage onLogin={handleLogin} />
-//             ) : (
-//               <OtpForm />
-//             )
-//           } />
-//         ) : !isProfileCompleted ? (
-//           /* Authenticated but profile not completed */
-//           <Route path="*" element={<Profile />} />
-//         ) : (
-//           /* Authenticated and profile completed - main app */
-//           <>
-//             <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
-//               <Route index element={<Navigate to="dashboard" replace />} />
-//               <Route path="dashboard" element={<Dashboard />} />
-//               <Route path="paper" element={<Paper />} />
-//               <Route path="profile" element={<Profile />} />
-//               <Route path="subscription" element={<Subscription />} />
-//               <Route path="settings" element={<Settings />} />
-//             </Route>
-//             <Route path="*" element={<Navigate to="/dashboard" replace />} />
-//           </>
-//         )}
-//       </Routes>
-//     </BrowserRouter>
+//     <Routes>
+//       {/* Not authenticated - show login flow */}
+//       {!isAuthenticated ? (
+//         <Route path="*" element={
+//           !showOtp ? (
+//             <LoginPage onLogin={handleLogin} />
+//           ) : (
+//             <OtpForm />
+//           )
+//         } />
+//       ) : !isProfileCompleted ? (
+//         /* Authenticated but profile not completed */
+//         <Route path="*" element={<Profile />} />
+//       ) : (
+//         /* Authenticated and profile completed - main app */
+//         <>
+//           <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
+//             <Route index element={<Navigate to="dashboard" replace />} />
+//             <Route path="dashboard" element={<Dashboard />} />
+//             <Route path="paper" element={<Paper />} />
+//             <Route path="profile" element={<Profile />} />
+//             <Route path="subscription" element={<Subscription />} />
+//             <Route path="settings" element={<Settings />} />
+//             <Route path="users" element={<UsersTable />} />
+//             <Route path="detail/:id" element={<DeatileCard/>} />
+//           </Route>
+//           <Route path="*" element={<Navigate to="/dashboard" replace />} />
+//         </>
+//       )}
+//     </Routes>
 //   );
 // }
 
-// export default App;
+// // Wrap App with BrowserRouter in index.tsx (better separation)
+// function AppWrapper() {
+//   return (
+//     <BrowserRouter>
+//       <App />
+//     </BrowserRouter>
+//   )
+// }
 
+// export default AppWrapper;
 import { useState } from "react"
-import { useSelector} from "react-redux"
+import { useSelector, useDispatch } from "react-redux" // ✅ Both hooks imported
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { RootState } from "@/store"
+import { logout } from "@/store/slices/userSlice" // ✅ Import logout action
 import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
 import OtpForm from "./Views/Admin/Pre_Login/otp"
 import Profile from "./Views/Admin/Post_Login/Profile"
@@ -83,7 +96,8 @@ import DeatileCard from "./Views/Admin/Post_Login/users/components/deatile"
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
   const [showOtp, setShowOtp] = useState(false);
-  const navigate = useNavigate(); // ✅ add navigate hook
+  const navigate = useNavigate();
+  const dispatch = useDispatch(); // ✅ Added dispatch hook
 
   const handleLogin = () => {
     setShowOtp(true);
@@ -91,14 +105,15 @@ function App() {
 
   const handleLogout = () => {
     setShowOtp(false);
-    // probably also dispatch logout action here
+    // ✅ IMPORTANT: Dispatch logout action to clear persisted state
+    dispatch(logout());
     message.success('Logged out successfully!');
-    navigate("/", { replace: true }); // ✅ redirect to login page
+    navigate("/", { replace: true });
   };
 
   return (
     <Routes>
-      {/* Not authenticated - show login flow */}
+      {/* 🚫 Not authenticated - show login flow */}
       {!isAuthenticated ? (
         <Route path="*" element={
           !showOtp ? (
@@ -108,10 +123,10 @@ function App() {
           )
         } />
       ) : !isProfileCompleted ? (
-        /* Authenticated but profile not completed */
+        /* 👤 Authenticated but profile not completed */
         <Route path="*" element={<Profile />} />
       ) : (
-        /* Authenticated and profile completed - main app */
+        /* ✅ Authenticated and profile completed - main app */
         <>
           <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -130,7 +145,7 @@ function App() {
   );
 }
 
-// Wrap App with BrowserRouter in index.tsx (better separation)
+// Wrap App with BrowserRouter
 function AppWrapper() {
   return (
     <BrowserRouter>
