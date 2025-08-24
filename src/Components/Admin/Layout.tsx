@@ -12,11 +12,7 @@ const LogOut = ({ className, style }: any) => (
     🚪
   </span>
 );
-const Menu = ({ className, style }: any) => (
-  <span className={className} style={style}>
-    ☰
-  </span>
-);
+
 const X = ({ className, style }: any) => (
   <span className={className} style={style}>
     ✗
