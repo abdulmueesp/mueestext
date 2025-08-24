@@ -169,6 +169,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
           ) : (
             <Outlet />
           )}
+          
         </main>
       </div>
     </div>
