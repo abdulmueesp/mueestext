@@ -345,8 +345,8 @@ const LoginPage = ({ onLogin }: any) => {
           <div>
             <button
               type="submit"
-              className="w-full h-11 rounded-md font-medium font-local2 text-white border-none shadow-md hover:shadow-lg transition-all duration-200 bg-blue-600 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              style={{ backgroundColor: '#06014f' }}
+              className=" bg-gradient-to-br from-[#007575] to-[#339999] w-full h-11 rounded-md font-medium font-local2 text-white border-none shadow-md hover:shadow-xl transition-all duration-200 bg-blue-600 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              // style={{ backgroundColor: '#007575' }}
             >
               Login
             </button>
@@ -397,7 +397,7 @@ const LoginPage = ({ onLogin }: any) => {
               className="w-full h-11 rounded-md font-medium font-local2 text-black bg-white border border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               <div className="flex items-center">
-                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="#06014f">
+                <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="#007575">
                   <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                 </svg>
                 Sign in with Email

@@ -77,7 +77,7 @@ const Subscription = () => {
       <PageHeader title="Subscription" backButton={true}>
         <Button
           type="primary"
-          style={{ backgroundColor: "#06014f", color: "white" }}
+          style={{ backgroundColor: "#007575", color: "white" }}
           className="font-local2"
           onClick={showModal}
         >
@@ -99,8 +99,8 @@ const Subscription = () => {
         width={700}
         okButtonProps={{
           style: {
-            backgroundColor: "#06014f",
-            borderColor: "#06014f",
+            backgroundColor: "#007575",
+            borderColor: "#007575",
           },
         }}
       >
@@ -167,6 +167,7 @@ const Subscription = () => {
                   checkedChildren="Active" 
                   unCheckedChildren="Inactive"
                   defaultChecked={true}
+                  style={{ backgroundColor: '#007575' }}
                 />
               </Form.Item>
             </Col>

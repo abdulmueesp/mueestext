@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
        colors: {
-         primary: '#06014f',
+         primary: '#007575',
        },
        fontFamily:{
          local1:['Gruppo'],

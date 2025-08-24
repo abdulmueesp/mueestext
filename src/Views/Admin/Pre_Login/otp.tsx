@@ -371,8 +371,8 @@ const OtpForm = () => {
                         <button
                             type="button"
                             onClick={handleSubmit}
-                            className="w-full h-11 rounded-md font-local2 font-medium text-white border-none shadow-md hover:shadow-lg transition-all duration-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                            style={{ backgroundColor: '#06014f' }}
+                            className="bg-gradient-to-br from-[#007575] to-[#339999] w-full h-11 rounded-md font-local2 font-medium text-white border-none shadow-md hover:shadow-lg transition-all duration-200 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                            // style={{ backgroundColor: '#007575' }}
                         >
                             Verify OTP
                         </button>

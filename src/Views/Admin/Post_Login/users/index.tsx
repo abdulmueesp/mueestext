@@ -312,8 +312,8 @@ const UsersTable = () => {
         centered
         okButtonProps={{
           style: {
-            backgroundColor: "#06014f",
-            borderColor: "#06014f",
+            backgroundColor: "#007575",
+            borderColor: "#007575",
           },
         }}
       >
