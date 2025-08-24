@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProfileCompleted } from '@/store/slices/userSlice';
 import { RootState } from '@/store';
-import { message } from '@/components/common/message/message';
+import { message } from '@/Components/common/message/message';
 
 const Profile = () => {
     const [name, setName] = useState('');

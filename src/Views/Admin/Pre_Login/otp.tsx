@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { useDispatch } from 'react-redux';
 import { setProfileCompleted, setRole } from '@/store/slices/userSlice'
-import { message } from '@/components/common/message/message';
+import { message } from '@/Components/common/message/message';
 
 const OtpForm = () => {
     const [otp, setOtp] = useState('');
