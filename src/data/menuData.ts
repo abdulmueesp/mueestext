@@ -1,19 +1,23 @@
 import { BiAward, BiCreditCard, BiHome } from "react-icons/bi";
 import { CiSettings } from "react-icons/ci";
-import { FcSettings } from "react-icons/fc";
 import { FiFilePlus, FiFileText } from "react-icons/fi";
-
-
+import { LuUsersRound } from "react-icons/lu";
+import { MdOutlineDashboardCustomize } from "react-icons/md";
+import { AiOutlineProfile,AiOutlineRead,AiOutlineFileText } from "react-icons/ai";
+import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
+import { IoSettingsOutline } from "react-icons/io5";
 export const menuData = {
   admin: [
     { id: 'dashboard', icon: BiHome, label: 'Dashboard', path: '/dashboard' }, 
     { id: 'subscription', icon: BiCreditCard, label: 'Subscription', path: '/subscription' },
-    { id: 'users', icon: BiCreditCard, label: 'Users', path: '/users' },
-    { id: 'examgen', icon: BiCreditCard, label: 'Examboard', path: '/examboard' },
-    { id: 'modules', icon: BiCreditCard, label: 'Modules', path: '/modules' },
-    { id: 'courses', icon: BiCreditCard, label: 'Courses', path: '/courses' },
-    { id: 'chapters', icon: BiCreditCard, label: 'Chapters', path: '/chapters' },
-    { id: 'settings', icon: FcSettings, label: 'Settings', path: '/settings' }
+    { id: 'users', icon: LuUsersRound, label: 'Users', path: '/users' },
+    { id: 'examgen', icon: MdOutlineDashboardCustomize, label: 'Examboard', path: '/examboard' },
+    { id: 'modules', icon: AiOutlineProfile, label: 'Modules', path: '/modules' },
+    { id: 'courses', icon: AiOutlineFileText, label: 'Courses', path: '/courses' },
+    { id: 'chapters', icon: AiOutlineRead, label: 'Subjects', path: '/chapters' },
+    { id: 'questions', icon: VscGitPullRequestGoToChanges, label: 'Questions', path: '/questions' },
+    { id: 'settings', icon: IoSettingsOutline, label: 'Settings', path: '/settings' },
+    
     
   ],
   user: [

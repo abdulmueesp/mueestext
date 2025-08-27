@@ -4,6 +4,7 @@ import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select,
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { message } from "@/Components/common/message/message";
+import { IoIosSearch, IoMdRefresh } from "react-icons/io";
 
 const { TextArea } = Input;
 
@@ -13,7 +14,7 @@ const Courses = () => {
   const [form] = Form.useForm();
   const [editingRecord, setEditingRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
-
+  const [searchValue, setSearchValue] = useState("");
   // Open Modal for Create
   const showModal = () => {
     setEditingRecord(null);
@@ -56,10 +57,8 @@ const Courses = () => {
       name: record.name,
       moduleId: record.moduleId,
       description: record.description,
-      price: record.price,
       accessType: record.accessType,
-      duration: record.duration,
-      chapterCount: record.chapterCount,
+      subjectCount: record.subjectCount,
       status: record.status === "Active",
     });
     setIsModalOpen(true);
@@ -75,10 +74,30 @@ const Courses = () => {
     setViewRecord(record);
     setIsViewOpen(true);
   };
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    // Add search logic here
+  };
+  const handleRefresh = () => {
+    setSearchValue("");
+    // Add refresh logic here
+  };
 
   return (
     <>
       <PageHeader title="Courses" backButton={true}>
+      <Input
+              placeholder="Search by name"
+              prefix={<IoIosSearch className="text-gray-400" />}
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none"
+              style={{
+                backgroundColor: '#f9fafb',
+                color: '#374151',
+                border: '1px solid #d1d5db'
+              }}
+            />
         <Button
           type="primary"
           style={{ backgroundColor: "#007575", color: "white" }}
@@ -87,6 +106,14 @@ const Courses = () => {
         >
           Create Course
         </Button>
+        <Button
+              type="primary"
+              icon={<IoMdRefresh />}
+              onClick={handleRefresh}
+              style={{ backgroundColor: '#007575', borderColor: '#007575', width: 'auto', height: 'auto', padding: '6px 10px' }}
+              className="hover:!bg-[#007575] hover:!border-[#007575]"
+              title="Refresh"
+            />
       </PageHeader>
 
       <Datatable onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
@@ -100,7 +127,7 @@ const Courses = () => {
         okText="Save"
         cancelText="Cancel"
         centered
-        width={800}
+        width={700}
         okButtonProps={{
           style: {
             backgroundColor: "#007575",
@@ -162,66 +189,10 @@ const Courses = () => {
                 <Radio.Group>
                   <Radio value="free">Free</Radio>
                   <Radio value="premium">Premium</Radio>
-                  <Radio value="subscription">Subscription Required</Radio>
                 </Radio.Group>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item 
-                name="price" 
-                label="Price (₹)"
-                rules={[
-                  { 
-                    required: true, 
-                    message: 'Please enter price!' 
-                  },
-                  {
-                    validator: (_, value) => {
-                      if (value && value < 0) {
-                        return Promise.reject('Price cannot be negative!');
-                      }
-                      return Promise.resolve();
-                    }
-                  }
-                ]}
-              >
-                <InputNumber 
-                  placeholder="Enter price" 
-                  style={{ width: "100%" }} 
-                  min={0}
-                  disabled={form.getFieldValue('accessType') === 'free'}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item 
-                name="duration" 
-                label="Duration (Hours)"
-                rules={[{ required: true, message: 'Please enter duration!' }]}
-              >
-                <InputNumber 
-                  placeholder="Enter duration" 
-                  style={{ width: "100%" }} 
-                  min={1}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item 
-                name="chapterCount" 
-                label="Number of Chapters"
-                rules={[{ required: true, message: 'Please enter chapter count!' }]}
-              >
-                <InputNumber 
-                  placeholder="Enter chapter count" 
-                  style={{ width: "100%" }} 
-                  min={1}
-                />
-              </Form.Item>
-            </Col>
+           
           </Row>
 
           <Row gutter={16}>
@@ -246,7 +217,7 @@ const Courses = () => {
         footer={null}
         onCancel={() => setIsViewOpen(false)}
         centered
-        width={700}
+        width={600}
       >
         {viewRecord && (
           <div className="p-4">
@@ -269,28 +240,15 @@ const Courses = () => {
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Access Type:</span>
                 <span className={`font-local2 text-lg ${
-                  viewRecord.accessType === 'free' ? 'text-green-600' : 
-                  viewRecord.accessType === 'premium' ? 'text-purple-600' : 'text-blue-600'
+                  viewRecord.accessType === 'free' ? 'text-green-600' : 'text-purple-600'
                 }`}>
                   {viewRecord.accessType.charAt(0).toUpperCase() + viewRecord.accessType.slice(1)}
                 </span>
               </div>
-
-              {viewRecord.accessType !== 'free' && (
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="font-semibold text-gray-700">Price:</span>
-                  <span className="font-local2 text-lg text-gray-900">₹{viewRecord.price}</span>
-                </div>
-              )}
               
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">Duration:</span>
-                <span className="font-local2 text-lg text-gray-900">{viewRecord.duration} hours</span>
-              </div>
-
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">Chapters:</span>
-                <span className="font-local2 text-lg text-gray-900">{viewRecord.chapterCount}</span>
+                <span className="font-semibold text-gray-700">Subjects:</span>
+                <span className="font-local2 text-lg text-gray-900">{viewRecord.subjectCount}</span>
               </div>
               
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">

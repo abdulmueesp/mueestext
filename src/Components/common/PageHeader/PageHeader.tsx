@@ -21,8 +21,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, backButton = false, goBa
 
   return (
     <>
-      <div className="w-full h-[50px] flex items-center justify-between border-b pr-6">
-        <div className="flex gap-4">
+      <div className="w-full flex flex-col gap-3 border-b p-4 sm:p-0 sm:h-[50px] sm:flex-row sm:items-center sm:justify-between sm:pr-6 sm:gap-0">
+        <div className="flex gap-4 items-start sm:items-center">
           {backButton && (
             <div
               onClick={handleBackClick}
@@ -44,7 +44,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, backButton = false, goBa
 
         </div>
 
-           <div className='flex items-center gap-4'>
+           <div className='flex items-center gap-4 flex-wrap sm:flex-nowrap'>
             {children}
            </div>
       </div>

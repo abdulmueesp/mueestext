@@ -96,6 +96,7 @@ import ExamGenerator from "./Views/Admin/Post_Login/ExamGenerator"
 import Modules from "./Views/Admin/Post_Login/Modules"
 import Chapters from "./Views/Admin/Post_Login/Chapters"
 import Courses from "./Views/Admin/Post_Login/Courses"
+import Questions from "./Views/Admin/Post_Login/Questions"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -145,6 +146,7 @@ function App() {
             <Route path="modules" element={<Modules />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="chapters" element={<Chapters />} />
+            <Route path="/questions" element={<Questions />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>

@@ -14,11 +14,8 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Mathematics",
       description: "Comprehensive study of algebraic concepts including polynomials, equations, and functions", 
       accessType: "premium",
-      price: 299,
-      duration: 25,
-      chapterCount: 8,
-      status: "Active",
-      questionCount: 450
+      subjectCount: 8,
+      status: "Active"
     },
     { 
       key: "2", 
@@ -28,11 +25,8 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Computer Science",
       description: "Learn Python programming from basics to advanced concepts", 
       accessType: "free",
-      price: 0,
-      duration: 30,
-      chapterCount: 12,
-      status: "Active",
-      questionCount: 600
+      subjectCount: 12,
+      status: "Active"
     },
     { 
       key: "3", 
@@ -41,12 +35,9 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleId: 3,
       moduleName: "English Literature",
       description: "In-depth analysis of Shakespeare's major works and themes", 
-      accessType: "subscription",
-      price: 199,
-      duration: 20,
-      chapterCount: 6,
-      status: "Active",
-      questionCount: 300
+      accessType: "premium",
+      subjectCount: 6,
+      status: "Active"
     },
     { 
       key: "4", 
@@ -56,11 +47,8 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Banking & Finance",
       description: "Principles and practices of financial accounting", 
       accessType: "premium",
-      price: 399,
-      duration: 35,
-      chapterCount: 10,
-      status: "Inactive",
-      questionCount: 500
+      subjectCount: 10,
+      status: "Inactive"
     },
     { 
       key: "5", 
@@ -69,12 +57,9 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleId: 5,
       moduleName: "UPSC Preparation",
       description: "Complete coverage of Indian political system and constitution", 
-      accessType: "subscription",
-      price: 149,
-      duration: 40,
-      chapterCount: 15,
-      status: "Active",
-      questionCount: 800
+      accessType: "premium",
+      subjectCount: 15,
+      status: "Active"
     },
     { 
       key: "6", 
@@ -84,11 +69,8 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Digital Marketing",
       description: "Strategies for effective social media marketing campaigns", 
       accessType: "premium",
-      price: 249,
-      duration: 18,
-      chapterCount: 7,
-      status: "Active",
-      questionCount: 350
+      subjectCount: 7,
+      status: "Active"
     },
   ];
 
@@ -115,8 +97,7 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       render: (accessType: string) => {
         const typeColors: Record<string, string> = {
           free: "green",
-          premium: "purple",
-          subscription: "blue",
+          premium: "purple"
         };
       
         const color = typeColors[accessType] || "default";
@@ -125,38 +106,11 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       }
     },
     { 
-      title: <span className="font-semi">Price (₹)</span>, 
-      dataIndex: "price", 
-      key: "price", 
-      width: 100,
-      render: (price: number, record: any) => (
-        <span className={`font-local2 font-semibold ${
-          record.accessType === 'free' ? 'text-green-600' : 'text-purple-600'
-        }`}>
-          {record.accessType === 'free' ? 'Free' : `₹${price}`}
-        </span>
-      )
-    },
-    { 
-      title: <span className="font-semi">Duration</span>, 
-      dataIndex: "duration", 
-      key: "duration", 
-      width: 100,
-      render: (duration: number) => <span className="font-local2">{duration}h</span>
-    },
-    { 
-      title: <span className="font-semi">Chapters</span>, 
-      dataIndex: "chapterCount", 
-      key: "chapterCount", 
+      title: <span className="font-semi">Subjects</span>, 
+      dataIndex: "subjectCount", 
+      key: "subjectCount", 
       width: 100,
       render: (count: number) => <span className="font-local2 font-semibold text-blue-600">{count}</span>
-    },
-    { 
-      title: <span className="font-semi">Questions</span>, 
-      dataIndex: "questionCount", 
-      key: "questionCount", 
-      width: 100,
-      render: (count: number) => <span className="font-local2 font-semibold text-green-600">{count}</span>
     },
     {
       title: <span className="font-semi">Status</span>,
@@ -234,7 +188,7 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
           showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
           pageSizeOptions: ["5", "10", "20", "50"],
         }}
-        scroll={{ x: 1400 }}
+        scroll={{ x: 1000 }}
         size="middle"
         className="font-local2"
         rowKey="id"

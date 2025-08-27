@@ -4,6 +4,7 @@ import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select 
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { message } from "@/Components/common/message/message";
+import { IoIosSearch, IoMdRefresh } from "react-icons/io";
 
 const { TextArea } = Input;
 
@@ -13,7 +14,7 @@ const Modules = () => {
   const [form] = Form.useForm();
   const [editingRecord, setEditingRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
-
+  const [searchValue, setSearchValue] = useState("");
   // Open Modal for Create
   const showModal = () => {
     setEditingRecord(null);
@@ -28,6 +29,10 @@ const Modules = () => {
     setEditingRecord(null);
     setViewRecord(null);
     form.resetFields();
+  };
+  const handleRefresh = () => {
+    setSearchValue("");
+    // Add refresh logic here
   };
 
   // Save Form
@@ -71,10 +76,26 @@ const Modules = () => {
     setViewRecord(record);
     setIsViewOpen(true);
   };
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    // Add search logic here
+  };
 
   return (
     <>
       <PageHeader title="Modules" backButton={true}>
+      <Input
+              placeholder="Search by name"
+              prefix={<IoIosSearch className="text-gray-400" />}
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none"
+              style={{
+                backgroundColor: '#f9fafb',
+                color: '#374151',
+                border: '1px solid #d1d5db'
+              }}
+            />
         <Button
           type="primary"
           style={{ backgroundColor: "#007575", color: "white" }}
@@ -83,6 +104,14 @@ const Modules = () => {
         >
           Create Module
         </Button>
+        <Button
+              type="primary"
+              icon={<IoMdRefresh />}
+              onClick={handleRefresh}
+              style={{ backgroundColor: '#007575', borderColor: '#007575', width: 'auto', height: 'auto', padding: '6px 10px' }}
+              className="hover:!bg-[#007575] hover:!border-[#007575]"
+              title="Refresh"
+            />
       </PageHeader>
 
       <Datatable onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
