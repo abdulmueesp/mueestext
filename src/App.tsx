@@ -97,6 +97,12 @@ import Modules from "./Views/Admin/Post_Login/Modules"
 import Chapters from "./Views/Admin/Post_Login/Chapters"
 import Courses from "./Views/Admin/Post_Login/Courses"
 import Questions from "./Views/Admin/Post_Login/Questions"
+import SubjectForm from "./Views/Admin/Post_Login/Chapters/components/form"
+import ViewChapter from "./Views/Admin/Post_Login/ChapterText/components/view"
+import ChapterForm from "./Views/Admin/Post_Login/ChapterText/components/form"
+import ChaptersT from "./Views/Admin/Post_Login/ChapterText"
+import QuestionForm from "./Views/Admin/Post_Login/Questions/components/form"
+import QuestionViiew from "./Views/Admin/Post_Login/Questions/components/view"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -145,8 +151,14 @@ function App() {
             <Route path="examboard" element={<ExamGenerator />} />
             <Route path="modules" element={<Modules />} />
             <Route path="/courses" element={<Courses />} />
-            <Route path="chapters" element={<Chapters />} />
+            <Route path="subjects" element={<Chapters />} />
             <Route path="/questions" element={<Questions />} />
+            <Route path="subjectForm/:id" element={<SubjectForm />} />
+            <Route path="Chapters" element={<ChaptersT/>} />
+            <Route path="chaptersview/:id" element={<ViewChapter/>} />
+            <Route path="/chaptersform/:id" element={<ChapterForm/>} />
+            <Route path="/questionform/:id" element={<QuestionForm/>} />
+            <Route path="/Viewquestion/:id" element={<QuestionViiew/>} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>

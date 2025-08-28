@@ -86,18 +86,34 @@ const Courses = () => {
   return (
     <>
       <PageHeader title="Courses" backButton={true}>
+        <Select
+    placeholder="Filter by Module"
+    allowClear
+    style={{ width:180, marginRight: 12 }}
+    onChange={(value) => console.log("Selected Module:", value)} // Replace with filter logic
+    className="font-local2"
+    options={[
+      { value: "Mathematics", label: "Mathematics" },
+      { value: "Computer Science", label: "Computer Science" },
+      { value: "English Literature", label: "English Literature" },
+      { value: "Banking & Finance", label: "Banking & Finance" },
+      { value: "UPSC Preparation", label: "UPSC Preparation" },
+      { value: "Digital Marketing", label: "Digital Marketing" },
+    ]}
+  />
       <Input
               placeholder="Search by name"
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
-              className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none"
+              className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none w-56"
               style={{
                 backgroundColor: '#f9fafb',
                 color: '#374151',
                 border: '1px solid #d1d5db'
               }}
             />
+
         <Button
           type="primary"
           style={{ backgroundColor: "#007575", color: "white" }}
@@ -106,14 +122,7 @@ const Courses = () => {
         >
           Create Course
         </Button>
-        <Button
-              type="primary"
-              icon={<IoMdRefresh />}
-              onClick={handleRefresh}
-              style={{ backgroundColor: '#007575', borderColor: '#007575', width: 'auto', height: 'auto', padding: '6px 10px' }}
-              className="hover:!bg-[#007575] hover:!border-[#007575]"
-              title="Refresh"
-            />
+        
       </PageHeader>
 
       <Datatable onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
@@ -244,11 +253,6 @@ const Courses = () => {
                 }`}>
                   {viewRecord.accessType.charAt(0).toUpperCase() + viewRecord.accessType.slice(1)}
                 </span>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">Subjects:</span>
-                <span className="font-local2 text-lg text-gray-900">{viewRecord.subjectCount}</span>
               </div>
               
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">

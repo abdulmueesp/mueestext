@@ -14,7 +14,6 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Mathematics",
       description: "Comprehensive study of algebraic concepts including polynomials, equations, and functions", 
       accessType: "premium",
-      subjectCount: 8,
       status: "Active"
     },
     { 
@@ -25,7 +24,6 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Computer Science",
       description: "Learn Python programming from basics to advanced concepts", 
       accessType: "free",
-      subjectCount: 12,
       status: "Active"
     },
     { 
@@ -36,7 +34,6 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "English Literature",
       description: "In-depth analysis of Shakespeare's major works and themes", 
       accessType: "premium",
-      subjectCount: 6,
       status: "Active"
     },
     { 
@@ -47,7 +44,6 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Banking & Finance",
       description: "Principles and practices of financial accounting", 
       accessType: "premium",
-      subjectCount: 10,
       status: "Inactive"
     },
     { 
@@ -58,7 +54,6 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "UPSC Preparation",
       description: "Complete coverage of Indian political system and constitution", 
       accessType: "premium",
-      subjectCount: 15,
       status: "Active"
     },
     { 
@@ -69,7 +64,6 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       moduleName: "Digital Marketing",
       description: "Strategies for effective social media marketing campaigns", 
       accessType: "premium",
-      subjectCount: 7,
       status: "Active"
     },
   ];
@@ -105,13 +99,7 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
         return <Tag color={color} className="font-local2 capitalize">{accessType}</Tag>;
       }
     },
-    { 
-      title: <span className="font-semi">Subjects</span>, 
-      dataIndex: "subjectCount", 
-      key: "subjectCount", 
-      width: 100,
-      render: (count: number) => <span className="font-local2 font-semibold text-blue-600">{count}</span>
-    },
+    
     {
       title: <span className="font-semi">Status</span>,
       dataIndex: "status",

@@ -89,7 +89,7 @@ const Modules = () => {
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
-              className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none"
+              className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none w-56"
               style={{
                 backgroundColor: '#f9fafb',
                 color: '#374151',
@@ -104,14 +104,7 @@ const Modules = () => {
         >
           Create Module
         </Button>
-        <Button
-              type="primary"
-              icon={<IoMdRefresh />}
-              onClick={handleRefresh}
-              style={{ backgroundColor: '#007575', borderColor: '#007575', width: 'auto', height: 'auto', padding: '6px 10px' }}
-              className="hover:!bg-[#007575] hover:!border-[#007575]"
-              title="Refresh"
-            />
+        
       </PageHeader>
 
       <Datatable onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />

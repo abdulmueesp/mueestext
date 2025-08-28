@@ -14,7 +14,8 @@ export const menuData = {
     { id: 'examgen', icon: MdOutlineDashboardCustomize, label: 'Examboard', path: '/examboard' },
     { id: 'modules', icon: AiOutlineProfile, label: 'Modules', path: '/modules' },
     { id: 'courses', icon: AiOutlineFileText, label: 'Courses', path: '/courses' },
-    { id: 'chapters', icon: AiOutlineRead, label: 'Subjects', path: '/chapters' },
+    { id: 'subjects', icon: AiOutlineRead, label: 'Subjects', path: '/subjects' },
+    { id: 'Chapters', icon: VscGitPullRequestGoToChanges, label: 'Chapters', path: '/Chapters' },
     { id: 'questions', icon: VscGitPullRequestGoToChanges, label: 'Questions', path: '/questions' },
     { id: 'settings', icon: IoSettingsOutline, label: 'Settings', path: '/settings' },
     
