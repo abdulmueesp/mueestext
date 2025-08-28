@@ -108,17 +108,11 @@ const Paper = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-[#06014f]">Create Question Paper</h2>
-                    <p className="text-[#06014f]">Follow the steps to create your examination paper</p>
-                </div>
-            </div>
-
+        
             {/* Stepper */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6" style={{ backgroundColor: '#F5F5F5' }}>
-                <div className="bg-[#F5F5F5] rounded-lg p-4 md:p-6">
+            <div className="bg-[#f9f9f9] rounded-lg  shadow-sm border border-gray-200 p-6" >
+                {/* style={{ backgroundColor: '#F5F5F5' }} */}
+                <div className="bg-white rounded-lg p-4 md:p-6">
                 {/* Step Indicators */}
                 <div className="flex items-center justify-between mb-8">
                     {steps.map((step, index) => (
