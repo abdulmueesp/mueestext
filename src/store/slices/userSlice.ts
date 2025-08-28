@@ -42,13 +42,26 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UserState {
+  userData: UserData;
   phoneNumber: string;
   role: 'admin' | 'user' | null;
   isAuthenticated: boolean;
   isProfileCompleted: boolean;
 }
+interface UserData {
+  name: string;
+  email: string;
+  type: 'student' | 'parent' | 'teacher' | null;
+  PhoneNumber: string;
+}
 
 const initialState: UserState = {
+  userData: {
+    name: '',
+    email: '',
+    type: null,
+    PhoneNumber: '',
+  },
   phoneNumber: '',
   role: null,
   isAuthenticated: false,
@@ -59,6 +72,9 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
+     setUserData: (state, action: PayloadAction<UserData>) => {
+      state.userData = action.payload;
+    },
     setPhoneNumber: (state, action: PayloadAction<string>) => {
       state.phoneNumber = action.payload;
     },
@@ -76,5 +92,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { setPhoneNumber, setRole, setProfileCompleted, logout } = userSlice.actions;
+export const { setPhoneNumber, setRole, setProfileCompleted, logout,setUserData } = userSlice.actions;
 export default userSlice.reducer;

@@ -113,6 +113,9 @@ function App() {
   const handleLogin = () => {
     setShowOtp(true);
   };
+  const handleChangePhone = () => {
+    setShowOtp(false);
+  };
 
   const handleLogout = () => {
     setShowOtp(false);
@@ -130,7 +133,7 @@ function App() {
           !showOtp ? (
             <LoginPage onLogin={handleLogin} />
           ) : (
-            <OtpForm />
+            <OtpForm onChangePhone={handleChangePhone} />
           )
         } />
       ) : !isProfileCompleted ? (
