@@ -92,7 +92,9 @@ const navigate = useNavigate();
     <div className="space-y-6 p-4">
       {/* Heading */}
       <div className="flex items-center gap-3">
-        <Button shape="square" className="flex items-center justify-center">
+        <Button
+        onClick={() => navigate(-1)}
+         shape="square" className="flex items-center justify-center">
           <ArrowLeft size={18} />
         </Button>
         <Title level={4} className="!mb-0 text-gray-700 font-local2">
@@ -145,7 +147,7 @@ const navigate = useNavigate();
 
       {/* Edit/Add Modal */}
       <Modal
-        title="Edit Header"
+       title={editingRecord ? "Edit Header" : "Add Header"}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
@@ -156,7 +158,7 @@ const navigate = useNavigate();
           layout="vertical"
           requiredMark={false} // hide red *
         >
-          <Row gutter={[16, 16]}>
+          <Row gutter={[8, 8]}>
             <Col xs={24} md={24}>
               <Form.Item label="Header Type" name="headerType">
                 <Radio.Group
