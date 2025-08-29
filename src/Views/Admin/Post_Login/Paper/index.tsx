@@ -300,7 +300,7 @@ const Paper = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#f9f9f9] shadow-sm border border-gray-200  md:p-7">
+      <div className="bg-[#f9f9f9] shadow-sm  border-gray-200  md:p-7">
         <div>
           {/* Ant Design Steps */}
           <Steps current={currentStep} className="mb-8">
