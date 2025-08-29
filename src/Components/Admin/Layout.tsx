@@ -408,7 +408,9 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto px-3 py-2 bg-white">
+        <main className={`flex-1 overflow-auto px-3 py-2 ${
+        role === "admin" ? "bg-white" : "bg-[#f9f9f9]"
+      }`}>
           {location.pathname === "/dashboard" ? (
             <Dashboard />
           ) : (

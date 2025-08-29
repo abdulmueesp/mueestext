@@ -103,6 +103,7 @@ import ChapterForm from "./Views/Admin/Post_Login/ChapterText/components/form"
 import ChaptersT from "./Views/Admin/Post_Login/ChapterText"
 import QuestionForm from "./Views/Admin/Post_Login/Questions/components/form"
 import QuestionViiew from "./Views/Admin/Post_Login/Questions/components/view"
+import HeaderFooter from "./Views/Admin/Post_Login/Paper/components/headfoot"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -162,6 +163,7 @@ function App() {
             <Route path="/chaptersform/:id" element={<ChapterForm/>} />
             <Route path="/questionform/:id" element={<QuestionForm/>} />
             <Route path="/Viewquestion/:id" element={<QuestionViiew/>} />
+            <Route path="/header" element={<HeaderFooter />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
