@@ -353,6 +353,43 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
                   className=" lg:w-[500px]  lg:h-[40px]"
                 />
               </div>
+               <div>
+          <Checkbox
+            checked={step1Data.addWatermark}
+            onChange={(e) =>
+              setStep1Data({
+                ...step1Data,
+                addWatermark: e.target.checked,
+              })
+            }
+          >
+            Add Watermark in PDF{" "}
+            <span
+              className="text-blue-500 underline cursor-pointer"
+              title="This will place a faint text or logo in the background of every page in your PDF."
+            >
+              (what is this?)
+            </span>
+          </Checkbox>
+        </div>
+        {step1Data.addWatermark && (
+          <div className="mt-2">
+            <Title level={5} className="text-gray-700 mb-2">
+              Watermark Text
+            </Title>
+            <Input
+              placeholder="Enter watermark text"
+              value={step1Data.watermarkText}
+              onChange={(e) =>
+                setStep1Data({
+                  ...step1Data,
+                  watermarkText: e.target.value,
+                })
+              }
+              className="lg:w-[500px] lg:h-[40px]"
+            />
+          </div>
+        )}
             </div>
           </Col>
         </Row>
