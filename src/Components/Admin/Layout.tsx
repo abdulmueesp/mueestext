@@ -190,6 +190,7 @@ import { RootState } from "@/store";
 import AdminHeader from "../common/header";
 import Dashboard from "@/Views/Admin/Post_Login/Dashboard";
 import { FaGraduationCap } from "react-icons/fa";
+import { MdLogout } from "react-icons/md";
 
 const LogOut = ({ className, style }: any) => (
   <span className={className} style={style}>
@@ -256,18 +257,22 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
       return [
         {
           title: "Overview",
-          items: menuItems.filter(item => ['dashboard', 'subscription'].includes(item.id))
+          items: menuItems.filter(item => ['dashboard'].includes(item.id))
         },
         {
           title: "User Management",
           items: menuItems.filter(item => ['users'].includes(item.id))
         },
         {
-          title: "Content Management",
+          title: "Exam Management",
           items: menuItems.filter(item => ['examgen', 'modules', 'courses', 'subjects', 'questions','Chapters'].includes(item.id))
         },
         {
-          title: "Configuration",
+          title: "Plans",
+          items: menuItems.filter(item => ['subscription'].includes(item.id))
+        },
+        {
+          title: "Account",
           items: menuItems.filter(item => ['settings'].includes(item.id))
         }
       ];
@@ -278,13 +283,17 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
           items: menuItems.filter(item => ['dashboard'].includes(item.id))
         },
         {
-          title: "Exam Tools",
-          items: menuItems.filter(item => ['Create Paper', 'exams', 'results'].includes(item.id))
+          title: "EXAMS",
+          items: menuItems.filter(item => ['Create Paper', 'My Papers', 'My Questions','Blueprints','Dynamic Blueprint'].includes(item.id))
         },
-        {
-          title: "Account",
-          items: menuItems.filter(item => ['settings'].includes(item.id))
-        }
+         {
+          title: "INSTITUTE",
+          items: menuItems.filter(item => ['My Institute', 'Batches', 'Students','Teachers'].includes(item.id))
+        },
+         {
+          title: "MY ACCOUNT",
+          items: menuItems.filter(item => ['Refer & Earn', 'Subscriptions', 'My Orders','settings'].includes(item.id))
+        },
       ];
     }
     return [];
@@ -338,7 +347,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
                 <div key={sectionIndex}>
                   {/* Section Heading */}
                   <div className="px-3 mb-2">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <h3 className="text-[12px] text-gray-600 uppercase tracking-wider font-bold">
                       {section.title}
                     </h3>
                   </div>
@@ -353,7 +362,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
                           key={item.id}
                           onClick={() => handleMenuClick(item)}
                           className={`flex items-center w-full px-4 py-3 text-left rounded-lg transition duration-200 text-sm ${
-                            isActive ? "text-white" : "text-gray-700"
+                            isActive ? "text-white" : "text-gray-500"
                           }`}
                           style={{
                             backgroundColor: isActive ? primaryColor : "transparent",
@@ -367,8 +376,11 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
                               e.currentTarget.style.backgroundColor = "transparent";
                           }}
                         >
-                          <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <Icon className={`w-5 h-5 mr-3 flex-shrink-0 text-[#007575] ${
+                            isActive ? "text-white" : "text-[#007575]"
+                          }`} />
+                  
+                          <span className="truncate font-local2 ">{item.label}</span>
                         </button>
                       );
                     })}
@@ -379,13 +391,14 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
           </div>
 
           {/* Fixed Logout Button */}
-          <div className="p-4 border-t border-gray-200 flex-shrink-0">
+          <div className=" flex justify-center items-center p-3 border-t border-gray-200 flex-shrink-0">
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200 text-sm"
+              className="flex items-center gap-1 w-full px-4 py-3 text-gray-700 hover:bg-red-50 rounded-lg transition duration-200 text-sm"
             >
-              <LogOut className="w-5 h-5 mr-3 flex-shrink-0" />
-              <span className="truncate">Logout</span>
+              {/* <LogOut className="w-5 h-5 mr-3 flex-shrink-0" /> */}
+              <MdLogout size={20} color="red" />
+              <span className="truncate text-red-500 font-local2 font-bold">Logout</span>
             </button>
           </div>
         </div>
@@ -409,7 +422,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
 
         {/* Main Content Area */}
         <main className={`flex-1 overflow-auto px-3 py-2 ${
-        role === "admin" ? "bg-white" : "bg-[#f9f9f9]"
+        role === "admin" ? "bg-white" : "bg-gradient-to-br from-slate-50 to-slate-100"
       }`}>
           {location.pathname === "/dashboard" ? (
             <Dashboard />

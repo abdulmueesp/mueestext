@@ -1,242 +1,4 @@
-// // @ts-nocheck
-// import React from "react";
-// import { Card, Row, Col, Statistic, Button, Progress, Table, Tag, Space } from "antd";
-// import { 
-//   BookOutlined, 
-//   ReadOutlined, 
-//   FileTextOutlined, 
-//   QuestionCircleOutlined,
-//   PlusOutlined,
-//   EyeOutlined,
-//   EditOutlined
-// } from "@ant-design/icons";
-// import PageHeader from "../../../../Components/common/PageHeader";
-// import { useNavigate } from "react-router-dom";
 
-// const ExamGenerator = () => {
-//   const navigate = useNavigate();
-
-//   // Sample statistics data
-//   const stats = {
-//     totalModules: 6,
-//     totalCourses: 24,
-//     totalChapters: 156,
-//     totalQuestions: 3240,
-//     activeModules: 5,
-//     activeCourses: 22,
-//     activeChapters: 142,
-//     activeQuestions: 2980
-//   };
-
- 
-
- 
-
-//   const quickActions = [
-//     {
-//       title: "Create Module",
-//       icon: <BookOutlined />,
-//       color: "#1890ff",
-//       action: () => navigate("/modules")
-//     },
-//     {
-//       title: "Create Course",
-//       icon: <ReadOutlined />,
-//       color: "#52c41a",
-//       action: () => navigate("/admin/courses")
-//     },
-//     {
-//       title: "Create Chapter",
-//       icon: <FileTextOutlined />,
-//       color: "#faad14",
-//       action: () => navigate("/admin/chapters")
-//     },
-//     {
-//       title: "Create Question",
-//       icon: <QuestionCircleOutlined />,
-//       color: "#f5222d",
-//       action: () => navigate("/admin/questions")
-//     }
-//   ];
-
-//   return (
-//     <>
-//       <PageHeader title="Exam Paper Generator" backButton={true}>
-//         <Space>
-//           <Button 
-//             type="primary" 
-//             icon={<PlusOutlined />}
-//             style={{ backgroundColor: "#007575", borderColor: "#007575" }}
-//             onClick={() => navigate("/admin/modules")}
-//           >
-//             Quick Start
-//           </Button>
-//         </Space>
-//       </PageHeader>
-
-//       {/* Statistics Cards */}
-//       <Row gutter={[16, 16]} className="mt-6">
-//         <Col xs={24} sm={12} lg={6}>
-//           <Card>
-//             <Statistic
-//               title={<span className="font-local2 text-gray-600">Total Modules</span>}
-//               value={stats.totalModules}
-//               prefix={<BookOutlined style={{ color: '#1890ff' }} />}
-//               valueStyle={{ color: '#1890ff', fontSize: '24px' }}
-//             />
-//             <Progress 
-//               percent={Math.round((stats.activeModules / stats.totalModules) * 100)} 
-//               size="small" 
-//               className="mt-2"
-//               strokeColor="#1890ff"
-//             />
-//             <div className="text-xs text-gray-500 mt-1">
-//               {stats.activeModules} Active / {stats.totalModules} Total
-//             </div>
-//           </Card>
-//         </Col>
-
-//         <Col xs={24} sm={12} lg={6}>
-//           <Card>
-//             <Statistic
-//               title={<span className="font-local2 text-gray-600">Total Courses</span>}
-//               value={stats.totalCourses}
-//               prefix={<ReadOutlined style={{ color: '#52c41a' }} />}
-//               valueStyle={{ color: '#52c41a', fontSize: '24px' }}
-//             />
-//             <Progress 
-//               percent={Math.round((stats.activeCourses / stats.totalCourses) * 100)} 
-//               size="small" 
-//               className="mt-2"
-//               strokeColor="#52c41a"
-//             />
-//             <div className="text-xs text-gray-500 mt-1">
-//               {stats.activeCourses} Active / {stats.totalCourses} Total
-//             </div>
-//           </Card>
-//         </Col>
-
-//         <Col xs={24} sm={12} lg={6}>
-//           <Card>
-//             <Statistic
-//               title={<span className="font-local2 text-gray-600">Total Chapters</span>}
-//               value={stats.totalChapters}
-//               prefix={<FileTextOutlined style={{ color: '#faad14' }} />}
-//               valueStyle={{ color: '#faad14', fontSize: '24px' }}
-//             />
-//             <Progress 
-//               percent={Math.round((stats.activeChapters / stats.totalChapters) * 100)} 
-//               size="small" 
-//               className="mt-2"
-//               strokeColor="#faad14"
-//             />
-//             <div className="text-xs text-gray-500 mt-1">
-//               {stats.activeChapters} Active / {stats.totalChapters} Total
-//             </div>
-//           </Card>
-//         </Col>
-
-//         <Col xs={24} sm={12} lg={6}>
-//           <Card>
-//             <Statistic
-//               title={<span className="font-local2 text-gray-600">Total Questions</span>}
-//               value={stats.totalQuestions}
-//               prefix={<QuestionCircleOutlined style={{ color: '#f5222d' }} />}
-//               valueStyle={{ color: '#f5222d', fontSize: '24px' }}
-//             />
-//             <Progress 
-//               percent={Math.round((stats.activeQuestions / stats.totalQuestions) * 100)} 
-//               size="small" 
-//               className="mt-2"
-//               strokeColor="#f5222d"
-//             />
-//             <div className="text-xs text-gray-500 mt-1">
-//               {stats.activeQuestions} Active / {stats.totalQuestions} Total
-//             </div>
-//           </Card>
-//         </Col>
-//       </Row>
-
-//       {/* Quick Actions */}
-//       <Row gutter={[16, 16]} className="mt-6">
-//         <Col span={24}>
-//           <Card title={<span className="font-local2 text-lg">Quick Actions</span>}>
-//             <Row gutter={[16, 16]}>
-//               {quickActions.map((action, index) => (
-//                 <Col xs={24} sm={12} md={6} key={index}>
-//                   <Card
-//                     hoverable
-//                     className="text-center cursor-pointer"
-//                     onClick={action.action}
-//                     style={{ borderColor: action.color }}
-//                   >
-//                     <div style={{ color: action.color, fontSize: '32px', marginBottom: '8px' }}>
-//                       {action.icon}
-//                     </div>
-//                     <div className="font-local2 font-semibold" style={{ color: action.color }}>
-//                       {action.title}
-//                     </div>
-//                   </Card>
-//                 </Col>
-//               ))}
-//             </Row>
-//           </Card>
-//         </Col>
-//       </Row>
-
-      
-
-//       {/* System Overview */}
-//       <Row gutter={[16, 16]} className="mt-6 mb-6">
-        
-//         <Col xs={24} lg={12}>
-//           <Card title={<span className="font-local2 text-lg">Getting Started</span>}>
-//             <div className="space-y-3">
-//               <div className="flex items-start space-x-3">
-//                 <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mt-0.5">
-//                   1
-//                 </div>
-//                 <div>
-//                   <div className="font-local2 font-semibold">Create Modules</div>
-//                   <div className="text-sm text-gray-600">Start by creating main subject categories</div>
-//                 </div>
-//               </div>
-//               <div className="flex items-start space-x-3">
-//                 <div className="bg-green-100 text-green-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mt-0.5">
-//                   2
-//                 </div>
-//                 <div>
-//                   <div className="font-local2 font-semibold">Add Courses</div>
-//                   <div className="text-sm text-gray-600">Create courses under each module with access control</div>
-//                 </div>
-//               </div>
-//               <div className="flex items-start space-x-3">
-//                 <div className="bg-yellow-100 text-yellow-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mt-0.5">
-//                   3
-//                 </div>
-//                 <div>
-//                   <div className="font-local2 font-semibold">Organize Chapters</div>
-//                   <div className="text-sm text-gray-600">Structure content into logical chapters</div>
-//                 </div>
-//               </div>
-//               <div className="flex items-start space-x-3">
-//                 <div className="bg-red-100 text-red-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mt-0.5">
-//                   4
-//                 </div>
-//                 <div>
-//                   <div className="font-local2 font-semibold">Create Questions</div>
-//                   <div className="text-sm text-gray-600">Add questions with Malayalam support and marks</div>
-//                 </div>
-//               </div>
-//             </div>
-//           </Card>
-//         </Col>
-//       </Row>
-//     </>
-//   );
-// };
-
-// export default ExamGenerator;
 // @ts-nocheck
 import React from "react";
 import { Card, Row, Col, Statistic, Button, Progress, Space } from "antd";
@@ -277,25 +39,25 @@ const ExamGenerator = () => {
       title: "Create Course",
       icon: <ReadOutlined />,
       color: "#007575",
-      action: () => navigate("/admin/courses")
+      action: () => navigate("/courses")
     },
     {
       title: "Create Subject",
       icon: <AppstoreOutlined />,
       color: "#007575",
-      action: () => navigate("/admin/subjects")
+      action: () => navigate("/subjects")
     },
     {
       title: "Create Chapter",
       icon: <FileTextOutlined />,
       color: "#007575",
-      action: () => navigate("/admin/chapters")
+      action: () => navigate("/Chapters")
     },
     {
       title: "Create Question",
       icon: <QuestionCircleOutlined />,
       color: "#007575",
-      action: () => navigate("/admin/questions")
+      action: () => navigate("/questions")
     }
   ];
 
@@ -311,7 +73,7 @@ const ExamGenerator = () => {
               borderColor: "#007575",
               boxShadow: "0 2px 8px rgba(0, 117, 117, 0.3)"
             }}
-            onClick={() => navigate("/admin/modules")}
+            onClick={() => navigate("/modules")}
           >
             Quick Start
           </Button>
