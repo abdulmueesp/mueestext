@@ -117,9 +117,9 @@ export const menuData = {
       label: "Teachers",
       path: "/results",
     },
-     { id: "Refer & Earn", icon: BsGraphUpArrow, label: "Refer & Earn", path: "/results" },
+     { id: "Refer & Earn", icon: BsGraphUpArrow, label: "Refer & Earn", path: "/refer" },
       { id: "Subscriptions", icon: FiBox, label: "Subscriptions", path: "/mysubscriptions" },
-       { id: "My Orders", icon: MdOutlineCardGiftcard, label: "My Orders", path: "/results" },
+       { id: "My Orders", icon: MdOutlineCardGiftcard, label: "My Orders", path: "/orders" },
     { id: "settings", icon: CiSettings, label: "Settings", path: "/settings" },
   ],
 };

@@ -106,6 +106,8 @@ import QuestionViiew from "./Views/Admin/Post_Login/Questions/components/view"
 import HeaderFooter from "./Views/Admin/Post_Login/Paper/components/headfoot"
 import Plans from "./Views/Admin/Post_Login/Plans"
 import UserPlan from "./Views/Admin/Post_Login/Userplan"
+import Orders from "./Views/Admin/Post_Login/Orders"
+import Refer from "./Views/Admin/Post_Login/Refern"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -168,6 +170,8 @@ function App() {
             <Route path="/header" element={<HeaderFooter />} />
             <Route path="/subscriptions" element={<Plans/>} />
             <Route path="/mysubscriptions" element={<UserPlan/>} />
+            <Route path="/orders" element={<Orders />}/>
+            <Route  path="/refer" element={<Refer/>}/>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
