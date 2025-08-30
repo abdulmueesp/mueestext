@@ -199,11 +199,14 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
         </Row>
       </Card>
 
-      <Card className="rounded-lg shadow-sm border border-gray-200">
+      <Card className="rounded-lg shadow-sm border border-gray-200 font-local2">
         <Row gutter={[17, 17]}>
           <Col xs={24} lg={12} xl={8}>
             <Title level={5} className="text-gray-700 mb-3">
-              Source (what is this){" "}
+              Source{" "}
+              <span className="text-blue-500 cursor-pointer">
+                (<span className="underline">What is this?</span>)
+              </span>
             </Title>
             <Radio.Group disabled className="space-y-3">
               <Radio value="question-paper" className="block text-[16px]">
@@ -365,7 +368,7 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
           >
             Add Watermark in PDF{" "}
             <span
-              className="text-blue-500 underline cursor-pointer"
+              className="text-blue-500 underline cursor-pointer font-local2"
               title="This will place a faint text or logo in the background of every page in your PDF."
             >
               (what is this?)
@@ -395,28 +398,7 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
         </Row>
       </Card>
 
-      {/* General Instructions Card */}
-      {/* <Card className="rounded-lg shadow-sm border border-gray-200">
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12} xl={8}>
-            <Title level={5} className="text-gray-700 mb-3">
-              General Instructions
-            </Title>
-            <div className="space-y-4">
-              <div>
-                <TextArea
-                  placeholder="Enter general instructions"
-                  value={step1Data.generalInstructions}
-                  onChange={handleGeneralInstructionsChange}
-                  rows={6}
-                />
-              </div>
-
-            </div>
-          </Col>
-        </Row>
-      </Card> */}
-      <Card className="rounded-lg shadow-sm border border-gray-200">
+    <Card className="rounded-lg shadow-sm border border-gray-200">
   <Row gutter={[16, 16]}>
     <Col xs={24} lg={12} xl={8}>
       <Title level={5} className="text-gray-700 mb-3">
