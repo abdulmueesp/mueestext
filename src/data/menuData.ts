@@ -118,7 +118,7 @@ export const menuData = {
       path: "/results",
     },
      { id: "Refer & Earn", icon: BsGraphUpArrow, label: "Refer & Earn", path: "/results" },
-      { id: "Subscriptions", icon: FiBox, label: "Subscriptions", path: "/subscriptions" },
+      { id: "Subscriptions", icon: FiBox, label: "Subscriptions", path: "/mysubscriptions" },
        { id: "My Orders", icon: MdOutlineCardGiftcard, label: "My Orders", path: "/results" },
     { id: "settings", icon: CiSettings, label: "Settings", path: "/settings" },
   ],

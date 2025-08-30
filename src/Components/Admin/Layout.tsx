@@ -192,11 +192,6 @@ import Dashboard from "@/Views/Admin/Post_Login/Dashboard";
 import { FaGraduationCap } from "react-icons/fa";
 import { MdLogout } from "react-icons/md";
 
-const LogOut = ({ className, style }: any) => (
-  <span className={className} style={style}>
-    🚪
-  </span>
-);
 
 const X = ({ className, style }: any) => (
   <span className={className} style={style}>
