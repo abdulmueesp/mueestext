@@ -89,7 +89,7 @@ export const menuData = {
       id: "My Questions",
       icon: TbFolderQuestion,
       label: "My Questions",
-      path: "/results",
+      path: "/myquestions",
     },
     {
       id: "Blueprints",

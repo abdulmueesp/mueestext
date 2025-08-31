@@ -1,3 +1,6 @@
+
+
+
 // @ts-nocheck
 import React from "react";
 import { Button, Card, Typography } from "antd";
@@ -6,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
-const UserPlan = () => {
+const Evaluate = () => {
   const navigate = useNavigate();
 
   return (
@@ -21,32 +24,23 @@ const UserPlan = () => {
           <ArrowLeft size={18} />
         </Button>
         <Title level={4} className="!mb-0 text-gray-700 font-local2">
-          My Subscription
+        Assigned for Evaluation
         </Title>
       </div>
 
-      {/* Subscription Card */}
-      <div className="w-full">
-        <Card
-          className="shadow-lg bg-white w-full"
-          bodyStyle={{ padding: "2rem" }}
-         
-        >
-          <div className="mb-6">
-            <Title level={4} className="!mb-2 !text-gray-600 font-local2">
-              No Subscription Purchased!
-            </Title>
+     
+       <div className="w-full">
+        <Card className="shadow-lg bg-white w-full">
+          <div>
+            <h4 className="font-local2 text-lg mb-2 text-gray-600 ">
+            No Testpaper for evaluation!
+            </h4>
+           
           </div>
-
-          <Button className="bg-white border-green-600 text-green-600 hover:!bg-green-600 hover:!text-white hover:!border-white font-local2"
-           onClick={() => navigate("/subscriptions")}
-          >
-            Buy Subscription
-          </Button>
         </Card>
       </div>
     </div>
   );
 };
 
-export default UserPlan;
+export default Evaluate;

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { RootState } from "@/store";
 import {
   BarChart,
@@ -43,6 +44,7 @@ import refer from "../../../../assets/Refer & Earn.png"
 import subscriptions from "../../../../assets/Subscription.png"
 import myprofile from "../../../../assets/My profile.png"
 import errreport from "../../../../assets/Error Report.png"
+import { FaWhatsapp } from "react-icons/fa";
 // Mock data for charts
 const revenueData = [
   { name: "Jan", monthly: "120000" },
@@ -67,45 +69,50 @@ const examBoxes = [
     title: "Create Paper",
     color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
     image: createpaper,
+    path: "/paper",
   },
   {
     title: "My Papers",
     color: "bg-gradient-to-br from-red-400/60 to-red-500/60",
-
     image: mypapers,
+    path: "/mypapers",
   },
   {
     title: "My Questions",
     color: "bg-gradient-to-br from-yellow-400/60 to-yellow-500/60",
     image: myquestions,
+    path: "/myquestions",
   },
   {
     title: "Blueprints",
     color: "bg-gradient-to-br from-orange-400/60 to-orange-500/60",
     image: blueprint,
+    path: "/Blueprint",
   },
   {
-    title: "Dynamic Bluepr...",
+    title: "Dynamic Blueprints",
     color: "bg-gradient-to-br from-orange-300/60 to-orange-400/60",
     image: dynaimblue,
+    path: "/dynamictemplate",
   },
   {
     title: "Evaluate",
     color: "bg-gradient-to-br from-red-400/60 to-red-500/60",
     image: evaluate,
+    path: "/evaluate",
   },
   {
     title: "Syllabus",
     color: "bg-gradient-to-br from-blue-400/60 to-blue-500/60",
     image: syllabus,
+    path: "/syllabus",
   },
   {
-    title: "Merge Testpage...",
+    title: "Merge Testpapers",
     color: "bg-gradient-to-br from-green-400/60 to-green-500/60",
     image: merge,
-
+    path: "/merge-testpapers",
   },
-
 ];
 
 const instituteBoxes = [
@@ -113,21 +120,25 @@ const instituteBoxes = [
     title: "My Institute",
     color: "bg-gradient-to-br from-orange-400/60 to-orange-500/60",
     image: institue,
+    path: "/my-institute",
   },
   {
     title: "Batches",
     color: "bg-gradient-to-br from-yellow-400/60 to-yellow-500/60",
     image: batches,
+    path: "/batches",
   },
   {
     title: "Students",
     color: "bg-gradient-to-br from-blue-400/60 to-blue-500/60",
     image: students,
+    path: "/students",
   },
   {
     title: "Teachers",
     color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
     image: teachers,
+    path: "/teachers",
   },
 ];
 
@@ -136,21 +147,25 @@ const accountBoxes = [
     title: "My Profile",
     color: "bg-gradient-to-br from-purple-400/60 to-purple-500/60",
     image: myprofile,
+    path: "/my-profile",
   },
   {
     title: "Subscription",
     color: "bg-gradient-to-br from-indigo-400/60 to-indigo-500/60",
     image: subscriptions,
+    path: "/mysubscriptions",
   },
   {
     title: "Refer & Earn",
     color: "bg-gradient-to-br from-pink-400/60 to-pink-500/60",
     image: refer,
+    path: "/refer",
   },
   {
     title: "Error Report",
     color: "bg-gradient-to-br from-gray-400/60 to-gray-500/60",
     image: errreport,
+    path: "/error-report",
   },
 ];
 
@@ -429,6 +444,28 @@ const AdminDashboard = () => {
 };
 
 const UserDashboard = () => {
+  const navigate = useNavigate();
+
+  const handleStartClick = () => {
+    navigate('/paper');
+  };
+
+  const handleBuyClick = () => {
+    navigate('/subscriptions');
+  };
+
+  const handleBoxClick = (path: string) => {
+    navigate(path);
+  };
+
+  const handleWhatsAppClick = () => {
+    // Replace with your actual WhatsApp number (with country code, no + or spaces)
+    const phoneNumber = "918075699058"; // Example: Indian number 9876543210
+    const message = "Hello! I need help with MyExam."; // Default message
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <div className="h-min p-3 pt-4  ">
       {/* Welcome Section */}
@@ -453,6 +490,7 @@ const UserDashboard = () => {
         <div className="flex flex-wrap gap-2 md:gap-4">
           <Button
             size="large"
+            onClick={handleStartClick}
             className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
              hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 hover:scale-105"
             style={{
@@ -464,7 +502,7 @@ const UserDashboard = () => {
             Start
           </Button>
 
-          <Button
+          {/* <Button
             size="large"
             className="border-2 border-[#007575] text-[#007575] hover:bg-[#007575] hover:text-white transition-all duration-200 font-local2"
             style={{
@@ -474,10 +512,11 @@ const UserDashboard = () => {
             }}
           >
             Tutorials
-          </Button>
+          </Button> */}
           <Button
             size="large"
-            className="border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white transition-all duration-200 font-local2"
+            onClick={handleBuyClick}
+            className="bg-white border-green-600 text-green-600 hover:!bg-green-600 hover:!text-white hover:!border-white font-local2 hover:!bg-opacity-80"
             style={{
               height: "40px",
               borderRadius: "8px",
@@ -496,28 +535,29 @@ const UserDashboard = () => {
         className="mb-8 shadow-lg border-0 font-local2"
         bodyStyle={{ padding: "2rem" }}
       >
-        {/* Exam Boxes Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-          {examBoxes.map((exam, index) => (
-            <div key={index} className="flex flex-col items-center mb-4">
-              <div
-                className={`${exam.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
-              >
-                                 <img
-                   src={exam.image}
-                   alt={exam.title}
-                   className="w-20 h-20 object-contain"
-                   draggable="false"
-                   onContextMenu={(e) => e.preventDefault()}
-                   style={{ userSelect: 'none', pointerEvents: 'none' }}
-                 />
-              </div>
-              <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
-                {exam.title}
-              </h3>
-            </div>
-          ))}
-        </div>
+                 {/* Exam Boxes Grid */}
+         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
+           {examBoxes.map((exam, index) => (
+             <div key={index} className="flex flex-col items-center mb-4">
+               <div
+                 onClick={() => handleBoxClick(exam.path)}
+                 className={`${exam.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
+               >
+                                  <img
+                    src={exam.image}
+                    alt={exam.title}
+                    className="w-20 h-20 object-contain"
+                    draggable="false"
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{ userSelect: 'none', pointerEvents: 'none' }}
+                  />
+               </div>
+               <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
+                 {exam.title}
+               </h3>
+             </div>
+           ))}
+         </div>
       </Card>
 
       {/* Institute Card */}
@@ -543,28 +583,29 @@ const UserDashboard = () => {
         className="mb-8 shadow-lg border-0 font-local2"
         bodyStyle={{ padding: "2rem" }}
       >
-        {/* Institute Boxes Flex */}
-        <div className="flex flex-wrap justify-start gap-4 md:gap-6 lg:gap-[55px]">
-          {instituteBoxes.map((institute, index) => (
-            <div key={index} className="flex flex-col items-center mb-4 flex-shrink-0">
-              <div
-                className={`${institute.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
-              >
-                                 <img
-                   src={institute.image}
-                   alt={institute.title}
-                   className="w-20 h-20 object-contain"
-                   draggable="false"
-                   onContextMenu={(e) => e.preventDefault()}
-                   style={{ userSelect: 'none', pointerEvents: 'none' }}
-                 />
-              </div>
-              <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
-                {institute.title}
-              </h3>
-            </div>
-          ))}
-        </div>
+                 {/* Institute Boxes Flex */}
+         <div className="flex flex-wrap justify-start gap-4 md:gap-6 lg:gap-[55px]">
+           {instituteBoxes.map((institute, index) => (
+             <div key={index} className="flex flex-col items-center mb-4 flex-shrink-0">
+               <div
+                 onClick={() => handleBoxClick(institute.path)}
+                 className={`${institute.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
+               >
+                                  <img
+                    src={institute.image}
+                    alt={institute.title}
+                    className="w-20 h-20 object-contain"
+                    draggable="false"
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{ userSelect: 'none', pointerEvents: 'none' }}
+                  />
+               </div>
+               <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
+                 {institute.title}
+               </h3>
+             </div>
+           ))}
+         </div>
       </Card>
 
       {/* My Account Card */}
@@ -574,46 +615,49 @@ const UserDashboard = () => {
         className="shadow-lg border-0 font-local2"
         bodyStyle={{ padding: "2rem" }}
       >
-        {/* Account Boxes Flex */}
-        <div className="flex flex-wrap justify-start gap-4 md:gap-6 lg:gap-[55px]">
-          {accountBoxes.map((account, index) => (
-            <div key={index} className="flex flex-col items-center mb-4 flex-shrink-0">
-              <div
-                className={`${account.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
-              >
-                                 <img
-                   src={account.image}
-                   alt={account.title}
-                   className="w-20 h-20 object-contain"
-                   draggable="false"
-                   onContextMenu={(e) => e.preventDefault()}
-                   style={{ userSelect: 'none', pointerEvents: 'none' }}
-                 />
-              </div>
-              <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
-                {account.title}
-              </h3>
-            </div>
-          ))}
-        </div>
+                 {/* Account Boxes Flex */}
+         <div className="flex flex-wrap justify-start gap-4 md:gap-6 lg:gap-[55px]">
+           {accountBoxes.map((account, index) => (
+             <div key={index} className="flex flex-col items-center mb-4 flex-shrink-0">
+               <div
+                 onClick={() => handleBoxClick(account.path)}
+                 className={`${account.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
+               >
+                                  <img
+                    src={account.image}
+                    alt={account.title}
+                    className="w-20 h-20 object-contain"
+                    draggable="false"
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{ userSelect: 'none', pointerEvents: 'none' }}
+                  />
+               </div>
+               <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
+                 {account.title}
+               </h3>
+             </div>
+           ))}
+         </div>
       </Card>
 
-      {/* Fixed WhatsApp Button */}
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          className="bg-green-500 hover:bg-green-600 border-0 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2 font-local2"
-          size="large"
-          style={{
-            borderRadius: "25px",
-            height: "50px",
-            paddingLeft: "20px",
-            paddingRight: "20px",
-          }}
-        >
-          <MessageCircle size={20} />
-          Chat with us
-        </Button>
-      </div>
+             {/* Fixed WhatsApp Button */}
+       <div className="fixed bottom-6 right-6 z-50">
+         <Button
+           onClick={handleWhatsAppClick}
+           className="bg-green-500 hover:!bg-green-600 border-0 text-white hover:!text-white shadow-lg hover:!shadow-xl transform hover:!scale-105 transition-all duration-200 flex items-center gap-2 font-local2 "
+           size="large"
+           style={{
+             borderRadius: "25px",
+             height: "50px",
+             paddingLeft: "20px",
+             paddingRight: "20px",
+           }}
+         >
+           {/* <MessageCircle size={20} /> */}
+           <FaWhatsapp size={20} />
+           Chat with us
+         </Button>
+       </div>
     </div>
   );
 };

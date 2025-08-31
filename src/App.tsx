@@ -110,6 +110,9 @@ import Orders from "./Views/Admin/Post_Login/Orders"
 import Refer from "./Views/Admin/Post_Login/Refern"
 import DynamicBlue from "./Views/Admin/Post_Login/Dynamicblue"
 import Blueprint from "./Views/Admin/Post_Login/BluePrints"
+import MyQuestions from "./Views/Admin/Post_Login/Myquestions"
+import Evaluate from "./Views/Admin/Post_Login/Evaluate"
+import Syllabus from "./Views/Admin/Post_Login/Syllabus"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -176,6 +179,9 @@ function App() {
             <Route  path="/refer" element={<Refer/>}/>
             <Route path="/dynamictemplate" element={<DynamicBlue />}/>
             <Route path="/Blueprint" element={<Blueprint/>} />
+            <Route path="/myquestions" element={<MyQuestions />} />
+            <Route path="/evaluate" element={<Evaluate />} />
+            <Route path="/syllabus" element={<Syllabus />}/>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
