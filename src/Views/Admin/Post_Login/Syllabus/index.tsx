@@ -12,10 +12,10 @@ import {
   Collapse,
   List,
 } from "antd";
+import { message } from "../../../../Components/common/message/message";
 import { RightOutlined, CloseOutlined, DownOutlined, SearchOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
 const { Option } = Select;
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -162,7 +162,19 @@ const Syllabus = () => {
   };
 
   const handleSearchSyllabus = () => {
-    setShowSyllabus(true); // Always show syllabus when search is clicked
+    if (!selectedModule) {
+      message.error("Please select Module before searching");
+      return;
+    }
+    if (!selectedCourse) {
+      message.error("Please select Course before searching");
+      return;
+    }
+    if (!selectedSubject) {
+      message.error("Please select Subject before searching");
+      return;
+    }
+    setShowSyllabus(true);
   };
 
   // Get syllabus data based on selection
@@ -189,7 +201,7 @@ const Syllabus = () => {
          <ArrowLeft size={18} />
         </Button>
         <Title level={4} className="!mb-0 text-gray-700 font-local2">
-          My Syllabus
+          Syllabus
         </Title>
       </div>
 

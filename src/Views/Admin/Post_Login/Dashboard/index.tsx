@@ -25,8 +25,10 @@ import {
   Activity,
   MessageCircle,
 } from "lucide-react";
-import { Card } from "antd";
+import { Card, Modal, Form, Input, Upload, message, Button as AntButton } from "antd";
 import { Button } from "antd";
+import { UploadOutlined, PlusOutlined } from "@ant-design/icons";
+import { useState } from "react";
 import createpaper from "../../../../assets/createpaper.png"
 import mypapers from "../../../../assets/mypapers.png"
 import institute1 from "../../../../assets/institute1.jpeg"
@@ -45,6 +47,7 @@ import subscriptions from "../../../../assets/Subscription.png"
 import myprofile from "../../../../assets/My profile.png"
 import errreport from "../../../../assets/Error Report.png"
 import { FaWhatsapp } from "react-icons/fa";
+import Instituteimg from "../../../../assets/institute1.jpeg"
 // Mock data for charts
 const revenueData = [
   { name: "Jan", monthly: "120000" },
@@ -111,7 +114,7 @@ const examBoxes = [
     title: "Merge Testpapers",
     color: "bg-gradient-to-br from-green-400/60 to-green-500/60",
     image: merge,
-    path: "/merge-testpapers",
+    path: "/mergepapers",
   },
 ];
 
@@ -438,13 +441,87 @@ const AdminDashboard = () => {
             ))}
           </div>
         </div>
-      </div>
+             </div>
+
+       {/* Institute Modal */}
+       <Modal
+         title="Add/Edit Institute"
+         open={isInstituteModalVisible}
+         onOk={handleInstituteModalOk}
+         onCancel={handleInstituteModalCancel}
+         okText="Save"
+         cancelText="Cancel"
+         centered={false}
+         style={{ top: 20 }}
+         width={600}
+         okButtonProps={{
+           className: "bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white"
+         }}
+       >
+         <Form
+           form={instituteForm}
+           layout="vertical"
+           className="mt-4"
+         >
+           <Form.Item
+             label="Logo"
+             name="logo"
+           >
+             <Upload
+               listType="picture-card"
+               maxCount={1}
+               beforeUpload={() => false}
+               accept="image/*"
+             >
+               <div>
+                 <PlusOutlined />
+                 <div style={{ marginTop: 8 }}>Upload Logo</div>
+               </div>
+             </Upload>
+           </Form.Item>
+
+           <Form.Item
+             label="Institute Name"
+             name="name"
+             rules={[{ required: true, message: 'Please enter institute name!' }]}
+           >
+             <Input 
+               placeholder="Enter institute name"
+               size="large"
+               className="rounded-lg"
+             />
+           </Form.Item>
+
+           <Form.Item
+             label="Address"
+             name="address"
+             rules={[{ required: true, message: 'Please enter address!' }]}
+           >
+             <Input.TextArea
+               placeholder="Enter institute address"
+               rows={3}
+               className="rounded-lg"
+             />
+           </Form.Item>
+         </Form>
+       </Modal>
     </div>
   );
 };
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+  
+  // Institute modal state and data
+  const [isInstituteModalVisible, setIsInstituteModalVisible] = useState(false);
+  const [instituteForm] = Form.useForm();
+
+  // Dummy institute data
+  const dummyInstituteData = {
+    name: "ABC Institute of Technology",
+    address: "123 Education Street, Knowledge City, State - 123456",
+    logo: Instituteimg
+  };
 
   const handleStartClick = () => {
     navigate('/paper');
@@ -455,7 +532,12 @@ const UserDashboard = () => {
   };
 
   const handleBoxClick = (path: string) => {
-    navigate(path);
+    if (path === "/my-institute") {
+      setIsInstituteModalVisible(true);
+      instituteForm.setFieldsValue(dummyInstituteData);
+    } else {
+      navigate(path);
+    }
   };
 
   const handleWhatsAppClick = () => {
@@ -464,6 +546,21 @@ const UserDashboard = () => {
     const message = "Hello! I need help with MyExam."; // Default message
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleInstituteModalOk = () => {
+    instituteForm.validateFields().then((values) => {
+      console.log('Form values:', values);
+      message.success('Saved');
+      setIsInstituteModalVisible(false);
+    }).catch((errorInfo) => {
+      console.log('Validation failed:', errorInfo);
+    });
+  };
+
+  const handleInstituteModalCancel = () => {
+    setIsInstituteModalVisible(false);
+    instituteForm.resetFields();
   };
 
   return (
@@ -658,6 +755,69 @@ const UserDashboard = () => {
            Chat with us
          </Button>
        </div>
+
+       {/* Institute Modal */}
+       <Modal
+         title="Add/Edit Institute"
+         open={isInstituteModalVisible}
+         onOk={handleInstituteModalOk}
+         onCancel={handleInstituteModalCancel}
+         okText="Save"
+         cancelText="Cancel"
+         centered={false}
+         style={{ top: 20 }}
+         width={600}
+         okButtonProps={{
+           className: "bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white"
+         }}
+       >
+         <Form
+           form={instituteForm}
+           layout="vertical"
+           className="mt-4"
+         >
+           <Form.Item
+             label="Logo"
+             name="logo"
+           >
+             <Upload
+               listType="picture-card"
+               maxCount={1}
+               beforeUpload={() => false}
+               accept="image/*"
+             >
+               <div>
+                 <PlusOutlined />
+                 <div style={{ marginTop: 8 }}>Upload Logo</div>
+               </div>
+             </Upload>
+           </Form.Item>
+
+           <Form.Item
+             label="Institute Name"
+             name="name"
+             rules={[{ required: true, message: 'Please enter institute name!' }]}
+           >
+             <Input 
+               placeholder="Enter institute name"
+               size="large"
+               className="rounded-lg"
+             />
+           </Form.Item>
+
+           <Form.Item
+             label="Address"
+             name="address"
+             rules={[{ required: true, message: 'Please enter address!' }]}
+           >
+             <Input.TextArea
+               placeholder="Enter institute address"
+               rows={3}
+               className="rounded-lg"
+             />
+           </Form.Item>
+         </Form>
+       </Modal>
     </div>
   );
 };

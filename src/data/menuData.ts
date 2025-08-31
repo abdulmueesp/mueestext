@@ -107,7 +107,7 @@ export const menuData = {
       id: "My Institute",
       icon: TbHome,
       label: "My Institute",
-      path: "/results",
+      path: "/dashboard",
     },
     { id: "Batches", icon: CgStack, label: "Batches", path: "/results" },
     { id: "Students", icon: LuUsersRound, label: "Students", path: "/results" },
