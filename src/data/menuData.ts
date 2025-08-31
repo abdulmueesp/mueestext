@@ -109,7 +109,7 @@ export const menuData = {
       label: "My Institute",
       path: "/dashboard",
     },
-    { id: "Batches", icon: CgStack, label: "Batches", path: "/results" },
+    { id: "Batches", icon: CgStack, label: "Batches", path: "/batch" },
     { id: "Students", icon: LuUsersRound, label: "Students", path: "/results" },
     {
       id: "Teachers",

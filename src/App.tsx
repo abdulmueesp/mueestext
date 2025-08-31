@@ -114,6 +114,8 @@ import MyQuestions from "./Views/Admin/Post_Login/Myquestions"
 import Evaluate from "./Views/Admin/Post_Login/Evaluate"
 import Syllabus from "./Views/Admin/Post_Login/Syllabus"
 import MergePapers from "./Views/Admin/Post_Login/MergePapers"
+import Batches from "./Views/Admin/Post_Login/Institute/Batches"
+import BatchDeatile from "./Views/Admin/Post_Login/Institute/Batches/components/batchdeatile"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -184,6 +186,8 @@ function App() {
             <Route path="/evaluate" element={<Evaluate />} />
             <Route path="/syllabus" element={<Syllabus />}/>
             <Route path="/mergepapers" element={<MergePapers />} />
+            <Route path="/batch" element={<Batches />} />
+            <Route path="/batchdeatile" element={<BatchDeatile />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
