@@ -95,13 +95,13 @@ export const menuData = {
       id: "Blueprints",
       icon: AiOutlineProject,
       label: "Blueprints",
-      path: "/results",
+      path: "/Blueprint",
     },
     {
       id: "Dynamic Blueprint",
       icon: AiOutlineProject,
       label: "Dynamic Blueprint",
-      path: "/results",
+      path: "/dynamictemplate",
     },
     {
       id: "My Institute",

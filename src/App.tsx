@@ -108,6 +108,8 @@ import Plans from "./Views/Admin/Post_Login/Plans"
 import UserPlan from "./Views/Admin/Post_Login/Userplan"
 import Orders from "./Views/Admin/Post_Login/Orders"
 import Refer from "./Views/Admin/Post_Login/Refern"
+import DynamicBlue from "./Views/Admin/Post_Login/Dynamicblue"
+import Blueprint from "./Views/Admin/Post_Login/BluePrints"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -172,6 +174,8 @@ function App() {
             <Route path="/mysubscriptions" element={<UserPlan/>} />
             <Route path="/orders" element={<Orders />}/>
             <Route  path="/refer" element={<Refer/>}/>
+            <Route path="/dynamictemplate" element={<DynamicBlue />}/>
+            <Route path="/Blueprint" element={<Blueprint/>} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
