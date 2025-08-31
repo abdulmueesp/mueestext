@@ -178,7 +178,7 @@ const Syllabus = () => {
   );
 
   return (
-    <div className="p-6 h-min font-local2">
+    <div className="p-3 h-min font-local2">
       {/* Heading */}
       <div className="flex items-center gap-3 mb-6">
         <Button
@@ -196,20 +196,24 @@ const Syllabus = () => {
       {/* Syllabus Selection Card */}
       <div className="w-full mb-5">
         <Card className="shadow-sm bg-white w-full">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-col gap-6">
             <div className="flex-1">
-              <Title level={5} className="text-gray-700 mb-3">
+              <Title level={5} className="text-gray-700 mb-4">
                 Select Class & Subject
               </Title>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                 <Select
-                   value={selectedModule}
-                   onChange={handleModuleChange}
-                   placeholder="Choose Module"
-                   className="w-full"
-                   suffixIcon={<DownOutlined />}
-                   style={{ height: "40px" }}
-                 >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                <Select
+                  value={selectedModule || undefined}
+                  onChange={handleModuleChange}
+                  placeholder="Choose Module"
+                  className="w-full min-w-[200px]"
+                  suffixIcon={<DownOutlined />}
+                  style={{ 
+                    height: "45px",
+                    minWidth: "200px"
+                  }}
+                  size="large"
+                >
                   {modules.map((module) => (
                     <Option key={module} value={module}>
                       {module}
@@ -217,15 +221,19 @@ const Syllabus = () => {
                   ))}
                 </Select>
                 
-                                 <Select
-                   value={selectedCourse}
-                   onChange={handleCourseChange}
-                   placeholder="Choose Course"
-                   className="w-full"
-                   suffixIcon={<DownOutlined />}
-                   disabled={!selectedModule}
-                   style={{ height: "40px" }}
-                 >
+                <Select
+                  value={selectedCourse || undefined}
+                  onChange={handleCourseChange}
+                  placeholder="Choose Course"
+                  className="w-full min-w-[200px]"
+                  suffixIcon={<DownOutlined />}
+                  disabled={!selectedModule}
+                  style={{ 
+                    height: "45px",
+                    minWidth: "200px"
+                  }}
+                  size="large"
+                >
                   {courses.map((course) => (
                     <Option key={course} value={course}>
                       {course}
@@ -233,15 +241,19 @@ const Syllabus = () => {
                   ))}
                 </Select>
                 
-                                 <Select
-                   value={selectedSubject}
-                   onChange={handleSubjectChange}
-                   placeholder="Choose Subject"
-                   className="w-full"
-                   suffixIcon={<DownOutlined />}
-                   disabled={!selectedCourse}
-                   style={{ height: "40px" }}
-                 >
+                <Select
+                  value={selectedSubject || undefined}
+                  onChange={handleSubjectChange}
+                  placeholder="Choose Subject"
+                  className="w-full min-w-[200px]"
+                  suffixIcon={<DownOutlined />}
+                  disabled={!selectedCourse}
+                  style={{ 
+                    height: "45px",
+                    minWidth: "200px"
+                  }}
+                  size="large"
+                >
                   {subjects.map((subject) => (
                     <Option key={subject} value={subject}>
                       {subject}
@@ -254,19 +266,21 @@ const Syllabus = () => {
            
           </div>
           <Button
-               type="primary"
-               icon={<SearchOutlined />}
-               onClick={handleSearchSyllabus}
-               className=" mt-2 bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
-             hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 hover:scale-105"
+            type="primary"
+            icon={<SearchOutlined />}
+            onClick={handleSearchSyllabus}
+            className="mt-4 bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
+              hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 "
             style={{
-              height: "40px",
+              height: "45px",
               borderRadius: "8px",
-              minWidth: "90px", // fixed typo (was 9a0px)
+              minWidth: "150px",
+              fontSize: "16px"
             }}
-             >
-              Search Syllabus
-            </Button>
+            size="large"
+          >
+            Search Syllabus
+          </Button>
         </Card>
       </div>
 
