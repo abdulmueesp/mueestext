@@ -27,6 +27,22 @@ import {
 import { Card } from "antd";
 import { Button } from "antd";
 import createpaper from "../../../../assets/createpaper.png"
+import mypapers from "../../../../assets/mypapers.png"
+import institute1 from "../../../../assets/institute1.jpeg"
+import blueprint from "../../../../assets/Blueprints.png"
+import dynaimblue from "../../../../assets/Dynamic Blueprints.png"
+import myquestions from "../../../../assets/myquestions.png"
+import evaluate from "../../../../assets/Evaluate.png"
+import syllabus from "../../../../assets/Syllabus.png"
+import merge from "../../../../assets/merge test papers.png"
+import institue from "../../../../assets/My institute.png"
+import batches from "../../../../assets/Batches.png"
+import students from "../../../../assets/Students.png"
+import teachers from "../../../../assets/Teachers.png"
+import refer from "../../../../assets/Refer & Earn.png"
+import subscriptions from "../../../../assets/Subscription.png"
+import myprofile from "../../../../assets/My profile.png"
+import errreport from "../../../../assets/Error Report.png"
 // Mock data for charts
 const revenueData = [
   { name: "Jan", monthly: "120000" },
@@ -49,34 +65,93 @@ const userGrowthData = [
 const examBoxes = [
   {
     title: "Create Paper",
-    color: "bg-gradient-to-br from-teal-600 to-teal-700",
+    color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
+    image: createpaper,
   },
   {
     title: "My Papers",
-    color: "bg-gradient-to-br from-emerald-500 to-emerald-600",
+    color: "bg-gradient-to-br from-red-400/60 to-red-500/60",
+
+    image: mypapers,
   },
   {
     title: "My Questions",
-    color: "bg-gradient-to-br from-yellow-400 to-yellow-500",
+    color: "bg-gradient-to-br from-yellow-400/60 to-yellow-500/60",
+    image: myquestions,
   },
   {
     title: "Blueprints",
-    color: "bg-gradient-to-br from-orange-400 to-orange-500",
+    color: "bg-gradient-to-br from-orange-400/60 to-orange-500/60",
+    image: blueprint,
   },
   {
     title: "Dynamic Bluepr...",
-    color: "bg-gradient-to-br from-orange-300 to-orange-400",
+    color: "bg-gradient-to-br from-orange-300/60 to-orange-400/60",
+    image: dynaimblue,
   },
-  { title: "Evaluate", color: "bg-gradient-to-br from-red-400 to-red-500" },
+  {
+    title: "Evaluate",
+    color: "bg-gradient-to-br from-red-400/60 to-red-500/60",
+    image: evaluate,
+  },
   {
     title: "Syllabus",
-    color: "bg-gradient-to-br from-orange-300 to-orange-400",
+    color: "bg-gradient-to-br from-blue-400/60 to-blue-500/60",
+    image: syllabus,
   },
   {
     title: "Merge Testpage...",
-    color: "bg-gradient-to-br from-yellow-400 to-yellow-500",
+    color: "bg-gradient-to-br from-green-400/60 to-green-500/60",
+    image: merge,
+
   },
 
+];
+
+const instituteBoxes = [
+  {
+    title: "My Institute",
+    color: "bg-gradient-to-br from-orange-400/60 to-orange-500/60",
+    image: institue,
+  },
+  {
+    title: "Batches",
+    color: "bg-gradient-to-br from-yellow-400/60 to-yellow-500/60",
+    image: batches,
+  },
+  {
+    title: "Students",
+    color: "bg-gradient-to-br from-blue-400/60 to-blue-500/60",
+    image: students,
+  },
+  {
+    title: "Teachers",
+    color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
+    image: teachers,
+  },
+];
+
+const accountBoxes = [
+  {
+    title: "My Profile",
+    color: "bg-gradient-to-br from-purple-400/60 to-purple-500/60",
+    image: myprofile,
+  },
+  {
+    title: "Subscription",
+    color: "bg-gradient-to-br from-indigo-400/60 to-indigo-500/60",
+    image: subscriptions,
+  },
+  {
+    title: "Refer & Earn",
+    color: "bg-gradient-to-br from-pink-400/60 to-pink-500/60",
+    image: refer,
+  },
+  {
+    title: "Error Report",
+    color: "bg-gradient-to-br from-gray-400/60 to-gray-500/60",
+    image: errreport,
+  },
 ];
 
 const plansData = [
@@ -372,7 +447,7 @@ const UserDashboard = () => {
       <Card
         title="Generate New Question Paper"
         headStyle={{ backgroundColor: "#fafafa", color: "#000" }}
-        className="mb-8 shadow-lg border-0"
+        className="mb-8 shadow-lg border-0 font-local2"
         bodyStyle={{ padding: "1rem" }}
       >
         <div className="flex flex-wrap gap-2 md:gap-4">
@@ -418,23 +493,105 @@ const UserDashboard = () => {
       <Card
         title="Exams"
         headStyle={{ backgroundColor: "#fafafa", color: "#000" }}
-        className="shadow-lg border-0"
+        className="mb-8 shadow-lg border-0 font-local2"
         bodyStyle={{ padding: "2rem" }}
       >
         {/* Exam Boxes Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
           {examBoxes.map((exam, index) => (
-            <div
-              key={index}
-              className={`${exam.color} rounded-2xl p-4 md:p-6 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-lg hover:shadow-xl`}
-            >
-              <div className="aspect-square flex items-center justify-center mb-2 md:mb-3">
-    
-                  <img src={createpaper} alt="icon" className="w-full h-full object-contain"/>
-                  
+            <div key={index} className="flex flex-col items-center mb-4">
+              <div
+                className={`${exam.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
+              >
+                                 <img
+                   src={exam.image}
+                   alt={exam.title}
+                   className="w-20 h-20 object-contain"
+                   draggable="false"
+                   onContextMenu={(e) => e.preventDefault()}
+                   style={{ userSelect: 'none', pointerEvents: 'none' }}
+                 />
               </div>
-              <h3 className="text-white font-medium text-xs md:text-sm text-center leading-tight font-local2">
+              <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
                 {exam.title}
+              </h3>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Institute Card */}
+      <Card
+        title={
+          <div className="flex items-center justify-between w-full pr-1">
+            <span>Institute</span>
+            <Button
+              size="small"
+              className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
+             hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 hover:scale-105"s
+              style={{
+                height: "40px",
+                borderRadius: "8px",
+                minWidth: "90px", // fixed typo (was 9a0px)
+              }}
+            >
+              Share
+            </Button>
+          </div>
+        }
+        headStyle={{ backgroundColor: "#fafafa", color: "#000" }}
+        className="mb-8 shadow-lg border-0 font-local2"
+        bodyStyle={{ padding: "2rem" }}
+      >
+        {/* Institute Boxes Flex */}
+        <div className="flex flex-wrap justify-start gap-4 md:gap-6 lg:gap-[55px]">
+          {instituteBoxes.map((institute, index) => (
+            <div key={index} className="flex flex-col items-center mb-4 flex-shrink-0">
+              <div
+                className={`${institute.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
+              >
+                                 <img
+                   src={institute.image}
+                   alt={institute.title}
+                   className="w-20 h-20 object-contain"
+                   draggable="false"
+                   onContextMenu={(e) => e.preventDefault()}
+                   style={{ userSelect: 'none', pointerEvents: 'none' }}
+                 />
+              </div>
+              <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
+                {institute.title}
+              </h3>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* My Account Card */}
+      <Card
+        title="My Account"
+        headStyle={{ backgroundColor: "#fafafa", color: "#000" }}
+        className="shadow-lg border-0 font-local2"
+        bodyStyle={{ padding: "2rem" }}
+      >
+        {/* Account Boxes Flex */}
+        <div className="flex flex-wrap justify-start gap-4 md:gap-6 lg:gap-[55px]">
+          {accountBoxes.map((account, index) => (
+            <div key={index} className="flex flex-col items-center mb-4 flex-shrink-0">
+              <div
+                className={`${account.color} rounded-xl p-3 cursor-pointer hover:scale-105 transform transition-all duration-200 shadow-md hover:shadow-lg w-28 h-28 flex items-center justify-center mb-2`}
+              >
+                                 <img
+                   src={account.image}
+                   alt={account.title}
+                   className="w-20 h-20 object-contain"
+                   draggable="false"
+                   onContextMenu={(e) => e.preventDefault()}
+                   style={{ userSelect: 'none', pointerEvents: 'none' }}
+                 />
+              </div>
+              <h3 className="text-gray-700 font-bold text-base text-center leading-tight font-local2 mt-2">
+                {account.title}
               </h3>
             </div>
           ))}
