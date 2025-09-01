@@ -64,12 +64,7 @@ export const menuData = {
       label: "Questions",
       path: "/questions",
     },
-    {
-      id: "settings",
-      icon: IoSettingsOutline,
-      label: "Settings",
-      path: "/settings",
-    },
+   
   ],
   user: [
     { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
@@ -120,6 +115,6 @@ export const menuData = {
      { id: "Refer & Earn", icon: BsGraphUpArrow, label: "Refer & Earn", path: "/refer" },
       { id: "Subscriptions", icon: FiBox, label: "Subscriptions", path: "/mysubscriptions" },
        { id: "My Orders", icon: MdOutlineCardGiftcard, label: "My Orders", path: "/orders" },
-    { id: "settings", icon: CiSettings, label: "Settings", path: "/settings" },
+    
   ],
 };
