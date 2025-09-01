@@ -60,6 +60,11 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
   const [selectedSubject, setSelectedSubject] = useState("");
   const navigate = useNavigate();
 
+  // Reusable Info Modal state
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [infoModalTitle, setInfoModalTitle] = useState<string>("");
+  const [infoModalContent, setInfoModalContent] = useState<React.ReactNode>(null);
+
   const modules = ["CBSE", "ICSE & ISC", "UP Board"];
   const courses = [
     "Class 1",
@@ -84,6 +89,12 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
 
   const showModal = () => {
     setIsModalVisible(true);
+  };
+
+  const openInfoModal = (title: string, content: React.ReactNode) => {
+    setInfoModalTitle(title);
+    setInfoModalContent(content);
+    setInfoModalOpen(true);
   };
 
   const handleChange = (field: keyof typeof step1Data, value: string) => {
@@ -152,10 +163,11 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
     handleChange("timeAllowed", value);
   };
 
-  const handleGeneralInstructionsChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    handleChange("generalInstructions", e.target.value);
+  // Optimized function to handle ReactQuill content
+  const handleGeneralInstructionsChange = (value: string) => {
+    // Store the raw HTML value directly instead of processing it on every keystroke
+    // This prevents performance issues and hanging
+    handleChange("generalInstructions", value || "");
   };
 
   useEffect(() => {
@@ -204,7 +216,28 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
           <Col xs={24} lg={12} xl={8}>
             <Title level={5} className="text-gray-700 mb-3">
               Source{" "}
-              <span className="text-blue-500 cursor-pointer">
+              <span
+                className="text-blue-500 cursor-pointer"
+                onClick={() =>
+                  openInfoModal(
+                    "What is Source?",
+                    <div className="space-y-3">
+                      <div>
+                        <Text strong>All Questions (Premium):</Text>{" "}
+                        <Text>
+                          It includes all questions from the NCERT textbook, NCERT exemplar, previous year question bank, questions added by our team of expert teachers and questions contributed by other teachers. It has all new exam pattern questions such as case study, assertion & reason, multiple choice, fill up, true-false, statement, picture, map, passage, extract etc. We update this question bank almost daily.
+                        </Text>
+                      </div>
+                      <div>
+                        <Text strong>NCERT Textbook (Free):</Text>{" "}
+                        <Text>
+                          It has NCERT textbook chapter-end and in-text questions only.
+                        </Text>
+                      </div>
+                    </div>
+                  )
+                }
+              >
                 (<span className="underline">What is this?</span>)
               </span>
             </Title>
@@ -226,8 +259,28 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
           <Col xs={24}>
             <Title level={5} className="text-gray-700 mb-3">
               Test Paper Type{" "}
-              <span className="text-blue-500">
-                (<span className="underline">What is this?</span>)
+              <span className="text-blue-500 cursor-pointer">
+                (<span className="underline"
+                onClick={() =>
+                  openInfoModal(
+                    "What is Testpaper Type?",
+                    <div className="space-y-3">
+                      <div>
+                        <Text strong>Question Paper (PDF/Word):</Text>{" "}
+                        <Text>
+                        This is a normal question paper in PDF and Microsoft Word format. You will also get a separate solution PDF. Best suitable for offline exams.
+                        </Text>
+                      </div>
+                      <div>
+                        <Text strong>Worksheet (PDF/Word): </Text>{" "}
+                        <Text>
+                        It is similar to a question paper without maximum marks, time allowed and general instructions. Best suitable for creating worksheets and homework assignments.
+                        </Text>
+                      </div>
+                    </div>
+                  )
+                }
+                >What is this?</span>)
               </span>
             </Title>
             <Radio.Group
@@ -252,8 +305,28 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
           <Col xs={24}>
             <Title level={5} className="text-gray-700 mb-3">
               Blueprint Mode{" "}
-              <span className="text-blue-500">
-                (<span className="underline">What is this?</span>)
+              <span className="text-blue-500 cursor-pointer">
+                (<span className="underline"
+                 onClick={() =>
+                  openInfoModal(
+                    "What is Testpaper Type?",
+                    <div className="space-y-3">
+                      <div>
+                        <Text strong>Manual: </Text>{" "}
+                        <Text>
+                        You can add questions one by one from each chapter. Suitable if too much customization required.
+                        </Text>
+                      </div>
+                      <div>
+                        <Text strong>Express: </Text>{" "}
+                        <Text>
+                        You can add questions altogether from each chapter. Suitable if less customization required.
+                        </Text>
+                      </div>
+                    </div>
+                  )
+                }
+                >What is this?</span>)
               </span>
             </Title>
             <Radio.Group className="space-y-3">
@@ -370,6 +443,20 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
             <span
               className="text-blue-500 underline cursor-pointer font-local2"
               title="This will place a faint text or logo in the background of every page in your PDF."
+              onClick={() =>
+                openInfoModal(
+                  "Watermark",
+                  <div className="space-y-3">
+                    <div>
+                      <Text strong>This feature will add a customised textual watermark diagonally on all pages of the question paper and solution PDF.</Text>{" "}
+                      <Text>
+                     
+                      </Text>
+                    </div>
+                   
+                  </div>
+                )
+              }
             >
               (what is this?)
             </span>
@@ -409,9 +496,7 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
       <ReactQuill
         theme="snow"
         value={step1Data.generalInstructions}
-        onChange={(value) =>
-          setStep1Data((prev) => ({ ...prev, generalInstructions: value }))
-        }
+        onChange={handleGeneralInstructionsChange}
         placeholder="Enter general instructions..."
         modules={{
           toolbar: [
@@ -562,6 +647,21 @@ const Step1 = ({ step1Data, setStep1Data }: Step1Props) => {
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* Reusable Info Modal */}
+      <Modal
+        title={infoModalTitle}
+        open={infoModalOpen}
+        onCancel={() => setInfoModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setInfoModalOpen(false)}>
+            Close
+          </Button>,
+        ]}
+        width={700}
+      >
+        <div className="space-y-3 text-gray-700">{infoModalContent}</div>
       </Modal>
     </div>
   );

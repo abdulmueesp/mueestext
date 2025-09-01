@@ -11,6 +11,7 @@ import {
 import Step1 from './components/step1';
 import Step2 from './components/step2';
 import Step3 from './components/step3';
+import { useNavigate } from 'react-router-dom';
 
 const { Step } = Steps;
 
@@ -33,6 +34,7 @@ const Paper = () => {
   const [sections, setSections] = useState<any[]>([
     { id: 1, name: 'Section A', questions: [] }
   ]);
+  const navigate = useNavigate();
 
   const [step1Data, setStep1Data] = useState<Step1DataType>({
     module: '',
@@ -79,6 +81,8 @@ const Paper = () => {
     }
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
+    } else {
+      navigate('/dashboard');
     }
   };
 
@@ -97,6 +101,8 @@ const Paper = () => {
       case 2:
         return <Step3 step1Data={step1Data} 
           sections={sections} 
+          setStep1Data={setStep1Data}
+          setSections={setSections}
           onPrevStep={() => setCurrentStep(1)} />;
       default:
         return <Step1 step1Data={step1Data} setStep1Data={setStep1Data} />;
@@ -142,12 +148,11 @@ const Paper = () => {
             <Button
               onClick={nextStep}
               type="primary"
-              disabled={currentStep === steps.length - 1}
               style={{ backgroundColor: '#007575', borderColor: '#007575' }}
               // icon={currentStep === steps.length - 1 ? <FileTextOutlined /> : <RightOutlined />}
               className="flex items-center"
             >
-              {currentStep === steps.length - 1 ? 'Generate PDF' : 'Next'}
+              {currentStep === steps.length - 1 ? 'Generate Paper' : 'Next'}
             </Button>
           </div>
         </div>
