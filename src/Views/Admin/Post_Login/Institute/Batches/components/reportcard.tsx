@@ -45,7 +45,7 @@ const ReportCard = () => {
                 <RangePicker
                   onChange={handleDateChange}
                   value={dateRange}
-                  className="w-[300px]"
+                  className="sm:w-[300px]"
                   placeholder={['Start Date', 'End Date']}
                   format="YYYY-MM-DD"
                 />
