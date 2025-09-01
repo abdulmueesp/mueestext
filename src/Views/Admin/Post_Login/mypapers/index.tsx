@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button, Card, Typography, Modal, Input, Dropdown } from "antd";
 import { Search, Filter, Eye, FileText, Download, Share, Repeat, ArrowLeft, Printer } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
@@ -225,7 +226,7 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
       {/* Print Options */}
       <div className="mb-6">
         <Card className="shadow-sm">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex gap-4">
             <Button
               onClick={handlePrintQuestionPaper}
               className="flex items-center gap-2 bg-blue-500 text-white border-blue-500 hover:bg-blue-600"
@@ -307,7 +308,7 @@ const MyPapers = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [viewingPaper, setViewingPaper] = useState(null);
-
+     const navigate = useNavigate();
   const openFilterModal = () => {
     setIsFilterModalOpen(true);
   };
@@ -537,7 +538,7 @@ const MyPapers = () => {
                     <Button
                       type="primary"
                       icon={<Search size={16} />}
-                      className="bg-green-500 border-green-500 hover:bg-green-600"
+                      className="bg-gradient-to-r from-[#007575] to-[#339999]  hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999]"
                     />
                   }
                 />
@@ -552,7 +553,10 @@ const MyPapers = () => {
         <Button 
           type="primary"
           size="large"
-          className="bg-green-500 border-green-500 hover:bg-green-600"
+         className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
+             hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 "
+          
+           onClick={() => navigate("/paper")}
         >
           Create Test Paper
         </Button>
