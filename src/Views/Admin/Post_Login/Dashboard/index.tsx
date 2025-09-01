@@ -129,13 +129,13 @@ const instituteBoxes = [
     title: "Batches",
     color: "bg-gradient-to-br from-yellow-400/60 to-yellow-500/60",
     image: batches,
-    path: "/batches",
+    path: "/batch",
   },
   {
     title: "Students",
     color: "bg-gradient-to-br from-blue-400/60 to-blue-500/60",
     image: students,
-    path: "/students",
+    path: "/allstudents",
   },
   {
     title: "Teachers",
@@ -444,67 +444,7 @@ const AdminDashboard = () => {
              </div>
 
        {/* Institute Modal */}
-       <Modal
-         title="Add/Edit Institute"
-         open={isInstituteModalVisible}
-         onOk={handleInstituteModalOk}
-         onCancel={handleInstituteModalCancel}
-         okText="Save"
-         cancelText="Cancel"
-         centered={false}
-         style={{ top: 20 }}
-         width={600}
-         okButtonProps={{
-           className: "bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white"
-         }}
-       >
-         <Form
-           form={instituteForm}
-           layout="vertical"
-           className="mt-4"
-         >
-           <Form.Item
-             label="Logo"
-             name="logo"
-           >
-             <Upload
-               listType="picture-card"
-               maxCount={1}
-               beforeUpload={() => false}
-               accept="image/*"
-             >
-               <div>
-                 <PlusOutlined />
-                 <div style={{ marginTop: 8 }}>Upload Logo</div>
-               </div>
-             </Upload>
-           </Form.Item>
-
-           <Form.Item
-             label="Institute Name"
-             name="name"
-             rules={[{ required: true, message: 'Please enter institute name!' }]}
-           >
-             <Input 
-               placeholder="Enter institute name"
-               size="large"
-               className="rounded-lg"
-             />
-           </Form.Item>
-
-           <Form.Item
-             label="Address"
-             name="address"
-             rules={[{ required: true, message: 'Please enter address!' }]}
-           >
-             <Input.TextArea
-               placeholder="Enter institute address"
-               rows={3}
-               className="rounded-lg"
-             />
-           </Form.Item>
-         </Form>
-       </Modal>
+    
     </div>
   );
 };

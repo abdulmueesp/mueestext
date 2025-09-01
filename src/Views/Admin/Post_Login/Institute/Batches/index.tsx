@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState } from 'react';
 import { Button, Card, Typography, message, Modal, Form, Input } from 'antd';
-import { ArrowLeftOutlined, CopyOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CopyOutlined, WhatsAppOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
@@ -12,6 +12,10 @@ const Batches = () => {
   const userData = useSelector((state: RootState) => state.user.userData);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+  
+  // Invite Students modal state
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
 
   // Dummy data for batches
   const [batches] = useState([
@@ -22,13 +26,7 @@ const Batches = () => {
       batchCode: 'PVRMYSN',
       studentsCount: 1
     },
-    {
-      id: 2,
-      name: 'Science Batch 2024',
-      createdBy: userData?.name || 'Abdul Muees',
-      batchCode: 'SCBAT24',
-      studentsCount: 25
-    }
+   
   ]);
 
   const handleCopyCode = async (code) => {
@@ -73,9 +71,42 @@ const Batches = () => {
     message.info(`Navigate to manage batch ${batchId}`);
   };
 
-  const handleInviteStudents = (batchId) => {
-    // Navigate to invite students
-    message.info(`Navigate to invite students for batch ${batchId}`);
+  const handleInviteStudents = (batch) => {
+    setSelectedBatch(batch);
+    setInviteModalVisible(true);
+  };
+
+  const handleInviteModalCancel = () => {
+    setInviteModalVisible(false);
+    setSelectedBatch(null);
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (selectedBatch) {
+      const inviteLink = `https://mueestext-lhld-git-main-muees-projects-14c95d13.vercel.app/`;
+      try {
+        await navigator.clipboard.writeText(inviteLink);
+        message.success('Invite link copied!');
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = inviteLink;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        message.success('Invite link copied!');
+      }
+    }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (selectedBatch) {
+      const inviteLink = `https://mueestext-lhld-git-main-muees-projects-14c95d13.vercel.app/`;
+      const text = `${userData?.name || 'Your teacher'} has invited you to join a batch:\n\nBatch Name: ${selectedBatch.name}\nBatch Code: ${selectedBatch.batchCode}\n\nJoin using this link: ${inviteLink}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(whatsappUrl, '_blank');
+    }
   };
 
   return (
@@ -184,7 +215,7 @@ const Batches = () => {
                     Manage
                   </Button>
                   <Button
-                    onClick={() => handleInviteStudents(batch.id)}
+                    onClick={() => handleInviteStudents(batch)}
                     className="bg-green-600 border-green-600 text-white hover:!bg-green-600 hover:!text-white hover:!border-white font-local2 hover:!bg-opacity-80"
                     style={{
                       height: '36px',
@@ -236,6 +267,63 @@ const Batches = () => {
             <Input placeholder="Enter batch name" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Invite Students Modal */}
+      <Modal
+        title="Invite Students"
+        open={inviteModalVisible}
+        onCancel={handleInviteModalCancel}
+        footer={null}
+        width={500}
+        centered
+        className="font-local2"
+      >
+        <div className="space-y-4">
+          <div className="text-center">
+            <Text className="text-gray-700 text-base font-local2">
+              {userData?.name || 'Muees'} or your teacher has invited you to join a batch:
+            </Text>
+          </div>
+          
+          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div className="flex justify-between">
+              <Text className="text-gray-700 font-medium font-local2">Batch Name:</Text>
+              <Text className="text-gray-800 font-local2">{selectedBatch?.name}</Text>
+            </div>
+            <div className="flex justify-between">
+              <Text className="text-gray-700 font-medium font-local2">Batch Code:</Text>
+              <Text className="text-gray-800 font-local2">{selectedBatch?.batchCode}</Text>
+            </div>
+            <div className="flex justify-between">
+              <Text className="text-gray-700 font-medium font-local2">Link:</Text>
+              <Text className="text-blue-600 font-local2 break-all">
+              https://mueestext-lhld-git-main-muees-projects-14c95d13.vercel.app/
+              </Text>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 pt-4">
+            <Button
+              onClick={handleCopyInviteLink}
+              icon={<CopyOutlined />}
+              className="flex-1 font-local2"
+              size="large"
+              style={{ height: '40px', borderRadius: '8px' }}
+            >
+              Copy
+            </Button>
+            <Button
+              onClick={handleWhatsAppShare}
+              icon={<WhatsAppOutlined />}
+              className="flex-1 font-local2 bg-green-600 border-green-600 text-white hover:!bg-green-600 hover:!text-white hover:!border-white"
+              size="large"
+              style={{ height: '40px', borderRadius: '8px' }}
+            >
+              WhatsApp
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

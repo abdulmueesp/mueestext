@@ -116,6 +116,12 @@ import Syllabus from "./Views/Admin/Post_Login/Syllabus"
 import MergePapers from "./Views/Admin/Post_Login/MergePapers"
 import Batches from "./Views/Admin/Post_Login/Institute/Batches"
 import BatchDeatile from "./Views/Admin/Post_Login/Institute/Batches/components/batchdeatile"
+import StudentsBatch from "./Views/Admin/Post_Login/Institute/Batches/components/studentsbatch"
+import ReportCard from "./Views/Admin/Post_Login/Institute/Batches/components/reportcard"
+import Teachers from "./Views/Admin/Post_Login/Institute/Batches/components/teachers"
+import Overallcard from "./Views/Admin/Post_Login/Institute/Batches/components/overall"
+import Uploadss from "./Views/Admin/Post_Login/Institute/Batches/components/uploadss"
+import Allstudents from "./Views/Admin/Post_Login/Institute/Batches/components/allstudents"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -188,6 +194,12 @@ function App() {
             <Route path="/mergepapers" element={<MergePapers />} />
             <Route path="/batch" element={<Batches />} />
             <Route path="/batchdeatile" element={<BatchDeatile />} />
+            <Route path="/students/1" element={<StudentsBatch />} />
+            <Route path="/reportcard" element={<ReportCard />} />
+            <Route path="/teachers" element={<Teachers />} />
+            <Route path="/overall" element={<Overallcard />}/>
+            <Route path="/uploads" element={<Uploadss />} />
+            <Route  path="/allstudents" element={<Allstudents />}/>
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>
