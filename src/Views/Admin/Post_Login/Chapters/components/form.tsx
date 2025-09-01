@@ -819,7 +819,7 @@ const SubjectForm = () => {
                 />
               </Form.Item>
             </Col>
-            <Col span={4}>
+            <Col span={20}>
               <Form.Item
                 name="status"
                 label="Status"

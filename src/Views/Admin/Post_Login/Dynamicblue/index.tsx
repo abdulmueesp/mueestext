@@ -32,7 +32,9 @@ const DynamicBlue = () => {
        headStyle={{ backgroundColor: "#fafafa", color: "#000" }}
         className="shadow-lg bg-white w-full font-local2">
           
-            <Button className=" text-white bg-green-600 border-green-600 hover:!bg-green-600 hover:!text-white hover:!border-white transition-all duration-200 font-local2">
+            <Button className=" text-white bg-green-600 border-green-600 hover:!bg-green-600 hover:!text-white hover:!border-white transition-all duration-200 font-local2"
+              onClick={() => navigate("/paper")}
+            >
               Create
             </Button>
           
