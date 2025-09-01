@@ -1,5 +1,5 @@
 import { BiCreditCard, BiHome } from "react-icons/bi";
-import { CiSettings } from "react-icons/ci";
+
 import { FiFilePlus } from "react-icons/fi";
 import { LuUsersRound } from "react-icons/lu";
 import { MdOutlineDashboardCustomize } from "react-icons/md";
@@ -9,7 +9,7 @@ import {
   AiOutlineFileText,
 } from "react-icons/ai";
 import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
-import { IoSettingsOutline } from "react-icons/io5";
+
 import { AiOutlineProject } from "react-icons/ai";
 import { TbFolderQuestion } from "react-icons/tb";
 import { TbHome } from "react-icons/tb";
