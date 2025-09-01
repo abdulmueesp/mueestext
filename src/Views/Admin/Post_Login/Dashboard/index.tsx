@@ -168,7 +168,7 @@ const accountBoxes = [
     title: "Error Report",
     color: "bg-gradient-to-br from-gray-400/60 to-gray-500/60",
     image: errreport,
-    path: "/error-report",
+    path: "/errors",
   },
 ];
 

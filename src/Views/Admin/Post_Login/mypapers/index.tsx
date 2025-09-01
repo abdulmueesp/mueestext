@@ -2,7 +2,7 @@
 // @ts-nocheck
 import React, { useState } from "react";
 import { Button, Card, Typography, Modal, Input, Dropdown, message } from "antd";
-import { Search, Filter, Eye, FileText, Download, Share, Repeat, ArrowLeft, Printer } from "lucide-react";
+import { Search, Filter, Eye, FileText, Download, Share, Repeat, ArrowLeft, Printer, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 
@@ -343,6 +343,10 @@ const MyPapers = () => {
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [viewingPaper, setViewingPaper] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+
+
   const navigate = useNavigate();
 
   const openFilterModal = () => {
@@ -589,7 +593,7 @@ const MyPapers = () => {
           <span>Share</span>
         </div>
       ),
-      onClick: () => console.log('Share clicked')
+     onClick: () => setIsShareModalOpen(true)
     },
     {
       key: 'Repeat',
@@ -599,7 +603,7 @@ const MyPapers = () => {
           <span>Repeat</span>
         </div>
       ),
-      onClick: () => console.log('Repeat clicked')
+       onClick: () => message.success("Repeat success!")
     }
   ];
 
@@ -607,6 +611,11 @@ const MyPapers = () => {
   if (viewingPaper) {
     return <ViewQuestionPaper paper={viewingPaper} onBack={handleBackToList} />;
   }
+  const users = [
+  { id: "1", name: "Batch A" },
+  { id: "2", name: "Batch B" },
+  { id: "3", name: "Batch C" },
+];
 
   return (
     <div className="p-6 h-min">
@@ -665,6 +674,58 @@ const MyPapers = () => {
             </div>
           </div>
         </Card>
+        <Modal
+  title="Share Test Link / Assign Test"
+  open={isShareModalOpen}
+  onCancel={() => setIsShareModalOpen(false)}
+  footer={null}
+>
+  {/* User boxes */}
+  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+    {users.map((user) => (
+      <div
+        key={user.id}
+        onClick={() =>
+          setSelectedUsers((prev) =>
+            prev.includes(user.id)
+              ? prev.filter((u) => u !== user.id)
+              : [...prev, user.id]
+          )
+        }
+        className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center transition ${
+          selectedUsers.includes(user.id)
+            ? "border-teal-500 bg-teal-50"
+            : "border-gray-200"
+        }`}
+      >
+        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+          <User size={20} className="text-gray-600" />
+        </div>
+        <span className="text-sm text-gray-700">{user.name}</span>
+      </div>
+    ))}
+  </div>
+
+  {/* Submit button */}
+  <div className="mt-6 flex justify-end">
+    <Button
+      type="primary"
+      className="bg-gradient-to-r from-[#007575] to-[#339999] text-white"
+      onClick={() => {
+        if (selectedUsers.length === 0) {
+          message.warning("Please select at least one batch!");
+          return;
+        }
+        message.success("Test link shared successfully!");
+        setIsShareModalOpen(false);
+        setSelectedUsers([]);
+      }}
+    >
+      Submit
+    </Button>
+  </div>
+</Modal>
+
       </div>
 
       {/* Create Test Paper Button */}
