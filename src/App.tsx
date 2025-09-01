@@ -122,6 +122,7 @@ import Teachers from "./Views/Admin/Post_Login/Institute/Batches/components/teac
 import Overallcard from "./Views/Admin/Post_Login/Institute/Batches/components/overall"
 import Uploadss from "./Views/Admin/Post_Login/Institute/Batches/components/uploadss"
 import Allstudents from "./Views/Admin/Post_Login/Institute/Batches/components/allstudents"
+import MyPapers from "./Views/Admin/Post_Login/mypapers"
 
 function App() {
   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
@@ -200,6 +201,7 @@ function App() {
             <Route path="/overall" element={<Overallcard />}/>
             <Route path="/uploads" element={<Uploadss />} />
             <Route  path="/allstudents" element={<Allstudents />}/>
+            <Route path="/mypapers" element={<MyPapers />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </>

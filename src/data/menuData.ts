@@ -83,7 +83,7 @@ export const menuData = {
       id: "My Papers",
       icon: AiOutlineFileText,
       label: "My Papers",
-      path: "/exams",
+      path: "/mypapers",
     },
     {
       id: "My Questions",
