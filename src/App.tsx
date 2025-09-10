@@ -1,88 +1,10 @@
 
-
-// import { useState } from "react"
-// import { useSelector} from "react-redux"
-// import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
-// import { RootState } from "@/store"
-// import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
-// import OtpForm from "./Views/Admin/Pre_Login/otp"
-// import Profile from "./Views/Admin/Post_Login/Profile"
-// import AdminLayout from "./Components/Admin/Layout"
-// import Dashboard from "./Views/Admin/Post_Login/Dashboard"
-// import Paper from "./Views/Admin/Post_Login/Paper"
-// import Subscription from "./Views/Admin/Post_Login/Subscription"
-// import Settings from "./Views/Admin/Post_Login/Settings"
-// import { message } from "./Components/common/message/message"
-// import UsersTable from "./Views/Admin/Post_Login/users"
-// import DeatileCard from "./Views/Admin/Post_Login/users/components/deatile"
-
-// function App() {
-//   const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
-//   const [showOtp, setShowOtp] = useState(false);
-//   const navigate = useNavigate(); // ✅ add navigate hook
-
-//   const handleLogin = () => {
-//     setShowOtp(true);
-//   };
-
-//   const handleLogout = () => {
-//     setShowOtp(false);
-//     // probably also dispatch logout action here
-//     message.success('Logged out successfully!');
-//     navigate("/", { replace: true }); // ✅ redirect to login page
-//   };
-
-//   return (
-//     <Routes>
-//       {/* Not authenticated - show login flow */}
-//       {!isAuthenticated ? (
-//         <Route path="*" element={
-//           !showOtp ? (
-//             <LoginPage onLogin={handleLogin} />
-//           ) : (
-//             <OtpForm />
-//           )
-//         } />
-//       ) : !isProfileCompleted ? (
-//         /* Authenticated but profile not completed */
-//         <Route path="*" element={<Profile />} />
-//       ) : (
-//         /* Authenticated and profile completed - main app */
-//         <>
-//           <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
-//             <Route index element={<Navigate to="dashboard" replace />} />
-//             <Route path="dashboard" element={<Dashboard />} />
-//             <Route path="paper" element={<Paper />} />
-//             <Route path="profile" element={<Profile />} />
-//             <Route path="subscription" element={<Subscription />} />
-//             <Route path="settings" element={<Settings />} />
-//             <Route path="users" element={<UsersTable />} />
-//             <Route path="detail/:id" element={<DeatileCard/>} />
-//           </Route>
-//           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-//         </>
-//       )}
-//     </Routes>
-//   );
-// }
-
-// // Wrap App with BrowserRouter in index.tsx (better separation)
-// function AppWrapper() {
-//   return (
-//     <BrowserRouter>
-//       <App />
-//     </BrowserRouter>
-//   )
-// }
-
-// export default AppWrapper;
-import { useState } from "react"
 import { useSelector, useDispatch } from "react-redux" // ✅ Both hooks imported
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { RootState } from "@/store"
 import { logout } from "@/store/slices/userSlice" // ✅ Import logout action
 import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
-import OtpForm from "./Views/Admin/Pre_Login/otp"
+// Removed OTP flow
 import Profile from "./Views/Admin/Post_Login/Profile"
 import AdminLayout from "./Components/Admin/Layout"
 import Dashboard from "./Views/Admin/Post_Login/Dashboard"
@@ -107,7 +29,7 @@ import HeaderFooter from "./Views/Admin/Post_Login/Paper/components/headfoot"
 import Plans from "./Views/Admin/Post_Login/Plans"
 import UserPlan from "./Views/Admin/Post_Login/Userplan"
 import Orders from "./Views/Admin/Post_Login/Orders"
-import Refer from "./Views/Admin/Post_Login/Refern"
+
 import DynamicBlue from "./Views/Admin/Post_Login/Dynamicblue"
 import Blueprint from "./Views/Admin/Post_Login/BluePrints"
 import MyQuestions from "./Views/Admin/Post_Login/Myquestions"
@@ -126,20 +48,11 @@ import MyPapers from "./Views/Admin/Post_Login/mypapers"
 import Errors from "./Views/Admin/Post_Login/Errors"
 
 function App() {
-  const { isAuthenticated, isProfileCompleted } = useSelector((state: RootState) => state.user);
-  const [showOtp, setShowOtp] = useState(false);
+  const { isAuthenticated } = useSelector((state: RootState) => state.user);
   const navigate = useNavigate();
   const dispatch = useDispatch(); // ✅ Added dispatch hook
 
-  const handleLogin = () => {
-    setShowOtp(true);
-  };
-  const handleChangePhone = () => {
-    setShowOtp(false);
-  };
-
   const handleLogout = () => {
-    setShowOtp(false);
     // ✅ IMPORTANT: Dispatch logout action to clear persisted state
     dispatch(logout());
     message.success('Logged out successfully!');
@@ -148,20 +61,11 @@ function App() {
 
   return (
     <Routes>
-      {/* 🚫 Not authenticated - show login flow */}
+      {/* 🚫 Not authenticated - show login page */}
       {!isAuthenticated ? (
-        <Route path="*" element={
-          !showOtp ? (
-            <LoginPage onLogin={handleLogin} />
-          ) : (
-            <OtpForm onChangePhone={handleChangePhone} />
-          )
-        } />
-      ) : !isProfileCompleted ? (
-        /* 👤 Authenticated but profile not completed */
-        <Route path="*" element={<Profile />} />
+        <Route path="*" element={<LoginPage />} />
       ) : (
-        /* ✅ Authenticated and profile completed - main app */
+        /* ✅ Authenticated - main app */
         <>
           <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -187,7 +91,7 @@ function App() {
             <Route path="/subscriptions" element={<Plans/>} />
             <Route path="/mysubscriptions" element={<UserPlan/>} />
             <Route path="/orders" element={<Orders />}/>
-            <Route  path="/refer" element={<Refer/>}/>
+           
             <Route path="/dynamictemplate" element={<DynamicBlue />}/>
             <Route path="/Blueprint" element={<Blueprint/>} />
             <Route path="/myquestions" element={<MyQuestions />} />

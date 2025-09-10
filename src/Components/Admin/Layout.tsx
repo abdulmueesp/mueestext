@@ -273,22 +273,12 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
       ];
     } else if (role === 'user') {
       return [
-        {
-          title: "Main",
-          items: menuItems.filter(item => ['dashboard'].includes(item.id))
-        },
+       
         {
           title: "EXAMS",
           items: menuItems.filter(item => ['Create Paper', 'My Papers', 'My Questions','Blueprints','Dynamic Blueprint'].includes(item.id))
         },
-         {
-          title: "INSTITUTE",
-          items: menuItems.filter(item => ['My Institute', 'Batches', 'Students','Teachers'].includes(item.id))
-        },
-         {
-          title: "MY ACCOUNT",
-          items: menuItems.filter(item => ['Refer & Earn', 'Subscriptions', 'My Orders','settings'].includes(item.id))
-        },
+       
       ];
     }
     return [];

@@ -80,41 +80,8 @@ export const menuData = {
       label: "My Papers",
       path: "/mypapers",
     },
-    {
-      id: "My Questions",
-      icon: TbFolderQuestion,
-      label: "My Questions",
-      path: "/myquestions",
-    },
-    {
-      id: "Blueprints",
-      icon: AiOutlineProject,
-      label: "Blueprints",
-      path: "/Blueprint",
-    },
-    {
-      id: "Dynamic Blueprint",
-      icon: AiOutlineProject,
-      label: "Dynamic Blueprint",
-      path: "/dynamictemplate",
-    },
-    {
-      id: "My Institute",
-      icon: TbHome,
-      label: "My Institute",
-      path: "/dashboard",
-    },
-    { id: "Batches", icon: CgStack, label: "Batches", path: "/batch" },
-    { id: "Students", icon: LuUsersRound, label: "Students", path: "/allstudents" },
-    {
-      id: "Teachers",
-      icon: PiChalkboardTeacherLight,
-      label: "Teachers",
-      path: "/teachers",
-    },
-     { id: "Refer & Earn", icon: BsGraphUpArrow, label: "Refer & Earn", path: "/refer" },
-      { id: "Subscriptions", icon: FiBox, label: "Subscriptions", path: "/mysubscriptions" },
-       { id: "My Orders", icon: MdOutlineCardGiftcard, label: "My Orders", path: "/orders" },
+   
+   
     
   ],
 };
