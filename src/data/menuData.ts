@@ -11,15 +11,8 @@ import {
 import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 
 import { AiOutlineProject } from "react-icons/ai";
-import { TbFolderQuestion } from "react-icons/tb";
-import { TbHome } from "react-icons/tb";
-import { CgStack } from "react-icons/cg";
-import { PiChalkboardTeacherLight } from "react-icons/pi";
-import { BsGraphUpArrow } from "react-icons/bs";
-import { FiBox } from "react-icons/fi";
-import { MdOutlineCardGiftcard } from "react-icons/md";
-export const menuData = {
-  admin: [
+
+export const menuData = {  admin: [
     { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
     {
       id: "subscription",
@@ -80,8 +73,5 @@ export const menuData = {
       label: "My Papers",
       path: "/mypapers",
     },
-   
-   
-    
   ],
 };

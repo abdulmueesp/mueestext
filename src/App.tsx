@@ -1,6 +1,6 @@
 
 import { useSelector, useDispatch } from "react-redux" // ✅ Both hooks imported
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { RootState } from "@/store"
 import { logout } from "@/store/slices/userSlice" // ✅ Import logout action
 import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
@@ -49,14 +49,12 @@ import Errors from "./Views/Admin/Post_Login/Errors"
 
 function App() {
   const { isAuthenticated } = useSelector((state: RootState) => state.user);
-  const navigate = useNavigate();
   const dispatch = useDispatch(); // ✅ Added dispatch hook
 
   const handleLogout = () => {
     // ✅ IMPORTANT: Dispatch logout action to clear persisted state
     dispatch(logout());
     message.success('Logged out successfully!');
-    navigate("/", { replace: true });
   };
 
   return (
@@ -68,7 +66,7 @@ function App() {
         /* ✅ Authenticated - main app */
         <>
           <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route index element={<Navigate to="paper" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="paper" element={<Paper />} />
             <Route path="profile" element={<Profile />} />
@@ -109,7 +107,7 @@ function App() {
             <Route path="/mypapers" element={<MyPapers />} />
             <Route path="/errors" element={<Errors />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/paper" replace />} />
         </>
       )}
     </Routes>

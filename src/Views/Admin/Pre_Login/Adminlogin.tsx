@@ -26,7 +26,7 @@ const LoginPage = () => {
     setError('');
     const role = username === 'user' ? 'user' : 'admin';
     dispatch(setRole(role));
-    navigate('/dashboard', { replace: true });
+    navigate('/paper', { replace: true });
   };
 
   // No social login handlers in this simplified flow
