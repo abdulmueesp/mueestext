@@ -5,7 +5,8 @@ import { Button, Card, Typography, Modal, Input, Dropdown, message, Select } fro
 import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
-
+import img1 from "../../../../assets/matching.png"
+import img2 from "../../../../assets/match2.jpeg"
 const { Title, Text } = Typography;
 
 // Filter options
@@ -59,8 +60,8 @@ const dummyPapers = [
         { question: { id: 'S2', type: 'Short Answer', text: 'What is a noun?', defaultMarks: 2 }, marks: 2, globalNumber: 2 }
       ],
       'Matching': [
-        { question: { id: 'M1', type: 'Matching', text: 'Match the animals to their habitats.', imageUrl: '/src/assets/match2.jpeg', defaultMarks: 4 }, marks: 4, globalNumber: 3 },
-        { question: { id: 'M2', type: 'Matching', text: 'Match states to their capitals.', imageUrl: '/src/assets/matching.png', defaultMarks: 4 }, marks: 4, globalNumber: 4 }
+        { question: { id: 'M1', type: 'Matching', text: 'Match the animals to their habitats.', imageUrl:img1, defaultMarks: 4 }, marks: 4, globalNumber: 3 },
+        { question: { id: 'M2', type: 'Matching', text: 'Match states to their capitals.', imageUrl:img2, defaultMarks: 4 }, marks: 4, globalNumber: 4 }
       ],
       'Essay': [
         { question: { id: 'E1', type: 'Essay', text: 'Explain the water cycle in detail.', defaultMarks: 10 }, marks: 10, globalNumber: 5 },
