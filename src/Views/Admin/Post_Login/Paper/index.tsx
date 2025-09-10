@@ -552,7 +552,7 @@ const Paper = () => {
                     {t}
                   </Button>
                 ))}
-                <Button size="small" onClick={() => { setModalFilterTypes([]); setPage(1); }} className="font-local2">All</Button>
+  
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4">

@@ -6,7 +6,6 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader: React.FC<AdminHeaderProps> = ({
-  currentTime,
   onMenuClick,
 }) => {
   return (
