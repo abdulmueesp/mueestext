@@ -703,7 +703,7 @@ const Paper = () => {
                   <div className="text-gray-800 font-medium">{t}</div>
                   <div className="text-xs text-gray-500">Configure count and marks</div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
                   <div className="flex items-center gap-2">
                     <Text type="secondary" className="text-xs">Count</Text>
                     <InputNumber min={0} max={50} value={randomConfig[t].count} onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], count: Number(v) || 0 } }))} />
