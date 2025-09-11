@@ -91,7 +91,7 @@ const dummyPapers = [
         { question: { id: 'S3', type: 'Short Answer', text: 'What is the process of photosynthesis?', defaultMarks: 2 }, marks: 2, globalNumber: 1 }
       ],
       'Matching': [
-        { question: { id: 'M3', type: 'Matching', text: 'Match the parts of a plant.', imageUrl: '/src/assets/match2.jpeg', defaultMarks: 4 }, marks: 4, globalNumber: 2 }
+        { question: { id: 'M3', type: 'Matching', text: 'Match the parts of a plant.', imageUrl:img1, defaultMarks: 4 }, marks: 4, globalNumber: 2 }
       ],
       'Essay': [
         { question: { id: 'E3', type: 'Essay', text: 'Explain the life cycle of a butterfly.', defaultMarks: 10 }, marks: 10, globalNumber: 3 }
