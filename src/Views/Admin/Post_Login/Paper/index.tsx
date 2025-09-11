@@ -381,8 +381,10 @@ const Paper = () => {
             .marks { font-weight: bold; margin-left: 10px; }
             @media print {
               body { margin: 20px; }
-              .section { page-break-inside: avoid; }
-              .question { page-break-inside: avoid; margin: 10px 0; }
+              /* Allow sections to flow across pages; do not force breaks */
+              .section { page-break-inside: auto; break-inside: auto; }
+              /* Keep an individual question together on the same page */
+              .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
               .question-image img { max-width: 250px; max-height: 150px; }
             }
           </style>
