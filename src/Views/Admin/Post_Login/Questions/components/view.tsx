@@ -4,7 +4,8 @@ import React from "react";
 import { Card, Divider, Button, Tag, Image } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
-
+import img from "../../../../../assets/matching.png"
+import img2 from "../../../../../assets/match2.jpeg"
 const QuestionView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ const QuestionView = () => {
             questionType: "matching",
             question: "Match the following diagram parts",
             marks: 2,
-            image: "https://via.placeholder.com/300x200.png?text=Matching+Image",
+            image: img,
             explanation: "Students should match labels to parts on the image"
           }
         ],
@@ -192,6 +193,13 @@ const QuestionView = () => {
             correctAnswer: "Heart and Soul",
             explanation: "Dr. B.R. Ambedkar called Article 32 the 'Heart and Soul' of the Constitution",
             image: null
+          },
+          {
+            questionType: "matching",
+            question: "Match the data structures with their time complexity",
+            marks: 3,
+            image: img2,
+            explanation: "Students should match data structures with their Big O notation"
           }
         ],
         status: true
@@ -244,6 +252,13 @@ const QuestionView = () => {
             correctAnswer: [2],
             explanation: "Video content, especially Reels, typically receives higher engagement due to Instagram's algorithm favoring video",
             image: null
+          },
+          {
+            questionType: "matching",
+            question: "Match the following mathematical functions with their derivatives",
+            marks: 3,
+            image: img,
+            explanation: "Students should match functions with their derivative formulas"
           }
         ],
         status: false
@@ -459,29 +474,17 @@ const QuestionView = () => {
                     </div>
                   )}
 
-                  {/* Matching type - show image */}
-                  {question.questionType === 'matching' && (
-                    <div className="mb-4">
-                      <span className="font-semibold text-gray-700">Matching Image: </span>
-                      <div className="mt-2">
-                        {question.image && (
-                          <Image
-                            width={300}
-                            src={question.image}
-                            alt="Matching Image"
-                          />
-                        )}
+               
+
+                  {/* Correct Answer - Hide for matching type */}
+                  {question.questionType !== 'matching' && (
+                    <div className="mb-4 p-3 bg-green-50 rounded-lg">
+                      <span className="font-semibold text-gray-700">Correct Answer: </span>
+                      <div className="font-local2 text-lg text-green-700 mt-2">
+                        {renderCorrectAnswer(question)}
                       </div>
                     </div>
                   )}
-
-                  {/* Correct Answer */}
-                  <div className="mb-4 p-3 bg-green-50 rounded-lg">
-                    <span className="font-semibold text-gray-700">Correct Answer: </span>
-                    <div className="font-local2 text-lg text-green-700 mt-2">
-                      {renderCorrectAnswer(question)}
-                    </div>
-                  </div>
 
                   {/* Explanation */}
                   {question.explanation && (
@@ -527,9 +530,9 @@ const QuestionView = () => {
                   </div>
                   <div>
                     <div className="font-bold text-2xl text-purple-600">
-                      {[...new Set(questionData.questions.map((q: any) => q.exercise))].length}
+                      {Math.round(questionData.questions.reduce((sum: number, q: any) => sum + q.marks, 0) / questionData.questions.length * 10) / 10}
                     </div>
-                    <div className="text-gray-600">Exercises</div>
+                    <div className="text-gray-600">Avg Marks</div>
                   </div>
                 </div>
               </div>

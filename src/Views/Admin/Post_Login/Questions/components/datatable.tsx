@@ -144,6 +144,7 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
               "Fill Blank": "orange",
               "Short Answer": "purple",
               "Essay": "red",
+              "Matching": "cyan",
             };
             return (
               <Tag key={index} color={typeColors[type]} className="font-local2 text-xs">
@@ -154,22 +155,7 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
         </div>
       )
     },
-    {
-      title: <span className="font-semibold">Status</span>,
-      dataIndex: "status",
-      key: "status",
-      width: 100,
-      render: (status: string) => {
-        const color = status === "Active" ? "green" : "red";
-        const bgColor = status === "Active" ? "bg-green-100" : "bg-red-100";
-        
-        return (
-          <Tag color={color} className={`font-local2 ${bgColor}`}>
-            {status}
-          </Tag>
-        );
-      },
-    },
+   
     {
       title: <span className="font-semibold">Actions</span>,
       key: "actions",

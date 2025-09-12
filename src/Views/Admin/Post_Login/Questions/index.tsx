@@ -40,16 +40,24 @@ const Questions = () => {
   return (
     <>
       <PageHeader title="Questions" backButton={true}>
-        <Select
+      <Select
           placeholder="Filter by Class"
           allowClear
           style={{ width: 180, marginRight: 8 }}
           onChange={(value) => console.log("Selected Class:", value)}
           className="font-local2"
           options={[
-            { value: "Class 10", label: "Class 10" },
-            { value: "Class 11", label: "Class 11" },
-            { value: "Class 12", label: "Class 12" },
+            { value: "0", label: "0" },
+            { value: "LKG", label: "LKG" },
+            { value: "UKG", label: "UKG" },
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+            { value: "3", label: "3" },
+            { value: "4", label: "4" },
+            { value: "5", label: "5" },
+            { value: "6", label: "6" },
+            { value: "7", label: "7" },
+            { value: "8", label: "8" },
           ]}
         />
         <Select
@@ -59,11 +67,14 @@ const Questions = () => {
           onChange={(value) => console.log("Selected Subject:", value)}
           className="font-local2"
           options={[
-            { value: "Mathematics", label: "Mathematics" },
-            { value: "Physics", label: "Physics" },
-            { value: "Chemistry", label: "Chemistry" },
-            { value: "Biology", label: "Biology" },
-            { value: "Computer Science", label: "Computer Science" },
+            { value: "Malayalam", label: "Malayalam" },
+            { value: "English", label: "English" },
+            { value: "Maths", label: "Maths" },
+            { value: "GK", label: "GK" },
+            { value: "Computer", label: "Computer" },
+            { value: "EVS", label: "EVS" },
+            { value: "Social Science", label: "Social Science" },
+            { value: "Science", label: "Science" },
           ]}
         />
         <Select

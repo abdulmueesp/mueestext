@@ -44,7 +44,7 @@ import Uploadss from "./Views/Admin/Post_Login/Institute/Batches/components/uplo
 import Allstudents from "./Views/Admin/Post_Login/Institute/Batches/components/allstudents"
 import MyPapers from "./Views/Admin/Post_Login/mypapers"
 import Errors from "./Views/Admin/Post_Login/Errors"
-import Subjects from "./Views/Admin/Post_Login/Modules"
+
 import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
 
 function App() {

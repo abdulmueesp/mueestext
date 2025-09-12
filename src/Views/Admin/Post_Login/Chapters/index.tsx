@@ -47,33 +47,40 @@ const Subjects = () => {
     <>
       <PageHeader title="Chapters" backButton={true}>
         <Select
-          placeholder="Filter by Module"
+          placeholder="Filter by Class"
           allowClear
           style={{ width: 180, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Module:", value)}
+          onChange={(value) => console.log("Selected Class:", value)}
           className="font-local2"
           options={[
-            { value: "Mathematics", label: "Mathematics" },
-            { value: "Computer Science", label: "Computer Science" },
-            { value: "English Literature", label: "English Literature" },
-            { value: "Banking & Finance", label: "Banking & Finance" },
-            { value: "UPSC Preparation", label: "UPSC Preparation" },
-            { value: "Digital Marketing", label: "Digital Marketing" },
+            { value: "0", label: "0" },
+            { value: "LKG", label: "LKG" },
+            { value: "UKG", label: "UKG" },
+            { value: "1", label: "1" },
+            { value: "2", label: "2" },
+            { value: "3", label: "3" },
+            { value: "4", label: "4" },
+            { value: "5", label: "5" },
+            { value: "6", label: "6" },
+            { value: "7", label: "7" },
+            { value: "8", label: "8" },
           ]}
         />
         <Select
-          placeholder="Filter by Course"
+          placeholder="Filter by Subject"
           allowClear
           style={{ width: 180, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Course:", value)}
+          onChange={(value) => console.log("Selected Subject:", value)}
           className="font-local2"
           options={[
-            { value: "Advanced Algebra", label: "Advanced Algebra" },
-            { value: "Python Programming", label: "Python Programming" },
-            { value: "Shakespeare Studies", label: "Shakespeare Studies" },
-            { value: "Financial Accounting", label: "Financial Accounting" },
-            { value: "Indian Polity", label: "Indian Polity" },
-            { value: "Social Media Marketing", label: "Social Media Marketing" },
+            { value: "Malayalam", label: "Malayalam" },
+            { value: "English", label: "English" },
+            { value: "Maths", label: "Maths" },
+            { value: "GK", label: "GK" },
+            { value: "Computer", label: "Computer" },
+            { value: "EVS", label: "EVS" },
+            { value: "Social Science", label: "Social Science" },
+            { value: "Science", label: "Science" },
           ]}
         />
         <Input

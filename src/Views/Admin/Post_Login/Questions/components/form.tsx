@@ -1,11 +1,12 @@
 
 // @ts-nocheck
 import React from "react";
-import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, InputNumber, Radio, Checkbox, Upload } from "antd";
+import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, InputNumber, Radio, Checkbox, Upload, message } from "antd";
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
-import { message } from "@/Components/common/message/message";
+import img from "../../../../../assets/matching.png"
+import img2 from "../../../../../assets/match2.jpeg"
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -16,18 +17,17 @@ const QuestionForm = () => {
   const navigate = useNavigate();
   const isEdit = id && id !== 'new';
 
-  // Complete dummy data for all question types
+  // Complete dummy data for all question types - matching view.tsx structure
   const getDummyData = (id: string) => {
     const questions = {
       '1': {
-        module: "Mathematics",
-        course: "Advanced Algebra",
-        subject: "Advanced Calculus",
-        textbook: "Calculus: Early Transcendentals",
-        chapter: "Linear Equations",
+        className: "Class 10",
+        subject: "Mathematics",
+        title: "Algebra Basics",
+        chapter: "Chapter 1",
+        examType: "Unit Test",
         questions: [
           {
-            exercise: "Basic Linear Equations Practice",
             questionType: "mcq",
             question: "What is the solution to the equation 2x + 5 = 13?",
             marks: 2,
@@ -41,25 +41,30 @@ const QuestionForm = () => {
             image: null
           },
           {
-            exercise: "Word Problems in Linear Equations",
             questionType: "fillblank",
             question: "If 3x - 7 = 14, then x = ____",
             marks: 3,
             correctAnswer: "7",
+            image: null
+          },
+          {
+            questionType: "shortanswer",
+            question: "Explain how to graph the equation y = 2x + 3",
+            marks: 5,
+            correctAnswer: "Start at y-intercept (0,3), use slope 2 (rise 2, run 1) to plot points",
             image: null
           }
         ],
         status: true
       },
       '2': {
-        module: "Computer Science",
-        course: "Python Programming",
-        subject: "Data Structures & Algorithms",
-        textbook: "Introduction to Algorithms",
-        chapter: "Variables and Data Types",
+        className: "Class 11",
+        subject: "Physics",
+        title: "Mechanics",
+        chapter: "Chapter 2",
+        examType: "1 Midterm",
         questions: [
           {
-            exercise: "Type Casting Practice",
             questionType: "mcq",
             question: "Which of the following is a valid Python variable name?",
             marks: 1,
@@ -73,25 +78,23 @@ const QuestionForm = () => {
             image: null
           },
           {
-            exercise: "String Manipulation",
-            questionType: "truefalse",
-            question: "Python strings are mutable (can be changed after creation).",
-            marks: 1,
-            correctAnswer: "false",
-            image: null
+            questionType: "matching",
+            question: "Match the following diagram parts",
+            marks: 2,
+            image: img,
+            correctAnswer: "Students should match labels to parts on the image"
           }
         ],
         status: true
       },
       '3': {
-        module: "English Literature",
-        course: "Shakespeare Studies",
-        subject: "Shakespearean Literature",
-        textbook: "The Complete Works of William Shakespeare",
-        chapter: "Hamlet Analysis",
+        className: "Class 12",
+        subject: "Chemistry",
+        title: "Organic Chemistry",
+        chapter: "Chapter 3",
+        examType: "1 Term",
         questions: [
           {
-            exercise: "Theme Analysis Essay",
             questionType: "essay",
             question: "Analyze the theme of revenge in Hamlet and its impact on the main characters.",
             marks: 15,
@@ -102,14 +105,13 @@ const QuestionForm = () => {
         status: false
       },
       '4': {
-        module: "Banking & Finance",
-        course: "Financial Accounting",
-        subject: "Corporate Finance",
-        textbook: "Principles of Corporate Finance",
-        chapter: "Financial Statements",
+        className: "Class 10",
+        subject: "Biology",
+        title: "Human Anatomy",
+        chapter: "Chapter 4",
+        examType: "2 Midterm",
         questions: [
           {
-            exercise: "Balance Sheet Analysis",
             questionType: "mcq",
             question: "Which of the following is NOT a current asset?",
             marks: 2,
@@ -123,7 +125,6 @@ const QuestionForm = () => {
             image: null
           },
           {
-            exercise: "Financial Ratios",
             questionType: "fillblank",
             question: "The current ratio is calculated as Current Assets divided by ____",
             marks: 2,
@@ -131,7 +132,6 @@ const QuestionForm = () => {
             image: null
           },
           {
-            exercise: "Cash Flow Analysis",
             questionType: "shortanswer",
             question: "Explain the difference between operating cash flow and free cash flow.",
             marks: 5,
@@ -142,14 +142,13 @@ const QuestionForm = () => {
         status: true
       },
       '5': {
-        module: "UPSC Preparation",
-        course: "Indian Polity",
-        subject: "Constitutional Law",
-        textbook: "Indian Constitution by D.D. Basu",
-        chapter: "Fundamental Rights",
+        className: "Class 11",
+        subject: "Computer Science",
+        title: "Data Structures",
+        chapter: "Chapter 5",
+        examType: "2 Term",
         questions: [
           {
-            exercise: "Article 19 Analysis",
             questionType: "mcq",
             question: "Which of the following is NOT guaranteed under Article 19?",
             marks: 2,
@@ -163,33 +162,37 @@ const QuestionForm = () => {
             image: null
           },
           {
-            exercise: "Constitutional Amendments",
-            questionType: "truefalse",
-            question: "Fundamental Rights can be amended by simple majority in Parliament.",
-            marks: 1,
-            correctAnswer: "false",
-            image: null
-          },
-          {
-            exercise: "Case Studies",
             questionType: "essay",
             question: "Discuss the significance of the Kesavananda Bharati case in Indian constitutional law.",
             marks: 10,
             correctAnswer: "The Kesavananda Bharati case established the basic structure doctrine, limiting Parliament's power to amend the Constitution and ensuring core constitutional principles remain intact.",
             image: null
+          },
+          {
+            questionType: "fillblank",
+            question: "Article 32 is known as the ____ of the Constitution.",
+            marks: 2,
+            correctAnswer: "Heart and Soul",
+            image: null
+          },
+          {
+            questionType: "matching",
+            question: "Match the data structures with their time complexity",
+            marks: 3,
+            image: img2,
+            correctAnswer: "Students should match data structures with their Big O notation"
           }
         ],
         status: true
       },
       '6': {
-        module: "Digital Marketing",
-        course: "Social Media Marketing",
-        subject: "Social Media Strategy",
-        textbook: "Social Media Marketing Strategy Guide",
-        chapter: "Content Strategy",
+        className: "Class 12",
+        subject: "Mathematics",
+        title: "Calculus",
+        chapter: "Chapter 6",
+        examType: "Unit Test",
         questions: [
           {
-            exercise: "Content Planning",
             questionType: "shortanswer",
             question: "What are the key elements of a successful content marketing strategy?",
             marks: 4,
@@ -197,12 +200,31 @@ const QuestionForm = () => {
             image: null
           },
           {
-            exercise: "Engagement Metrics",
             questionType: "fillblank",
             question: "The engagement rate is calculated by dividing total engagements by ____ and multiplying by 100.",
             marks: 2,
             correctAnswer: "total reach",
             image: null
+          },
+          {
+            questionType: "mcq",
+            question: "Which content type typically generates the highest engagement on Instagram?",
+            marks: 2,
+            options: [
+              { text: "Static images with text overlay" },
+              { text: "Carousel posts with multiple images" },
+              { text: "Video content and Reels" },
+              { text: "Long-form captions only" }
+            ],
+            correctAnswer: [2],
+            image: null
+          },
+          {
+            questionType: "matching",
+            question: "Match the following mathematical functions with their derivatives",
+            marks: 3,
+            image: img,
+            correctAnswer: "Students should match functions with their derivative formulas"
           }
         ],
         status: false
@@ -319,7 +341,26 @@ const QuestionForm = () => {
     if (isEdit && id) {
       const dummyData = getDummyData(id);
       if (dummyData) {
-        form.setFieldsValue(dummyData);
+        const mapped = {
+          ...dummyData,
+          questions: (dummyData.questions || []).map((q: any) => {
+            if (q?.questionType === 'matching' && q?.image) {
+              return {
+                ...q,
+                imageFileList: [
+                  {
+                    uid: '-1',
+                    name: 'matching-image',
+                    status: 'done',
+                    url: typeof q.image === 'string' ? q.image : (q.image?.src || ''),
+                  },
+                ],
+              };
+            }
+            return q;
+          }),
+        };
+        form.setFieldsValue(mapped);
         // selectors are independent; no need to set selection state
       }
     }
@@ -344,14 +385,28 @@ const QuestionForm = () => {
                           name={[name, 'text']}
                           rules={[{ required: true, message: 'Please enter option text!' }]}
                         >
-                          <Input placeholder={`Option ${name + 1}`} />
+                          <Input 
+                            placeholder={`Option ${name + 1}`}
+                            onChange={() => {
+                              // Force re-render of correct answer checkboxes
+                              setQuestionTypeChangeKey(prev => prev + 1);
+                            }}
+                          />
                         </Form.Item>
                       </Col>
                       <Col span={4}>
                         <Button
                           type="text"
                           icon={<MinusCircleOutlined />}
-                          onClick={() => remove(name)}
+                          onClick={() => {
+                            remove(name);
+                            // Clear correct answer if it references removed option
+                            const currentAnswers = form.getFieldValue(['questions', questionIndex, 'correctAnswer']) || [];
+                            const filteredAnswers = currentAnswers.filter((answer: number) => answer !== name);
+                            form.setFieldValue(['questions', questionIndex, 'correctAnswer'], filteredAnswers);
+                            // Force re-render
+                            setQuestionTypeChangeKey(prev => prev + 1);
+                          }}
                           danger
                           disabled={fields.length <= 2}
                         />
@@ -361,7 +416,13 @@ const QuestionForm = () => {
                   <Form.Item>
                     <Button
                       type="dashed"
-                      onClick={() => add()}
+                      onClick={() => {
+                        add();
+                        // Force re-render after adding option
+                        setTimeout(() => {
+                          setQuestionTypeChangeKey(prev => prev + 1);
+                        }, 100);
+                      }}
                       icon={<PlusOutlined />}
                       disabled={fields.length >= 6}
                       className="w-full"
@@ -381,7 +442,7 @@ const QuestionForm = () => {
               <Checkbox.Group>
                 <Row>
                   {(form.getFieldValue(['questions', questionIndex, 'options']) || []).map((option: any, index: number) => (
-                    <Col span={12} key={index}>
+                    <Col span={12} key={`option-${questionIndex}-${index}-${questionTypeChangeKey}`}>
                       <Checkbox value={index}>
                         Option {index + 1} {option?.text ? `(${option.text.slice(0, 20)}...)` : ''}
                       </Checkbox>
@@ -438,26 +499,7 @@ const QuestionForm = () => {
         );
 
       case 'matching':
-        return (
-          <div key={`matching-${questionIndex}-${questionTypeChangeKey}`}>
-            <Form.Item 
-              name={[questionIndex, 'image']}
-              label="Upload Matching Image"
-              rules={[{ required: true, message: 'Please upload image for matching!' }]}
-            >
-              <Upload
-                listType="picture-card"
-                maxCount={1}
-                beforeUpload={() => false}
-              >
-                <div>
-                  <UploadOutlined />
-                  <div style={{ marginTop: 8 }}>Upload</div>
-                </div>
-              </Upload>
-            </Form.Item>
-          </div>
-        );
+        return null;
 
       default:
         return null;
@@ -634,7 +676,41 @@ const QuestionForm = () => {
                       </Col>
                     </Row>
 
-                    {/* Image upload is rendered only for Matching type inside type-specific renderer */}
+                    {/* Image upload is shown below the question when type is Matching */}
+                    {form.getFieldValue(['questions', name, 'questionType']) === 'matching' && (
+                      <Row gutter={16}>
+                        <Col span={24}>
+                          <Form.Item 
+                            {...restField}
+                            name={[name, 'imageFileList']}
+                            label="Upload Matching Image"
+                            rules={[{ required: true, message: 'Please upload image for matching!' }]}
+                          >
+                            <Upload
+                              listType="picture-card"
+                              maxCount={1}
+                              beforeUpload={() => false}
+                              defaultFileList={form.getFieldValue(['questions', name, 'imageFileList'])}
+                              onChange={({ fileList }) => {
+                                const questions = form.getFieldValue('questions') || [];
+                                if (!questions[name]) return;
+                                questions[name] = {
+                                  ...questions[name],
+                                  imageFileList: fileList,
+                                  image: fileList?.[0]?.url || fileList?.[0]?.thumbUrl || null,
+                                };
+                                form.setFieldValue('questions', questions);
+                              }}
+                            >
+                              <div>
+                                <UploadOutlined />
+                                <div style={{ marginTop: 8 }}>Upload</div>
+                              </div>
+                            </Upload>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    )}
 
                     <Divider plain>Answer Options</Divider>
                     

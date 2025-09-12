@@ -559,7 +559,7 @@ const MyPapers = () => {
       <div className="w-full mb-5">
         <Button 
           type="primary"
-          size="large"
+          size="middle"
          className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
              hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 "
           

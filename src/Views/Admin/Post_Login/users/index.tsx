@@ -152,27 +152,7 @@ const UsersTable = () => {
         <div className="font-local2 text-gray-500">{username}</div>
       ),
     },
-    {
-      title: <span className="font-semi">Password</span>,
-      dataIndex: "password",
-      key: "password",
-      width: 200,
-      render: (password: string, record: any) => (
-        <div className="flex items-center gap-2">
-          <div className="font-local2 text-gray-500">
-            {visiblePasswords[record.id] ? password : "••••••••"}
-          </div>
-          <Button
-            type="link"
-            icon={visiblePasswords[record.id] ? <FaEyeSlash color="black" size={14} /> : <FaEye color="black" size={14} />}
-            size="small"
-            onClick={() => togglePasswordVisibility(record.id)}
-            title={visiblePasswords[record.id] ? "Hide password" : "Show password"}
-            className="p-0 h-auto min-w-0"
-          />
-        </div>
-      ),
-    },
+   
     {
       title: <span className="font-semi">Type</span>,
       dataIndex: "type",

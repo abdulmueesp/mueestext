@@ -72,11 +72,19 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
   // Group menu items by sections
   const getMenuSections = () => {
     if (role === 'admin') {
-      return [  
+      return [
         {
-          title: "Exam Management",
-          items: menuItems.filter(item => ['examgen', 'Books', 'courses', 'Chapters', 'questions','Chapters'].includes(item.id))
+          title: "Overview",
+          items: menuItems.filter(item => ['examgen'].includes(item.id))
         },  
+        {
+          title: "Question Management",
+          items: menuItems.filter(item => ['Books', 'courses', 'Chapters', 'questions','Chapters'].includes(item.id))
+        },  
+        {
+          title: "EXAMS",
+          items: menuItems.filter(item => ['Create Paper', 'My Papers'].includes(item.id))
+        },
         {
           title: "User Management",
           items: menuItems.filter(item => ['users'].includes(item.id))

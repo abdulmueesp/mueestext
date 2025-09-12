@@ -10,7 +10,6 @@ import {
 } from "react-icons/ai";
 import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 
-import { AiOutlineProject } from "react-icons/ai";
 
 export const menuData = {  admin: [
        
@@ -38,6 +37,18 @@ export const menuData = {  admin: [
       icon: VscGitPullRequestGoToChanges,
       label: "Questions",
       path: "/questions",
+    },
+    {
+      id: "Create Paper",
+      icon: FiFilePlus,
+      label: "Create Paper",
+      path: "/paper",
+    },
+    {
+      id: "My Papers",
+      icon: AiOutlineFileText,
+      label: "My Papers",
+      path: "/mypapers",
     },
    
   ],
