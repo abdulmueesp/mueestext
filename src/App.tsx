@@ -1,6 +1,6 @@
 
 import { useSelector, useDispatch } from "react-redux" // ✅ Both hooks imported
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { RootState } from "@/store"
 import { logout } from "@/store/slices/userSlice" // ✅ Import logout action
 import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
@@ -13,13 +13,11 @@ import Subscription from "./Views/Admin/Post_Login/Subscription"
 import Settings from "./Views/Admin/Post_Login/Settings"
 import { message } from "./Components/common/message/message"
 import UsersTable from "./Views/Admin/Post_Login/users"
-import DeatileCard from "./Views/Admin/Post_Login/users/components/deatile"
 import ExamGenerator from "./Views/Admin/Post_Login/ExamGenerator"
-import Modules from "./Views/Admin/Post_Login/Modules"
+import Books from "./Views/Admin/Post_Login/Books/index"
 import Chapters from "./Views/Admin/Post_Login/Chapters"
 import Courses from "./Views/Admin/Post_Login/Courses"
 import Questions from "./Views/Admin/Post_Login/Questions"
-import SubjectForm from "./Views/Admin/Post_Login/Chapters/components/form"
 import ViewChapter from "./Views/Admin/Post_Login/ChapterText/components/view"
 import ChapterForm from "./Views/Admin/Post_Login/ChapterText/components/form"
 import ChaptersT from "./Views/Admin/Post_Login/ChapterText"
@@ -46,43 +44,63 @@ import Uploadss from "./Views/Admin/Post_Login/Institute/Batches/components/uplo
 import Allstudents from "./Views/Admin/Post_Login/Institute/Batches/components/allstudents"
 import MyPapers from "./Views/Admin/Post_Login/mypapers"
 import Errors from "./Views/Admin/Post_Login/Errors"
+import Subjects from "./Views/Admin/Post_Login/Modules"
+import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
 
 function App() {
-  const { isAuthenticated } = useSelector((state: RootState) => state.user);
+  const { isAuthenticated, role } = useSelector((state: RootState) => state.user);
   const dispatch = useDispatch(); // ✅ Added dispatch hook
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     // ✅ IMPORTANT: Dispatch logout action to clear persisted state
     dispatch(logout());
     message.success('Logged out successfully!');
+    // Navigate to root path after logout
+    navigate('/', { replace: true });
   };
+
+  // Determine default route based on user role
+  const getDefaultRoute = () => {
+    if (role === 'admin') {
+      return 'examboard';
+    } else if (role === 'user') {
+      return 'paper';
+    }
+    return 'paper'; // fallback
+  };
+
+  // Show loading or login based on authentication state
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    );
+  }
+
 
   return (
     <Routes>
-      {/* 🚫 Not authenticated - show login page */}
-      {!isAuthenticated ? (
-        <Route path="*" element={<LoginPage />} />
-      ) : (
-        /* ✅ Authenticated - main app */
-        <>
-          <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
-            <Route index element={<Navigate to="paper" replace />} />
+      {/* ✅ Authenticated - main app */}
+      <>
+        <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
+          <Route index element={<Navigate to={getDefaultRoute()} replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="paper" element={<Paper />} />
             <Route path="profile" element={<Profile />} />
             <Route path="subscription" element={<Subscription />} />
             <Route path="settings" element={<Settings />} />
             <Route path="users" element={<UsersTable />} />
-            <Route path="detail/:id" element={<DeatileCard/>} />
             <Route path="examboard" element={<ExamGenerator />} />
-            <Route path="modules" element={<Modules />} />
+            <Route path="books" element={<Books />} />
             <Route path="/courses" element={<Courses />} />
-            <Route path="subjects" element={<Chapters />} />
+            <Route path="chapters" element={<Chapters />} />
             <Route path="/questions" element={<Questions />} />
-            <Route path="subjectForm/:id" element={<SubjectForm />} />
-            <Route path="Chapters" element={<ChaptersT/>} />
+            <Route path="chaptersform/:id" element={<Chaptersform />} />
+            <Route path="Chaptersjd" element={<ChaptersT/>} />
             <Route path="chaptersview/:id" element={<ViewChapter/>} />
-            <Route path="/chaptersform/:id" element={<ChapterForm/>} />
+            <Route path="/chaptersformhj/:id" element={<ChapterForm/>} />
             <Route path="/questionform/:id" element={<QuestionForm/>} />
             <Route path="/Viewquestion/:id" element={<QuestionViiew/>} />
             <Route path="/header" element={<HeaderFooter />} />
@@ -106,10 +124,9 @@ function App() {
             <Route  path="/allstudents" element={<Allstudents />}/>
             <Route path="/mypapers" element={<MyPapers />} />
             <Route path="/errors" element={<Errors />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/paper" replace />} />
-        </>
-      )}
+        </Route>
+        <Route path="*" element={<Navigate to={`/${getDefaultRoute()}`} replace />} />
+      </>
     </Routes>
   );
 }

@@ -26,7 +26,8 @@ const LoginPage = () => {
     setError('');
     const role = username === 'user' ? 'user' : 'admin';
     dispatch(setRole(role));
-    navigate('/paper', { replace: true });
+    // Let the App component handle the role-based routing
+    navigate('/', { replace: true });
   };
 
   // No social login handlers in this simplified flow

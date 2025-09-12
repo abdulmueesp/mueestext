@@ -1,14 +1,37 @@
 // @ts-nocheck
 import { useState } from "react";
-import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select } from "antd";
+import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select,message } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
-import { message } from "@/Components/common/message/message";
 import { IoIosSearch, IoMdRefresh } from "react-icons/io";
 
 const { TextArea } = Input;
 
-const Modules = () => {
+const Books = () => {
+  const SUBJECT_OPTIONS = [
+    "Malayalam",
+    "English",
+    "Maths",
+    "GK",
+    "Computer",
+    "EVS",
+    "Social Science",
+    "Science",
+  ];
+
+  const CLASS_OPTIONS = [
+    "0",
+    "LKG",
+    "UKG",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+  ];
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [form] = Form.useForm();
@@ -40,9 +63,9 @@ const Modules = () => {
     try {
       const values = await form.validateFields();
       if (editingRecord) {
-        message.success("Module updated successfully!");
+        message.success("Book updated successfully!");
       } else {
-        message.success("Module created successfully!");
+        message.success("Book created successfully!");
       }
       setIsModalOpen(false);
       setEditingRecord(null);
@@ -58,17 +81,16 @@ const Modules = () => {
     setEditingRecord(record);
     setViewRecord(null);
     form.setFieldsValue({
-      name: record.name,
-      description: record.description,
-      category: record.category,
-      status: record.status === "Active",
+      title: record.title,
+      subject: record.subject,
+      class: record.class,
     });
     setIsModalOpen(true);
   };
 
   // Handle Delete Confirm
   const handleDelete = (id: number) => {
-    message.success(`Module ${id} deleted successfully!`);
+    message.success(`Book ${id} deleted successfully!`);
   };
 
   // Handle View Click
@@ -83,9 +105,9 @@ const Modules = () => {
 
   return (
     <>
-      <PageHeader title="Modules" backButton={true}>
+      <PageHeader title="Books" backButton={true}>
       <Input
-              placeholder="Search by name"
+              placeholder="Search by Title"
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
@@ -102,7 +124,7 @@ const Modules = () => {
           className="font-local2"
           onClick={showModal}
         >
-          Create Module
+          Create
         </Button>
         
       </PageHeader>
@@ -111,7 +133,7 @@ const Modules = () => {
 
       {/* Create / Edit Modal */}
       <Modal
-        title={editingRecord ? "Edit Module" : "Create Module"}
+        title={editingRecord ? "Edit Book" : "Create Book"}
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
@@ -130,40 +152,43 @@ const Modules = () => {
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item 
-                name="name" 
-                label="Module Name" 
-                rules={[{ required: true, message: 'Please enter module name!' }]}
+                name="title" 
+                label="Title" 
+                required={false}
+                rules={[{ required: true, message: 'Please enter book title!' }]}
               >
-                <Input placeholder="Enter module name" />
-              </Form.Item>
-            </Col>
-           
-          </Row>
-          
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item 
-                name="description" 
-                label="Description"
-                rules={[{ required: true, message: 'Please enter description!' }]}
-              >
-                <TextArea 
-                  rows={4}
-                  placeholder="Enter module description" 
-                />
+                <Input placeholder="Enter book title" />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="status" label="Status" valuePropName="checked">
-                <Switch 
-                  checkedChildren="Active" 
-                  unCheckedChildren="Inactive"
-                  defaultChecked={true}
-                  style={{ backgroundColor: '#007575' }}
-                />
+              <Form.Item 
+               required={false}
+                name="subject" 
+                label="Subject"
+                rules={[{ required: true, message: 'Please select subject!' }]}
+              >
+                <Select placeholder="Select subject">
+                  {SUBJECT_OPTIONS.map((subj) => (
+                    <Select.Option key={subj} value={subj}>{subj}</Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item 
+               required={false}
+                name="class" 
+                label="Class"
+                rules={[{ required: true, message: 'Please select class!' }]}
+              >
+                <Select placeholder="Select class">
+                  {CLASS_OPTIONS.map((cls) => (
+                    <Select.Option key={cls} value={cls}>{cls}</Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>
@@ -172,7 +197,7 @@ const Modules = () => {
 
       {/* View Modal */}
       <Modal
-        title="Module Details"
+        title="Book Details"
         open={isViewOpen}
         footer={null}
         onCancel={() => setIsViewOpen(false)}
@@ -183,22 +208,16 @@ const Modules = () => {
           <div className="p-4">
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">Name:</span>
-                <span className="font-local2 text-lg text-gray-900">{viewRecord.name}</span>
+                <span className="font-semibold text-gray-700">Title:</span>
+                <span className="font-local2 text-lg text-gray-900">{viewRecord.title}</span>
               </div>
-              
-            
-              
-              <div className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">Description:</span>
-                <span className="font-local2 text-lg text-gray-900 max-w-xs text-right">{viewRecord.description}</span>
-              </div>
-              
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="font-semibold text-gray-700">Status:</span>
-                <span className={`font-local2 text-lg ${viewRecord.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
-                  {viewRecord.status}
-                </span>
+                <span className="font-semibold text-gray-700">Subject:</span>
+                <span className="font-local2 text-lg text-gray-900">{viewRecord.subject}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="font-semibold text-gray-700">Class:</span>
+                <span className="font-local2 text-lg text-gray-900">{viewRecord.class}</span>
               </div>
             </div>
           </div>
@@ -208,4 +227,4 @@ const Modules = () => {
   );
 };
 
-export default Modules;
+export default Books;

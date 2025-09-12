@@ -1,655 +1,4 @@
-// // @ts-nocheck
-// import React from "react";
-// import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, InputNumber, Radio, Checkbox, Upload } from "antd";
-// import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
-// import { useParams, useNavigate } from "react-router-dom";
-// import PageHeader from "@/Components/common/PageHeader";
-// import { message } from "@/Components/common/message/message";
 
-// const { Option } = Select;
-// const { TextArea } = Input;
-
-// const QuestionForm = () => {
-//   const [form] = Form.useForm();
-//   const { id } = useParams();
-//   const navigate = useNavigate();
-//   const isEdit = id && id !== 'new';
-
-//   // Updated dummy data for questions
-//   const getDummyData = (id: string) => {
-//     const questions = {
-//       '1': {
-//         module: "Mathematics",
-//         course: "Advanced Algebra",
-//         subject: "Advanced Calculus",
-//         textbook: "Calculus: Early Transcendentals",
-//         chapter: "Linear Equations",
-//         questions: [
-//           {
-//             exercise: "Basic Linear Equations Practice",
-//             questionType: "mcq",
-//             question: "What is the solution to the equation 2x + 5 = 13?",
-//             marks: 2,
-//             options: [
-//               { text: "x = 4" },
-//               { text: "x = 3" },
-//               { text: "x = 5" },
-//               { text: "x = 6" }
-//             ],
-//             correctAnswer: [0],
-//             image: null
-//           },
-//           {
-//             exercise: "Word Problems in Linear Equations",
-//             questionType: "fillblank",
-//             question: "If 3x - 7 = 14, then x = ____",
-//             marks: 3,
-//             correctAnswer: "7",
-//             image: null
-//           }
-//         ],
-//         status: true
-//       },
-//       '2': {
-//         module: "Computer Science",
-//         course: "Python Programming",
-//         subject: "Data Structures & Algorithms",
-//         textbook: "Introduction to Algorithms",
-//         chapter: "Variables and Data Types",
-//         questions: [
-//           {
-//             exercise: "Type Casting Practice",
-//             questionType: "mcq",
-//             question: "Which of the following is a valid Python variable name?",
-//             marks: 1,
-//             options: [
-//               { text: "2variable" },
-//               { text: "_variable" },
-//               { text: "variable-name" },
-//               { text: "class" }
-//             ],
-//             correctAnswer: [1],
-//             image: null
-//           }
-//         ],
-//         status: true
-//       }
-//     };
-
-//     return questions[id] || null;
-//   };
-
-//   // Selector options
-//   const moduleOptions = [
-//     { value: "Mathematics", label: "Mathematics" },
-//     { value: "Computer Science", label: "Computer Science" },
-//     { value: "English Literature", label: "English Literature" },
-//     { value: "Banking & Finance", label: "Banking & Finance" },
-//     { value: "UPSC Preparation", label: "UPSC Preparation" },
-//     { value: "Digital Marketing", label: "Digital Marketing" },
-//   ];
-
-//   const courseOptions = {
-//     "Mathematics": [
-//       { value: "Advanced Algebra", label: "Advanced Algebra" },
-//       { value: "Calculus", label: "Calculus" },
-//       { value: "Statistics", label: "Statistics" }
-//     ],
-//     "Computer Science": [
-//       { value: "Python Programming", label: "Python Programming" },
-//       { value: "Data Science", label: "Data Science" },
-//       { value: "Web Development", label: "Web Development" }
-//     ],
-//     "English Literature": [
-//       { value: "Shakespeare Studies", label: "Shakespeare Studies" },
-//       { value: "Modern Literature", label: "Modern Literature" },
-//       { value: "Poetry Analysis", label: "Poetry Analysis" }
-//     ],
-//     "Banking & Finance": [
-//       { value: "Financial Accounting", label: "Financial Accounting" },
-//       { value: "Investment Banking", label: "Investment Banking" },
-//       { value: "Corporate Finance", label: "Corporate Finance" }
-//     ],
-//     "UPSC Preparation": [
-//       { value: "Indian Polity", label: "Indian Polity" },
-//       { value: "Geography", label: "Geography" },
-//       { value: "History", label: "History" }
-//     ],
-//     "Digital Marketing": [
-//       { value: "Social Media Marketing", label: "Social Media Marketing" },
-//       { value: "SEO Optimization", label: "SEO Optimization" },
-//       { value: "Content Marketing", label: "Content Marketing" }
-//     ]
-//   };
-
-//   const subjectOptions = {
-//     "Advanced Algebra": [
-//       { value: "Advanced Calculus", label: "Advanced Calculus" },
-//       { value: "Linear Algebra", label: "Linear Algebra" }
-//     ],
-//     "Python Programming": [
-//       { value: "Data Structures & Algorithms", label: "Data Structures & Algorithms" },
-//       { value: "Web Development with Python", label: "Web Development with Python" }
-//     ],
-//     "Shakespeare Studies": [
-//       { value: "Shakespearean Literature", label: "Shakespearean Literature" },
-//       { value: "Elizabethan Drama", label: "Elizabethan Drama" }
-//     ],
-//     "Financial Accounting": [
-//       { value: "Corporate Finance", label: "Corporate Finance" },
-//       { value: "Financial Management", label: "Financial Management" }
-//     ],
-//     "Indian Polity": [
-//       { value: "Constitutional Law", label: "Constitutional Law" },
-//       { value: "Governance and Administration", label: "Governance and Administration" }
-//     ],
-//     "Social Media Marketing": [
-//       { value: "Social Media Strategy", label: "Social Media Strategy" },
-//       { value: "Digital Brand Management", label: "Digital Brand Management" }
-//     ]
-//   };
-
-//   const textbookOptions = {
-//     "Advanced Calculus": [
-//       { value: "Calculus: Early Transcendentals", label: "Calculus: Early Transcendentals" },
-//       { value: "Advanced Mathematical Methods", label: "Advanced Mathematical Methods" }
-//     ],
-//     "Data Structures & Algorithms": [
-//       { value: "Introduction to Algorithms", label: "Introduction to Algorithms" },
-//       { value: "Data Structures Using Python", label: "Data Structures Using Python" }
-//     ],
-//     "Shakespearean Literature": [
-//       { value: "The Complete Works of William Shakespeare", label: "The Complete Works of William Shakespeare" },
-//       { value: "Shakespeare: A Critical Study", label: "Shakespeare: A Critical Study" }
-//     ],
-//     "Corporate Finance": [
-//       { value: "Principles of Corporate Finance", label: "Principles of Corporate Finance" },
-//       { value: "Financial Management Theory & Practice", label: "Financial Management Theory & Practice" }
-//     ],
-//     "Constitutional Law": [
-//       { value: "Indian Constitution by D.D. Basu", label: "Indian Constitution by D.D. Basu" },
-//       { value: "Introduction to the Constitution of India", label: "Introduction to the Constitution of India" }
-//     ],
-//     "Social Media Strategy": [
-//       { value: "Social Media Marketing Strategy Guide", label: "Social Media Marketing Strategy Guide" },
-//       { value: "Digital Marketing Excellence", label: "Digital Marketing Excellence" }
-//     ]
-//   };
-
-//   const chapterOptions = {
-//     "Calculus: Early Transcendentals": [
-//       { value: "Linear Equations", label: "Linear Equations" },
-//       { value: "Differentiation", label: "Differentiation" }
-//     ],
-//     "Introduction to Algorithms": [
-//       { value: "Variables and Data Types", label: "Variables and Data Types" },
-//       { value: "Arrays and Lists", label: "Arrays and Lists" }
-//     ],
-//     "The Complete Works of William Shakespeare": [
-//       { value: "Hamlet Analysis", label: "Hamlet Analysis" },
-//       { value: "Macbeth Study", label: "Macbeth Study" }
-//     ]
-//   };
-
-//   const exerciseOptions = {
-//     "Linear Equations": [
-//       { value: "Basic Linear Equations Practice", label: "Basic Linear Equations Practice" },
-//       { value: "Word Problems in Linear Equations", label: "Word Problems in Linear Equations" },
-//       { value: "Graphical Representation", label: "Graphical Representation" }
-//     ],
-//     "Variables and Data Types": [
-//       { value: "Integer Operations", label: "Integer Operations" },
-//       { value: "String Manipulation", label: "String Manipulation" },
-//       { value: "Type Casting Practice", label: "Type Casting Practice" }
-//     ],
-//     "Hamlet Analysis": [
-//       { value: "Hamlet Character Study", label: "Hamlet Character Study" },
-//       { value: "Theme Analysis Essay", label: "Theme Analysis Essay" }
-//     ]
-//   };
-
-//   const [selectedModule, setSelectedModule] = React.useState(null);
-//   const [selectedCourse, setSelectedCourse] = React.useState(null);
-//   const [selectedSubject, setSelectedSubject] = React.useState(null);
-//   const [selectedTextbook, setSelectedTextbook] = React.useState(null);
-//   const [selectedChapter, setSelectedChapter] = React.useState(null);
-
-//   const handleFinish = (values: any) => {
-//     console.log("Form values:", values);
-//     if (isEdit) {
-//       message.success("Questions updated successfully!");
-//     } else {
-//       message.success("Questions created successfully!");
-//     }
-//     navigate('/questions');
-//   };
-
-//   const handleCancel = () => {
-//     navigate('/questions');
-//   };
-
-//   const handleModuleChange = (value: string) => {
-//     setSelectedModule(value);
-//     setSelectedCourse(null);
-//     setSelectedSubject(null);
-//     setSelectedTextbook(null);
-//     setSelectedChapter(null);
-//     form.setFieldsValue({ course: undefined, subject: undefined, textbook: undefined, chapter: undefined });
-//   };
-
-//   const handleCourseChange = (value: string) => {
-//     setSelectedCourse(value);
-//     setSelectedSubject(null);
-//     setSelectedTextbook(null);
-//     setSelectedChapter(null);
-//     form.setFieldsValue({ subject: undefined, textbook: undefined, chapter: undefined });
-//   };
-
-//   const handleSubjectChange = (value: string) => {
-//     setSelectedSubject(value);
-//     setSelectedTextbook(null);
-//     setSelectedChapter(null);
-//     form.setFieldsValue({ textbook: undefined, chapter: undefined });
-//   };
-
-//   const handleTextbookChange = (value: string) => {
-//     setSelectedTextbook(value);
-//     setSelectedChapter(null);
-//     form.setFieldsValue({ chapter: undefined });
-//   };
-
-//   const handleChapterChange = (value: string) => {
-//     setSelectedChapter(value);
-//   };
-
-//   // Set initial values if editing
-//   React.useEffect(() => {
-//     if (isEdit && id) {
-//       const dummyData = getDummyData(id);
-//       if (dummyData) {
-//         form.setFieldsValue(dummyData);
-//         setSelectedModule(dummyData.module);
-//         setSelectedCourse(dummyData.course);
-//         setSelectedSubject(dummyData.subject);
-//         setSelectedTextbook(dummyData.textbook);
-//         setSelectedChapter(dummyData.chapter);
-//       }
-//     }
-//   }, [form, isEdit, id]);
-
-//   // Render question type specific fields
-//   const renderQuestionTypeFields = (questionType: string, questionIndex: number) => {
-//     switch (questionType) {
-//       case 'mcq':
-//         return (
-//           <>
-//             <Form.List name={[questionIndex, 'options']}>
-//               {(fields, { add, remove }) => (
-//                 <>
-//                   {fields.map(({ key, name, ...restField }) => (
-//                     <Row key={key} gutter={16} align="middle">
-//                       <Col span={20}>
-//                         <Form.Item
-//                           {...restField}
-//                           name={[name, 'text']}
-//                           rules={[{ required: true, message: 'Please enter option text!' }]}
-//                         >
-//                           <Input placeholder={`Option ${name + 1}`} />
-//                         </Form.Item>
-//                       </Col>
-//                       <Col span={4}>
-//                         <Button
-//                           type="text"
-//                           icon={<MinusCircleOutlined />}
-//                           onClick={() => remove(name)}
-//                           danger
-//                           disabled={fields.length <= 2}
-//                         />
-//                       </Col>
-//                     </Row>
-//                   ))}
-//                   <Form.Item>
-//                     <Button
-//                       type="dashed"
-//                       onClick={() => add()}
-//                       icon={<PlusOutlined />}
-//                       disabled={fields.length >= 6}
-//                       className="w-full"
-//                     >
-//                       Add Option
-//                     </Button>
-//                   </Form.Item>
-//                 </>
-//               )}
-//             </Form.List>
-
-//             <Form.Item 
-//               name={[questionIndex, 'correctAnswer']} 
-//               label="Correct Answer(s)"
-//               rules={[{ required: true, message: 'Please select correct answer!' }]}
-//             >
-//               <Checkbox.Group>
-//                 {form.getFieldValue(['questions', questionIndex, 'options'])?.map((option: any, index: number) => (
-//                   <Checkbox key={index} value={index}>
-//                     Option {index + 1}
-//                   </Checkbox>
-//                 ))}
-//               </Checkbox.Group>
-//             </Form.Item>
-//           </>
-//         );
-
-//       case 'truefalse':
-//         return (
-//           <Form.Item 
-//             name={[questionIndex, 'correctAnswer']} 
-//             label="Correct Answer"
-//             rules={[{ required: true, message: 'Please select correct answer!' }]}
-//           >
-//             <Radio.Group>
-//               <Radio value="true">True</Radio>
-//               <Radio value="false">False</Radio>
-//             </Radio.Group>
-//           </Form.Item>
-//         );
-
-//       case 'fillblank':
-//         return (
-//           <Form.Item 
-//             name={[questionIndex, 'correctAnswer']} 
-//             label="Correct Answer"
-//             rules={[{ required: true, message: 'Please enter correct answer!' }]}
-//           >
-//             <Input placeholder="Enter the correct answer" />
-//           </Form.Item>
-//         );
-
-//       case 'shortanswer':
-//       case 'essay':
-//         return (
-//           <Form.Item 
-//             name={[questionIndex, 'correctAnswer']} 
-//             label="Sample Answer / Key Points"
-//             rules={[{ required: true, message: 'Please enter sample answer!' }]}
-//           >
-//             <TextArea 
-//               rows={4}
-//               placeholder="Enter sample answer or key points for evaluation" 
-//             />
-//           </Form.Item>
-//         );
-
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <>
-//       <PageHeader title={isEdit ? "Edit Questions" : "Create Questions"} backButton={true} />
-      
-//       <Card className="w-full mt-4 shadow-md">
-//         <Form
-//           form={form}
-//           layout="vertical"
-//           onFinish={handleFinish}
-//           className="font-local2"
-//           initialValues={{
-//             status: true
-//           }}
-//         >
-//           {/* Basic Information */}
-//           <Row gutter={24}>
-//             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//               <Form.Item
-//                 name="module"
-//                 label="Module"
-//                 rules={[{ required: true, message: 'Please select a module!' }]}
-//               >
-//                 <Select 
-//                   placeholder="Select module" 
-//                   size="large"
-//                   onChange={handleModuleChange}
-//                   options={moduleOptions}
-//                 />
-//               </Form.Item>
-//             </Col>
-//             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//               <Form.Item
-//                 name="course"
-//                 label="Course"
-//                 rules={[{ required: true, message: 'Please select a course!' }]}
-//               >
-//                 <Select 
-//                   placeholder="Select course" 
-//                   size="large"
-//                   disabled={!selectedModule}
-//                   onChange={handleCourseChange}
-//                   options={selectedModule ? courseOptions[selectedModule] : []}
-//                 />
-//               </Form.Item>
-//             </Col>
-//             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//               <Form.Item
-//                 name="subject"
-//                 label="Subject"
-//                 rules={[{ required: true, message: 'Please select a subject!' }]}
-//               >
-//                 <Select 
-//                   placeholder="Select subject" 
-//                   size="large"
-//                   disabled={!selectedCourse}
-//                   onChange={handleSubjectChange}
-//                   options={selectedCourse ? subjectOptions[selectedCourse] : []}
-//                 />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Row gutter={24}>
-//             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//               <Form.Item
-//                 name="textbook"
-//                 label="Textbook"
-//                 rules={[{ required: true, message: 'Please select a textbook!' }]}
-//               >
-//                 <Select 
-//                   placeholder="Select textbook" 
-//                   size="large"
-//                   disabled={!selectedSubject}
-//                   onChange={handleTextbookChange}
-//                   options={selectedSubject ? textbookOptions[selectedSubject] : []}
-//                 />
-//               </Form.Item>
-//             </Col>
-//             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//               <Form.Item
-//                 name="chapter"
-//                 label="Chapter"
-//                 rules={[{ required: true, message: 'Please select a chapter!' }]}
-//               >
-//                 <Select 
-//                   placeholder="Select chapter" 
-//                   size="large"
-//                   disabled={!selectedTextbook}
-//                   onChange={handleChapterChange}
-//                   options={selectedTextbook ? chapterOptions[selectedTextbook] : []}
-//                 />
-//               </Form.Item>
-//             </Col>
-//             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//               <Form.Item
-//                 name="status"
-//                 label="Status"
-//                 valuePropName="checked"
-//               >
-//                 <Switch
-//                   checkedChildren="Active"
-//                   unCheckedChildren="Inactive"
-//                   size="default"
-//                 />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Divider orientation="left">Questions</Divider>
-
-//           {/* Dynamic Questions */}
-//           <Form.List name="questions">
-//             {(fields, { add, remove }) => (
-//               <>
-//                 {fields.map(({ key, name, ...restField }) => (
-//                   <Card 
-//                     key={key} 
-//                     size="small" 
-//                     className="mb-4"
-//                     style={{ backgroundColor: '#f8f9fa' }}
-//                     title={`Question ${name + 1}`}
-//                     extra={
-//                       <Button
-//                         type="text"
-//                         icon={<MinusCircleOutlined />}
-//                         onClick={() => remove(name)}
-//                         danger
-//                       />
-//                     }
-//                   >
-//                     <Row gutter={16}>
-//                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//                         <Form.Item
-//                           {...restField}
-//                           name={[name, 'exercise']}
-//                           label="Exercise"
-//                           rules={[{ required: true, message: 'Please select exercise!' }]}
-//                         >
-//                           <Select 
-//                             placeholder="Select exercise"
-//                             disabled={!selectedChapter}
-//                             options={selectedChapter ? exerciseOptions[selectedChapter] : []}
-//                           />
-//                         </Form.Item>
-//                       </Col>
-//                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//                         <Form.Item
-//                           {...restField}
-//                           name={[name, 'questionType']}
-//                           label="Question Type"
-//                           rules={[{ required: true, message: 'Please select question type!' }]}
-//                         >
-//                           <Select placeholder="Select type">
-//                             <Option value="mcq">Multiple Choice (MCQ)</Option>
-//                             <Option value="truefalse">True/False</Option>
-//                             <Option value="fillblank">Fill in the Blank</Option>
-//                             <Option value="shortanswer">Short Answer</Option>
-//                             <Option value="essay">Essay</Option>
-//                           </Select>
-//                         </Form.Item>
-//                       </Col>
-//                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-//                         <Form.Item
-//                           {...restField}
-//                           name={[name, 'marks']}
-//                           label="Marks"
-//                           rules={[{ required: true, message: 'Please enter marks!' }]}
-//                         >
-//                           <InputNumber 
-//                             placeholder="Enter marks" 
-//                             style={{ width: "100%" }} 
-//                             min={1}
-//                             max={100}
-//                           />
-//                         </Form.Item>
-//                       </Col>
-//                     </Row>
-
-//                     <Row gutter={16}>
-//                       <Col span={24}>
-//                         <Form.Item
-//                           {...restField}
-//                           name={[name, 'question']}
-//                           label="Question (English)"
-//                           rules={[{ required: true, message: 'Please enter question!' }]}
-//                         >
-//                           <TextArea 
-//                             rows={3}
-//                             placeholder="Enter your question in English" 
-//                           />
-//                         </Form.Item>
-//                       </Col>
-//                     </Row>
-
-//                     <Row gutter={16}>
-//                       <Col span={20}>
-//                         <Form.Item
-//                           {...restField}
-//                           name={[name, 'image']}
-//                           label="Question Image (Optional)"
-//                         >
-//                           <Upload
-//                             listType="picture-card"
-//                             maxCount={1}
-//                             beforeUpload={() => false}
-//                           >
-//                             <div>
-//                               <UploadOutlined />
-//                               <div style={{ marginTop: 8 }}>Upload</div>
-//                             </div>
-//                           </Upload>
-//                         </Form.Item>
-//                       </Col>
-//                     </Row>
-
-//                     <Divider plain>Answer Options</Divider>
-                    
-//                     {/* Render question type specific fields */}
-//                     {renderQuestionTypeFields(
-//                       form.getFieldValue(['questions', name, 'questionType']),
-//                       name
-//                     )}
-//                   </Card>
-//                 ))}
-//                 <Form.Item>
-//                   <Button
-//                     type="dashed"
-//                     onClick={() => add()}
-//                     icon={<PlusOutlined />}
-//                     size="large"
-//                     className="w-full h-12"
-//                     style={{ maxWidth: '800px' }}
-//                   >
-//                     Add Question
-//                   </Button>
-//                 </Form.Item>
-//               </>
-//             )}
-//           </Form.List>
-
-//           {/* Action Buttons */}
-//           <Row justify="end" className="mt-6">
-//             <Space size="middle">
-//               <Button size="large" onClick={handleCancel}>
-//                 Cancel
-//               </Button>
-//               <Button
-//                 type="primary"
-//                 htmlType="submit"
-//                 size="large"
-//                 style={{ 
-//                   backgroundColor: "#007575", 
-//                   borderColor: "#007575" 
-//                 }}
-//               >
-//                 {isEdit ? "Update Questions" : "Create Questions"}
-//               </Button>
-//             </Space>
-//           </Row>
-//         </Form>
-//       </Card>
-//     </>
-//   );
-// };
-
-// export default QuestionForm;
 // @ts-nocheck
 import React from "react";
 import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, InputNumber, Radio, Checkbox, Upload } from "antd";
@@ -863,167 +212,66 @@ const QuestionForm = () => {
     return questions[id] || null;
   };
 
-  // Selector options (keeping existing structure)
-  const moduleOptions = [
-    { value: "Mathematics", label: "Mathematics" },
-    { value: "Computer Science", label: "Computer Science" },
-    { value: "English Literature", label: "English Literature" },
-    { value: "Banking & Finance", label: "Banking & Finance" },
-    { value: "UPSC Preparation", label: "UPSC Preparation" },
-    { value: "Digital Marketing", label: "Digital Marketing" },
+  // Selector options adapted to Class/Subject/Title/Chapter
+  const classOptions = [
+    { value: "0", label: "0" },
+    { value: "LKG", label: "LKG" },
+    { value: "UKG", label: "UKG" },
+    { value: "1", label: "1" },
+    { value: "2", label: "2" },
+    { value: "3", label: "3" },
+    { value: "4", label: "4" },
+    { value: "5", label: "5" },
+    { value: "6", label: "6" },
+    { value: "7", label: "7" },
+    { value: "8", label: "8" },
   ];
 
-  const courseOptions = {
-    "Mathematics": [
-      { value: "Advanced Algebra", label: "Advanced Algebra" },
-      { value: "Calculus", label: "Calculus" },
-      { value: "Statistics", label: "Statistics" }
-    ],
-    "Computer Science": [
-      { value: "Python Programming", label: "Python Programming" },
-      { value: "Data Science", label: "Data Science" },
-      { value: "Web Development", label: "Web Development" }
-    ],
-    "English Literature": [
-      { value: "Shakespeare Studies", label: "Shakespeare Studies" },
-      { value: "Modern Literature", label: "Modern Literature" },
-      { value: "Poetry Analysis", label: "Poetry Analysis" }
-    ],
-    "Banking & Finance": [
-      { value: "Financial Accounting", label: "Financial Accounting" },
-      { value: "Investment Banking", label: "Investment Banking" },
-      { value: "Corporate Finance", label: "Corporate Finance" }
-    ],
-    "UPSC Preparation": [
-      { value: "Indian Polity", label: "Indian Polity" },
-      { value: "Geography", label: "Geography" },
-      { value: "History", label: "History" }
-    ],
-    "Digital Marketing": [
-      { value: "Social Media Marketing", label: "Social Media Marketing" },
-      { value: "SEO Optimization", label: "SEO Optimization" },
-      { value: "Content Marketing", label: "Content Marketing" }
-    ]
-  };
+  // Independent options (no cascading)
+  const subjectOptions = [
+    { value: "Malayalam", label: "Malayalam" },
+    { value: "English", label: "English" },
+    { value: "Maths", label: "Maths" },
+    { value: "GK", label: "GK" },
+    { value: "Computer", label: "Computer" },
+    { value: "EVS", label: "EVS" },
+    { value: "Social Science", label: "Social Science" },
+    { value: "Science", label: "Science" }
+  ];
 
-  const subjectOptions = {
-    "Advanced Algebra": [
-      { value: "Advanced Calculus", label: "Advanced Calculus" },
-      { value: "Linear Algebra", label: "Linear Algebra" }
-    ],
-    "Python Programming": [
-      { value: "Data Structures & Algorithms", label: "Data Structures & Algorithms" },
-      { value: "Web Development with Python", label: "Web Development with Python" }
-    ],
-    "Shakespeare Studies": [
-      { value: "Shakespearean Literature", label: "Shakespearean Literature" },
-      { value: "Elizabethan Drama", label: "Elizabethan Drama" }
-    ],
-    "Financial Accounting": [
-      { value: "Corporate Finance", label: "Corporate Finance" },
-      { value: "Financial Management", label: "Financial Management" }
-    ],
-    "Indian Polity": [
-      { value: "Constitutional Law", label: "Constitutional Law" },
-      { value: "Governance and Administration", label: "Governance and Administration" }
-    ],
-    "Social Media Marketing": [
-      { value: "Social Media Strategy", label: "Social Media Strategy" },
-      { value: "Digital Brand Management", label: "Digital Brand Management" }
-    ]
-  };
+  const titleOptions = [
+    { value: "Algebra Basics", label: "Algebra Basics" },
+    { value: "Calculus", label: "Calculus" },
+    { value: "Mechanics", label: "Mechanics" },
+    { value: "Optics", label: "Optics" },
+    { value: "Organic Chemistry", label: "Organic Chemistry" },
+    { value: "Physical Chemistry", label: "Physical Chemistry" },
+    { value: "Human Anatomy", label: "Human Anatomy" },
+    { value: "Data Structures", label: "Data Structures" },
+    { value: "Algorithms", label: "Algorithms" }
+  ];
 
-  const textbookOptions = {
-    "Advanced Calculus": [
-      { value: "Calculus: Early Transcendentals", label: "Calculus: Early Transcendentals" },
-      { value: "Advanced Mathematical Methods", label: "Advanced Mathematical Methods" }
-    ],
-    "Data Structures & Algorithms": [
-      { value: "Introduction to Algorithms", label: "Introduction to Algorithms" },
-      { value: "Data Structures Using Python", label: "Data Structures Using Python" }
-    ],
-    "Shakespearean Literature": [
-      { value: "The Complete Works of William Shakespeare", label: "The Complete Works of William Shakespeare" },
-      { value: "Shakespeare: A Critical Study", label: "Shakespeare: A Critical Study" }
-    ],
-    "Corporate Finance": [
-      { value: "Principles of Corporate Finance", label: "Principles of Corporate Finance" },
-      { value: "Financial Management Theory & Practice", label: "Financial Management Theory & Practice" }
-    ],
-    "Constitutional Law": [
-      { value: "Indian Constitution by D.D. Basu", label: "Indian Constitution by D.D. Basu" },
-      { value: "Introduction to the Constitution of India", label: "Introduction to the Constitution of India" }
-    ],
-    "Social Media Strategy": [
-      { value: "Social Media Marketing Strategy Guide", label: "Social Media Marketing Strategy Guide" },
-      { value: "Digital Marketing Excellence", label: "Digital Marketing Excellence" }
-    ]
-  };
+  const chapterOptions = [
+    { value: "Chapter 1", label: "Chapter 1" },
+    { value: "Chapter 2", label: "Chapter 2" },
+    { value: "Chapter 3", label: "Chapter 3" },
+    { value: "Chapter 4", label: "Chapter 4" },
+    { value: "Chapter 5", label: "Chapter 5" },
+    { value: "Chapter 6", label: "Chapter 6" }
+  ];
 
-  const chapterOptions = {
-    "Calculus: Early Transcendentals": [
-      { value: "Linear Equations", label: "Linear Equations" },
-      { value: "Differentiation", label: "Differentiation" }
-    ],
-    "Introduction to Algorithms": [
-      { value: "Variables and Data Types", label: "Variables and Data Types" },
-      { value: "Arrays and Lists", label: "Arrays and Lists" }
-    ],
-    "The Complete Works of William Shakespeare": [
-      { value: "Hamlet Analysis", label: "Hamlet Analysis" },
-      { value: "Macbeth Study", label: "Macbeth Study" }
-    ],
-    "Principles of Corporate Finance": [
-      { value: "Financial Statements", label: "Financial Statements" },
-      { value: "Capital Budgeting", label: "Capital Budgeting" }
-    ],
-    "Indian Constitution by D.D. Basu": [
-      { value: "Fundamental Rights", label: "Fundamental Rights" },
-      { value: "Directive Principles", label: "Directive Principles" }
-    ],
-    "Social Media Marketing Strategy Guide": [
-      { value: "Content Strategy", label: "Content Strategy" },
-      { value: "Analytics and Metrics", label: "Analytics and Metrics" }
-    ]
-  };
+  // Exam Type options
+  const examTypeOptions = [
+    { value: "Unit Test", label: "Unit Test" },
+    { value: "1 Midterm", label: "1 Midterm" },
+    { value: "1 Term", label: "1 Term" },
+    { value: "2 Midterm", label: "2 Midterm" },
+    { value: "2 Term", label: "2 Term" },
+  ];
 
-  const exerciseOptions = {
-    "Linear Equations": [
-      { value: "Basic Linear Equations Practice", label: "Basic Linear Equations Practice" },
-      { value: "Word Problems in Linear Equations", label: "Word Problems in Linear Equations" },
-      { value: "Graphical Representation", label: "Graphical Representation" }
-    ],
-    "Variables and Data Types": [
-      { value: "Integer Operations", label: "Integer Operations" },
-      { value: "String Manipulation", label: "String Manipulation" },
-      { value: "Type Casting Practice", label: "Type Casting Practice" }
-    ],
-    "Hamlet Analysis": [
-      { value: "Hamlet Character Study", label: "Hamlet Character Study" },
-      { value: "Theme Analysis Essay", label: "Theme Analysis Essay" }
-    ],
-    "Financial Statements": [
-      { value: "Balance Sheet Analysis", label: "Balance Sheet Analysis" },
-      { value: "Income Statement Review", label: "Income Statement Review" },
-      { value: "Financial Ratios", label: "Financial Ratios" },
-      { value: "Cash Flow Analysis", label: "Cash Flow Analysis" }
-    ],
-    "Fundamental Rights": [
-      { value: "Article 19 Analysis", label: "Article 19 Analysis" },
-      { value: "Constitutional Amendments", label: "Constitutional Amendments" },
-      { value: "Case Studies", label: "Case Studies" }
-    ],
-    "Content Strategy": [
-      { value: "Content Planning", label: "Content Planning" },
-      { value: "Engagement Metrics", label: "Engagement Metrics" }
-    ]
-  };
+  // remove exercise feature – not needed anymore
 
-  const [selectedModule, setSelectedModule] = React.useState(null);
-  const [selectedCourse, setSelectedCourse] = React.useState(null);
-  const [selectedSubject, setSelectedSubject] = React.useState(null);
-  const [selectedTextbook, setSelectedTextbook] = React.useState(null);
-  const [selectedChapter, setSelectedChapter] = React.useState(null);
+  // No dependent selection state needed
 
   // Force re-render state for question type changes
   const [questionTypeChangeKey, setQuestionTypeChangeKey] = React.useState(0);
@@ -1042,39 +290,13 @@ const QuestionForm = () => {
     navigate('/questions');
   };
 
-  const handleModuleChange = (value: string) => {
-    setSelectedModule(value);
-    setSelectedCourse(null);
-    setSelectedSubject(null);
-    setSelectedTextbook(null);
-    setSelectedChapter(null);
-    form.setFieldsValue({ course: undefined, subject: undefined, textbook: undefined, chapter: undefined });
-  };
+  // Removed dependency handlers; selectors are independent now
 
-  const handleCourseChange = (value: string) => {
-    setSelectedCourse(value);
-    setSelectedSubject(null);
-    setSelectedTextbook(null);
-    setSelectedChapter(null);
-    form.setFieldsValue({ subject: undefined, textbook: undefined, chapter: undefined });
-  };
+  
 
-  const handleSubjectChange = (value: string) => {
-    setSelectedSubject(value);
-    setSelectedTextbook(null);
-    setSelectedChapter(null);
-    form.setFieldsValue({ textbook: undefined, chapter: undefined });
-  };
+  
 
-  const handleTextbookChange = (value: string) => {
-    setSelectedTextbook(value);
-    setSelectedChapter(null);
-    form.setFieldsValue({ chapter: undefined });
-  };
-
-  const handleChapterChange = (value: string) => {
-    setSelectedChapter(value);
-  };
+  
 
   // Handle question type change to force re-render
   const handleQuestionTypeChange = (questionIndex: number, questionType: string) => {
@@ -1092,17 +314,13 @@ const QuestionForm = () => {
     setQuestionTypeChangeKey(prev => prev + 1);
   };
 
-  // Set initial values if editing
+  // Set initial values if editing (mapping to new fields)
   React.useEffect(() => {
     if (isEdit && id) {
       const dummyData = getDummyData(id);
       if (dummyData) {
         form.setFieldsValue(dummyData);
-        setSelectedModule(dummyData.module);
-        setSelectedCourse(dummyData.course);
-        setSelectedSubject(dummyData.subject);
-        setSelectedTextbook(dummyData.textbook);
-        setSelectedChapter(dummyData.chapter);
+        // selectors are independent; no need to set selection state
       }
     }
   }, [form, isEdit, id]);
@@ -1175,20 +393,7 @@ const QuestionForm = () => {
           </div>
         );
 
-      case 'truefalse':
-        return (
-          <Form.Item 
-            key={`truefalse-${questionIndex}-${questionTypeChangeKey}`}
-            name={[questionIndex, 'correctAnswer']} 
-            label="Correct Answer"
-            rules={[{ required: true, message: 'Please select correct answer!' }]}
-          >
-            <Radio.Group>
-              <Radio value="true">True</Radio>
-              <Radio value="false">False</Radio>
-            </Radio.Group>
-          </Form.Item>
-        );
+      // remove true/false type
 
       case 'fillblank':
         return (
@@ -1232,6 +437,28 @@ const QuestionForm = () => {
           </Form.Item>
         );
 
+      case 'matching':
+        return (
+          <div key={`matching-${questionIndex}-${questionTypeChangeKey}`}>
+            <Form.Item 
+              name={[questionIndex, 'image']}
+              label="Upload Matching Image"
+              rules={[{ required: true, message: 'Please upload image for matching!' }]}
+            >
+              <Upload
+                listType="picture-card"
+                maxCount={1}
+                beforeUpload={() => false}
+              >
+                <div>
+                  <UploadOutlined />
+                  <div style={{ marginTop: 8 }}>Upload</div>
+                </div>
+              </Upload>
+            </Form.Item>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -1255,35 +482,21 @@ const QuestionForm = () => {
           <Row gutter={24}>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
-                name="module"
-                label="Module"
-                rules={[{ required: true, message: 'Please select a module!' }]}
+                required={false}
+                name="className"
+                label="Class"
+                rules={[{ required: true, message: 'Please select a class!' }]}
               >
                 <Select 
-                  placeholder="Select module" 
+                  placeholder="Select class" 
                   size="large"
-                  onChange={handleModuleChange}
-                  options={moduleOptions}
+                  options={classOptions}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
-                name="course"
-                label="Course"
-                rules={[{ required: true, message: 'Please select a course!' }]}
-              >
-                <Select 
-                  placeholder="Select course" 
-                  size="large"
-                  disabled={!selectedModule}
-                  onChange={handleCourseChange}
-                  options={selectedModule ? courseOptions[selectedModule] : []}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
+              required={false}
                 name="subject"
                 label="Subject"
                 rules={[{ required: true, message: 'Please select a subject!' }]}
@@ -1291,9 +504,21 @@ const QuestionForm = () => {
                 <Select 
                   placeholder="Select subject" 
                   size="large"
-                  disabled={!selectedCourse}
-                  onChange={handleSubjectChange}
-                  options={selectedCourse ? subjectOptions[selectedCourse] : []}
+                  options={subjectOptions}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+              <Form.Item
+              required={false}
+                name="title"
+                label="Title"
+                rules={[{ required: true, message: 'Please select a title!' }]}
+              >
+                <Select 
+                  placeholder="Select title" 
+                  size="large"
+                  options={titleOptions}
                 />
               </Form.Item>
             </Col>
@@ -1302,21 +527,7 @@ const QuestionForm = () => {
           <Row gutter={24}>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
-                name="textbook"
-                label="Textbook"
-                rules={[{ required: true, message: 'Please select a textbook!' }]}
-              >
-                <Select 
-                  placeholder="Select textbook" 
-                  size="large"
-                  disabled={!selectedSubject}
-                  onChange={handleTextbookChange}
-                  options={selectedSubject ? textbookOptions[selectedSubject] : []}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
+              required={false}
                 name="chapter"
                 label="Chapter"
                 rules={[{ required: true, message: 'Please select a chapter!' }]}
@@ -1324,25 +535,25 @@ const QuestionForm = () => {
                 <Select 
                   placeholder="Select chapter" 
                   size="large"
-                  disabled={!selectedTextbook}
-                  onChange={handleChapterChange}
-                  options={selectedTextbook ? chapterOptions[selectedTextbook] : []}
+                  options={chapterOptions}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
-                name="status"
-                label="Status"
-                valuePropName="checked"
+              required={false}
+                name="examType"
+                label="Exam Type"
+                rules={[{ required: true, message: 'Please select an exam type!' }]}
               >
-                <Switch
-                  checkedChildren="Active"
-                  unCheckedChildren="Inactive"
-                  size="default"
+                <Select 
+                  placeholder="Select exam type" 
+                  size="large"
+                  options={examTypeOptions}
                 />
               </Form.Item>
             </Col>
+           
           </Row>
 
           <Divider orientation="left">Questions</Divider>
@@ -1370,20 +581,7 @@ const QuestionForm = () => {
                     <Row gutter={16}>
                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                         <Form.Item
-                          {...restField}
-                          name={[name, 'exercise']}
-                          label="Exercise"
-                          rules={[{ required: true, message: 'Please select exercise!' }]}
-                        >
-                          <Select 
-                            placeholder="Select exercise"
-                            disabled={!selectedChapter}
-                            options={selectedChapter ? exerciseOptions[selectedChapter] : []}
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                        <Form.Item
+                         required={false}
                           {...restField}
                           name={[name, 'questionType']}
                           label="Question Type"
@@ -1394,15 +592,16 @@ const QuestionForm = () => {
                             onChange={(value) => handleQuestionTypeChange(name, value)}
                           >
                             <Option value="mcq">Multiple Choice (MCQ)</Option>
-                            <Option value="truefalse">True/False</Option>
                             <Option value="fillblank">Fill in the Blank</Option>
                             <Option value="shortanswer">Short Answer</Option>
                             <Option value="essay">Essay</Option>
+                            <Option value="matching">Matching</Option>
                           </Select>
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                         <Form.Item
+                        required={false}
                           {...restField}
                           name={[name, 'marks']}
                           label="Marks"
@@ -1421,6 +620,7 @@ const QuestionForm = () => {
                     <Row gutter={16}>
                       <Col span={24}>
                         <Form.Item
+                        required={false}
                           {...restField}
                           name={[name, 'question']}
                           label="Question (English)"
@@ -1434,26 +634,7 @@ const QuestionForm = () => {
                       </Col>
                     </Row>
 
-                    <Row gutter={16}>
-                      <Col span={20}>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'image']}
-                          label="Question Image (Optional)"
-                        >
-                          <Upload
-                            listType="picture-card"
-                            maxCount={1}
-                            beforeUpload={() => false}
-                          >
-                            <div>
-                              <UploadOutlined />
-                              <div style={{ marginTop: 8 }}>Upload</div>
-                            </div>
-                          </Upload>
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                    {/* Image upload is rendered only for Matching type inside type-specific renderer */}
 
                     <Divider plain>Answer Options</Divider>
                     

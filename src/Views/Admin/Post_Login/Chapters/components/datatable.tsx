@@ -447,7 +447,7 @@
 // export default SubjectDatatable;
 // @ts-nocheck
 import React from "react";
-import { Table, Tag, Button, Popconfirm, Switch } from "antd";
+import { Table, Tag, Button, Popconfirm, Popover } from "antd";
 import { FaEdit, FaRegEye } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 
@@ -456,166 +456,90 @@ const SubjectDatatable = ({ onEdit, onDelete, onView }) => {
     {
       key: "1",
       id: 1,
-      subjectName: "Advanced Calculus",
-      module: "Mathematics",
-      course: "Advanced Algebra",
-      description: "Comprehensive study of differential and integral calculus with real-world applications",
-      type: "Public",
-      textbooks: [
-        { textbookName: "Calculus: Early Transcendentals" },
-        { textbookName: "Advanced Mathematical Methods" },
-        { textbookName: "Linear Algebra and Its Applications" }
-      ],
-      status: true
+      title: "Numbers Workbook",
+      subject: "Maths",
+      class: "1",
+      chapters: ["Counting", "Addition", "Subtraction", "Shapes", "Patterns"],
+      
     },
     {
       key: "2",
       id: 2,
-      subjectName: "Data Structures & Algorithms",
-      module: "Computer Science",
-      course: "Python Programming",
-      description: "Introduction to fundamental data structures and algorithm design patterns",
-      type: "Public",
-      textbooks: [
-        { textbookName: "Introduction to Algorithms" },
-        { textbookName: "Data Structures Using Python" }
-      ],
-      status: true
+      title: "Alphabets Fun",
+      subject: "English",
+      class: "LKG",
+      chapters: ["A to E", "F to J", "K to O", "P to T", "U to Z"],
+      
     },
     {
       key: "3",
       id: 3,
-      subjectName: "Shakespearean Literature",
-      module: "English Literature",
-      course: "Shakespeare Studies",
-      description: "In-depth analysis of Shakespeare's major tragedies, comedies, and historical plays",
-      type: "Private",
-      textbooks: [
-        { textbookName: "The Complete Works of William Shakespeare" },
-        { textbookName: "Shakespeare: A Critical Study" }
-      ],
-      status: false
+      title: "My First GK",
+      subject: "GK",
+      class: "UKG",
+      chapters: ["Animals", "Fruits", "Vehicles"]
     },
     {
       key: "4",
       id: 4,
-      subjectName: "Corporate Finance",
-      module: "Banking & Finance",
-      course: "Financial Accounting",
-      description: "Advanced concepts in corporate financial management and investment analysis",
-      type: "Public",
-      textbooks: [
-        { textbookName: "Principles of Corporate Finance" },
-        { textbookName: "Financial Management Theory & Practice" },
-        { textbookName: "Investment Analysis and Portfolio Management" }
-      ],
-      status: true
-    },
-    {
-      key: "5",
-      id: 5,
-      subjectName: "Constitutional Law",
-      module: "UPSC Preparation",
-      course: "Indian Polity",
-      description: "Comprehensive study of Indian Constitution, fundamental rights, and governance",
-      type: "Public",
-      textbooks: [
-        { textbookName: "Indian Constitution by D.D. Basu" },
-        { textbookName: "Introduction to the Constitution of India" }
-      ],
-      status: true
-    },
-    {
-      key: "6",
-      id: 6,
-      subjectName: "Social Media Strategy",
-      module: "Digital Marketing",
-      course: "Social Media Marketing",
-      description: "Strategic approach to social media marketing and brand engagement",
-      type: "Private",
-      textbooks: [
-        { textbookName: "Social Media Marketing Strategy Guide" },
-        { textbookName: "Digital Marketing Excellence" }
-      ],
-      status: false
+      title: "Basics of Computing",
+      subject: "Computer",
+      class: "3",
+      chapters: ["What is a Computer?", "Input/Output Devices", "Using Mouse", "Typing Basics"]
     }
   ];
 
   const columns: any[] = [
     {
-      title: <span className="font-semibold">Subject Name</span>,
-      dataIndex: "subjectName",
-      key: "subjectName",
-      width: 200,
-      render: (name: string) => <span className="font-local2 font-semibold">{name}</span>
+      title: <span className="font-semibold">Title</span>,
+      dataIndex: "title",
+      key: "title",
+      width: 220,
+      render: (title: string) => <span className="font-local2 font-semibold">{title}</span>
     },
     {
-      title: <span className="font-semibold">Module</span>,
-      dataIndex: "module",
-      key: "module",
-      width: 150,
-      render: (module: string) => <span className="font-local2 text-purple-600">{module}</span>
+      title: <span className="font-semibold">Subject</span>,
+      dataIndex: "subject",
+      key: "subject",
+      width: 140,
+      render: (subject: string) => <Tag color="blue" className="font-local2 bg-blue-100">{subject}</Tag>
     },
     {
-      title: <span className="font-semibold">Course</span>,
-      dataIndex: "course",
-      key: "course",
-      width: 160,
-      render: (course: string) => <span className="font-local2 text-blue-600">{course}</span>
-    },
-    {
-      title: <span className="font-semibold">Description</span>,
-      dataIndex: "description",
-      key: "description",
-      width: 250,
-      render: (description: string) => (
-        <span className="font-local2 text-gray-600">
-          {description.length > 50 ? `${description.substring(0, 50)}...` : description}
-        </span>
-      )
-    },
-    {
-      title: <span className="font-semibold">Type</span>,
-      dataIndex: "type",
-      key: "type",
+      title: <span className="font-semibold">Class</span>,
+      dataIndex: "class",
+      key: "class",
       width: 100,
-      render: (type: string) => {
-        const color = type === "Public" ? "green" : "orange";
-        const bgColor = type === "Public" ? "bg-green-100" : "bg-orange-100";
-        
-        return (
-          <Tag color={color} className={`font-local2 ${bgColor}`}>
-            {type}
-          </Tag>
+      render: (cls: string) => <Tag className="font-local2 bg-gray-100">{cls}</Tag>
+    },
+    {
+      title: <span className="font-semibold">Chapters</span>,
+      dataIndex: "chapters",
+      key: "chapters",
+      width: 260,
+      render: (chapters: string[]) => {
+        const maxInline = 2;
+        const hasMore = chapters.length > maxInline;
+        const inline = chapters.slice(0, maxInline);
+        const content = (
+          <div className="max-w-xs">
+            {chapters.map((ch, idx) => (
+              <Tag key={idx} className="mb-1 font-local2" color="purple">{ch}</Tag>
+            ))}
+          </div>
         );
-      },
-    },
-    {
-      title: <span className="font-semibold">Textbooks</span>,
-      dataIndex: "textbooks",
-      key: "textbooks",
-      width: 100,
-      render: (textbooks: any[]) => (
-        <span className="font-local2 font-semibold text-purple-600">
-          {textbooks?.length || 0}
-        </span>
-      )
-    },
-    {
-      title: <span className="font-semibold">Status</span>,
-      dataIndex: "status",
-      key: "status",
-      width: 100,
-      render: (status: boolean) => {
-        const color = status ? "green" : "red";
-        const bgColor = status ? "bg-green-100" : "bg-red-100";
-        
         return (
-          <Tag color={color} className={`font-local2 ${bgColor}`}>
-            {status ? "Active" : "Inactive"}
-          </Tag>
+          <div className="flex items-center gap-1 flex-wrap">
+            {inline.map((ch, idx) => (
+              <Tag key={idx} className="font-local2" color="purple">{ch}</Tag>
+            ))}
+            {hasMore && (
+              <Popover content={content} title="All Chapters">
+                <Tag className="cursor-pointer font-local2" color="default">+{chapters.length - maxInline} more</Tag>
+              </Popover>
+            )}
+          </div>
         );
-      },
+      }
     },
     {
       title: <span className="font-semibold">Actions</span>,

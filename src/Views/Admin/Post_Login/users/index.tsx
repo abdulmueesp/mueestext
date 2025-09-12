@@ -1,123 +1,63 @@
 // @ts-nocheck
 import { useState } from "react";
-import { Button, Table, Tag, Avatar, Input, Modal, Select } from "antd";
-import { FaRegEye, FaUserGraduate, FaChalkboardTeacher, FaUsers, FaUserCircle, FaEdit } from "react-icons/fa";
-import { IoIosSearch, IoMdRefresh } from "react-icons/io";
-import { useNavigate } from "react-router-dom";
+import { Button, Table, Tag, Input, Modal, Select, Form, Input as AntInput, Popconfirm, message } from "antd";
+import { FaUserCircle, FaEdit, FaPlus, FaEye, FaEyeSlash } from "react-icons/fa";
+import { IoIosSearch } from "react-icons/io";
+import { MdDeleteOutline } from "react-icons/md";
 import PageHeader from "../../../../Components/common/PageHeader";
-import { message } from "../../../../Components/common/message/message";
 
 const UsersTable = () => {
-  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newStatus, setNewStatus] = useState("");
+  const [form] = Form.useForm();
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
-  // Dummy data for users with and without subscription details
-  const data: any[] = [
+  // Dummy data for users
+  const [data, setData] = useState<any[]>([
     {
       key: "1",
       id: 1,
-      username: "John Smith",
-      type: "Student",
-      email: "john.smith@email.com",
-      phoneNumber: "+91 98765 43210",
-      status: "Active",
-      subscription: {
-        type: "Premium",
-        rate: "249",
-        papers: 150,
-        validity: "1 Year",
-        status: "Active",
-        offerRate: "199",
-        attempts: 15
-      },
-      joinDate: "2024-01-15",
-      lastLogin: "2024-03-20"
+      username: "admin1",
+      password: "admin123",
+      type: "Admin",
+      status: "Active"
     },
     {
       key: "2",
       id: 2,
-      username: "Sarah Johnson",
-      type: "Teacher",
-      email: "sarah.johnson@email.com",
-      phoneNumber: "+91 87654 32109",
-      status: "Active",
-      subscription: null, // No subscription
-      joinDate: "2023-08-20",
-      lastLogin: "2024-03-19"
+      username: "user1",
+      password: "user123",
+      type: "User",
+      status: "Active"
     },
     {
       key: "3",
       id: 3,
-      username: "Mike Wilson",
-      type: "Parent",
-      email: "mike.wilson@email.com",
-      phoneNumber: "+91 76543 21098",
-      status: "Active",
-      subscription: {
-        type: "Basic",
-        rate: "150",
-        papers: 75,
-        validity: "4 Months",
-        status: "Active",
-        offerRate: "120",
-        attempts: 8
-      },
-      joinDate: "2024-02-10",
-      lastLogin: "2024-03-18"
+      username: "user2",
+      password: "user456",
+      type: "User",
+      status: "Active"
     },
     {
       key: "4",
       id: 4,
-      username: "Emily Davis",
-      type: "Student",
-      email: "emily.davis@email.com",
-      phoneNumber: "+91 65432 10987",
-      status: "Inactive",
-      subscription: null, // No subscription
-      joinDate: "2023-12-05",
-      lastLogin: "2024-02-15"
+      username: "user4",
+      password: "user456",
+      type: "User",
+      status: "Inactive"
     },
     {
       key: "5",
       id: 5,
-      username: "David Brown",
-      type: "Teacher",
-      email: "david.brown@email.com",
-      phoneNumber: "+91 54321 09876",
-      status: "Active",
-      subscription: {
-        type: "Pro",
-        rate: "900",
-        papers: 50,
-        validity: "3 Months",
-        status: "Active",
-        offerRate: "750",
-        attempts: 5
-      },
-      joinDate: "2023-06-12",
-      lastLogin: "2024-03-20"
-    },
-    {
-      key: "6",
-      id: 6,
-      username: "Lisa Anderson",
-      type: "Student",
-      email: "lisa.anderson@email.com",
-      phoneNumber: "+91 43210 98765",
-      status: "Active",
-      subscription: null, // No subscription
-      joinDate: "2024-03-01",
-      lastLogin: "2024-03-20"
+      username: "user5",
+      password: "user789",
+      type: "User",
+      status: "Active"
     }
-  ];
-
-  // Handle View Click - Navigate to detail page
-  const handleView = (record: any) => {
-    navigate(`/detail/${record.id}`);
-  };
+  ]);
 
   // Handle Edit Click - Open modal
   const handleEdit = (record: any) => {
@@ -133,14 +73,50 @@ const UsersTable = () => {
       user.id === selectedUser.id 
         ? { ...user, status: newStatus }
         : user
-    ) 
+    );
+    setData(updatedData);
+    
     // Show success message
-    message.success(`status updated successfully!`);
+    message.success(`Status updated successfully!`);
     
     // Close modal and reset state
     setIsEditModalOpen(false);
     setSelectedUser(null);
     setNewStatus("");
+  };
+
+  // Handle create user
+  const handleCreateUser = () => {
+    form.validateFields().then((values) => {
+      const newUser = {
+        key: (data.length + 1).toString(),
+        id: data.length + 1,
+        username: values.username,
+        password: values.password,
+        type: "Admin",
+        status: "Active"
+      };
+      
+      setData([...data, newUser]);
+      message.success("User created successfully!");
+      setIsCreateModalOpen(false);
+      form.resetFields();
+    });
+  };
+
+  // Handle delete user
+  const handleDelete = (userId: number) => {
+    const updatedData = data.filter(user => user.id !== userId);
+    setData(updatedData);
+    message.success("User deleted successfully!");
+  };
+
+  // Toggle password visibility
+  const togglePasswordVisibility = (userId: number) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
   };
 
   // Handle search
@@ -157,12 +133,10 @@ const UsersTable = () => {
 
   const getUserTypeColor = (type: string) => {
     switch (type) {
-      case "Student":
+      case "Admin":
+        return "red";
+      case "User":
         return "blue";
-      case "Teacher":
-        return "green";
-      case "Parent":
-        return "purple";
       default:
         return "default";
     }
@@ -170,16 +144,32 @@ const UsersTable = () => {
 
   const columns: any[] = [
     {
-      title: <span className="font-semi">User</span>,
-      key: "user",
+      title: <span className="font-semi">Username</span>,
+      dataIndex: "username",
+      key: "username",
+      width: 150,
+      render: (username: string) => (
+        <div className="font-local2 text-gray-500">{username}</div>
+      ),
+    },
+    {
+      title: <span className="font-semi">Password</span>,
+      dataIndex: "password",
+      key: "password",
       width: 200,
-      render: (_, record: any) => (
-        <div className="flex items-center gap-3">
-          <FaUserCircle size={30} color="gray" />
-          <div>
-            <div className="font-local2 font-semibold text-gray-900">{record.username}</div>
-            <div className="text-xs text-gray-500">ID: {record.id}</div>
+      render: (password: string, record: any) => (
+        <div className="flex items-center gap-2">
+          <div className="font-local2 text-gray-500">
+            {visiblePasswords[record.id] ? password : "••••••••"}
           </div>
+          <Button
+            type="link"
+            icon={visiblePasswords[record.id] ? <FaEyeSlash color="black" size={14} /> : <FaEye color="black" size={14} />}
+            size="small"
+            onClick={() => togglePasswordVisibility(record.id)}
+            title={visiblePasswords[record.id] ? "Hide password" : "Show password"}
+            className="p-0 h-auto min-w-0"
+          />
         </div>
       ),
     },
@@ -189,23 +179,9 @@ const UsersTable = () => {
       key: "type",
       width: 120,
       render: (type: string) => (
-        <div className="flex items-center gap-2">
-        
-          <Tag color={getUserTypeColor(type)} className="font-local2">
-            {type}
-          </Tag>
-        </div>
-      ),
-    },
-    {
-      title: <span className="font-semi">Contact</span>,
-      key: "contact",
-      width: 250,
-      render: (_, record: any) => (
-        <div className="space-y-1">
-          <div className="font-local2 text-gray-900">{record.email}</div>
-          <div className="text-sm text-gray-600">{record.phoneNumber}</div>
-        </div>
+        <Tag color={getUserTypeColor(type)} className="font-local2">
+          {type}
+        </Tag>
       ),
     },
     {
@@ -225,16 +201,9 @@ const UsersTable = () => {
     {
       title: <span className="font-semi">Actions</span>,
       key: "actions",
-      width: 150,
+      width: 100,
       render: (_: any, record: any) => (
         <div className="flex items-center gap-2">
-          <Button
-            type="link"
-            icon={<FaRegEye color="black" size={18} />}
-            size="small"
-            onClick={() => handleView(record)}
-            title="View Details"
-          />
           <Button
             type="link"
             icon={<FaEdit color="orange" size={18} />}
@@ -242,6 +211,19 @@ const UsersTable = () => {
             onClick={() => handleEdit(record)}
             title="Edit Status"
           />
+          <Popconfirm
+            title="Are you sure you want to delete this user?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button
+              type="link"
+              icon={<MdDeleteOutline size={18} color="red" />}
+              size="small"
+              title="Delete User"
+            />
+          </Popconfirm>
         </div>
       ),
     },
@@ -251,9 +233,9 @@ const UsersTable = () => {
     <>
       <PageHeader title="Users" backButton={true}>
         <div className="flex items-center gap-3 w-full">
-          <div className="flex-1 max-w-xs sm:max-w-md">
+          <div className="flex-1 max-w-sm sm:max-w-lg">
             <Input
-              placeholder="Search by name"
+              placeholder="Search by username"
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
@@ -265,15 +247,13 @@ const UsersTable = () => {
               }}
             />
           </div>
-          <div className="hidden sm:block">
-            <Button
-              type="text"
-              icon={<IoMdRefresh color="white"/>}
-              onClick={handleRefresh}
-              className="flex items-center bg-primary justify-center w-10 h-8 border border-gray-300 rounded-lg  "
-              title="Refresh"
-            />
-          </div>
+          <Button
+            type="primary"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2 hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999]"
+          >
+            Create
+          </Button>
         </div>
       </PageHeader>
 
@@ -328,7 +308,7 @@ const UsersTable = () => {
             </div>
             
             <div className="space-y-2">
-              <label className="font-local2 font-medium text-gray-700">Current Status:</label>
+              <label className="font-local2 font-medium text-gray-700 mr-1">Current Status:</label>
               <Tag 
                 color={selectedUser.status === "Active" ? "green" : "red"} 
                 className="font-local2"
@@ -358,6 +338,57 @@ const UsersTable = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Create User Modal */}
+      <Modal
+        title="Create New User"
+        open={isCreateModalOpen}
+        onOk={handleCreateUser}
+        onCancel={() => {
+          setIsCreateModalOpen(false);
+          form.resetFields();
+        }}
+        okText="Create"
+        cancelText="Cancel"
+        centered
+        okButtonProps={{
+          style: {
+            backgroundColor: "#007575",
+            borderColor: "#007575",
+          },
+        }}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          className="font-local2"
+        >
+          <Form.Item
+          required={false}
+            label="Username"
+            name="username"
+            rules={[{ required: true, message: 'Please enter username' }]}
+          >
+            <AntInput placeholder="Enter username" />
+          </Form.Item>
+
+          <Form.Item
+          required={false}
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: 'Please enter password' }]}
+          >
+            <AntInput.Password placeholder="Enter password" />
+          </Form.Item>
+
+
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-600">
+              <strong>Note:</strong> New users will be created as "Admin" with "Active" status by default.
+            </p>
+          </div>
+        </Form>
       </Modal>
     </>
   );

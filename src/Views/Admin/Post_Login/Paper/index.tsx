@@ -251,20 +251,42 @@ const Paper = () => {
   const applyRandomGeneration = () => {
     // Build a selection using available pool per type
     const next: Record<string, number> = {};
+    let totalGeneratedMarks = 0;
+    
+    // First, check if we have enough questions in the pool for each type
+    for (const t of selectedTypes) {
+      const pool = allQuestions.filter(q => q.type === t);
+      const cfg = randomConfig[t];
+      
+      if (pool.length < cfg.count) {
+        Modal.warning({
+          title: 'Insufficient Questions',
+          content: `Not enough ${t} questions available. Required: ${cfg.count}, Available: ${pool.length}. Please reduce the count or add more questions.`,
+          okText: 'OK'
+        });
+        return;
+      }
+    }
+    
+    // Generate questions for each type
     selectedTypes.forEach(t => {
       const pool = allQuestions.filter(q => q.type === t);
       const cfg = randomConfig[t];
+      
+      // Shuffle the pool to get random selection
+      const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
+      
       let picked = 0;
-      for (let i = 0; i < pool.length && picked < cfg.count; i++) {
-        const q = pool[i];
+      for (let i = 0; i < shuffledPool.length && picked < cfg.count; i++) {
+        const q = shuffledPool[i];
         next[q.id] = cfg.marks;
+        totalGeneratedMarks += cfg.marks;
         picked++;
       }
     });
-    const sum = Object.values(next).reduce((a, b) => a + (Number(b) || 0), 0);
     
     // Check if total marks exceed the configured total marks
-    if (totalMarksField && sum > totalMarksField) {
+    if (totalMarksField && totalGeneratedMarks > totalMarksField) {
       Modal.warning({
         title: 'Total marks exceeded',
         content: 'Randomly generated questions exceed Total Mark. Reduce counts or marks.',
@@ -273,10 +295,10 @@ const Paper = () => {
     }
     
     // Check if total marks don't match the configured total marks exactly
-    if (totalMarksField && sum !== totalMarksField) {
+    if (totalMarksField && totalGeneratedMarks !== totalMarksField) {
       Modal.warning({
         title: 'Total marks mismatch',
-        content: `Generated questions total marks (${sum}) does not match the configured total marks (${totalMarksField}). Please adjust the count or marks per question to match exactly.`,
+        content: `Generated questions total marks (${totalGeneratedMarks}) does not match the configured total marks (${totalMarksField}). Please adjust the count or marks per question to match exactly.`,
         okText: 'OK'
       });
       return;
@@ -285,7 +307,6 @@ const Paper = () => {
     setSelectedQuestions(next);
     setLockedAfterRandom(true);
     setRandomOpen(false);
- 
   };
 
   const resetLockedState = () => {
@@ -343,9 +364,9 @@ const Paper = () => {
       .map(type => `
         <div class="section">
           <div class="section-title">Section: ${type}</div>
-          ${organizedQuestions[type].map(({ question, marks, globalNumber }) => `
+          ${organizedQuestions[type].map(({ question, marks }, sectionIndex) => `
             <div class="question">
-              <div class="question-no">${globalNumber}.</div>
+              <div class="question-no">${sectionIndex + 1}.</div>
               <div class="question-content">
                 <div class="question-text">${question.text}</div>
                 ${question.type === 'Matching' && question.imageUrl ? `
@@ -660,10 +681,10 @@ const Paper = () => {
                   Section: {type}
                 </h3>
                 <div className="space-y-3">
-                  {questionsOfType.map(({ question, marks, globalNumber }) => (
+                  {questionsOfType.map(({ question, marks }, sectionIndex) => (
                     <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded">
                       <div className="flex gap-3 flex-1">
-                        <span className="font-semibold min-w-[30px]">{globalNumber}.</span>
+                        <span className="font-semibold min-w-[30px]">{sectionIndex + 1}.</span>
                         <div className="flex-1">
                           <div>{question.text}</div>
                           {question.type === 'Matching' && question.imageUrl && (
@@ -698,26 +719,42 @@ const Paper = () => {
       >
         <div className="space-y-4 font-local2">
           <div className="text-sm text-gray-600">Set how many questions of each selected type to add and the marks per question. After generation, editing will be locked.</div>
-          {selectedTypes.map(t => (
-            <Card key={t} className="border border-gray-200">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-gray-800 font-medium">{t}</div>
-                  <div className="text-xs text-gray-500">Configure count and marks</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="flex items-center gap-2">
-                    <Text type="secondary" className="text-xs">Count</Text>
-                    <InputNumber min={0} max={50} value={randomConfig[t].count} onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], count: Number(v) || 0 } }))} />
+          {selectedTypes.map(t => {
+            const availableCount = allQuestions.filter(q => q.type === t).length;
+            const isExceedingAvailable = randomConfig[t].count > availableCount;
+            
+            return (
+              <Card key={t} className={`border ${isExceedingAvailable ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-gray-800 font-medium">{t}</div>
+                    <div className="text-xs text-gray-500">
+                      Configure count and marks
+                      {isExceedingAvailable && (
+                        <span className="text-red-500 ml-1">(Max available: {availableCount})</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Text type="secondary" className="text-xs">Marks</Text>
-                    <InputNumber min={1} max={100} value={randomConfig[t].marks} onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], marks: Number(v) || 1 } }))} />
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <Text type="secondary" className="text-xs">Count</Text>
+                      <InputNumber 
+                        min={0} 
+                        max={availableCount} 
+                        value={randomConfig[t].count} 
+                        onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], count: Number(v) || 0 } }))}
+                        status={isExceedingAvailable ? 'error' : undefined}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Text type="secondary" className="text-xs">Marks</Text>
+                      <InputNumber min={1} max={100} value={randomConfig[t].marks} onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], marks: Number(v) || 1 } }))} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
           <Divider className="my-2" />
           <div className="space-y-2">
             <div className="text-gray-700 text-sm">Total Mark limit: {totalMarksField || '-'}</div>

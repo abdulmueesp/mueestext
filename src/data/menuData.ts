@@ -13,13 +13,7 @@ import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 import { AiOutlineProject } from "react-icons/ai";
 
 export const menuData = {  admin: [
-    { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
-    {
-      id: "subscription",
-      icon: BiCreditCard,
-      label: "Subscription",
-      path: "/subscription",
-    },
+       
     { id: "users", icon: LuUsersRound, label: "Users", path: "/users" },
     {
       id: "examgen",
@@ -28,28 +22,16 @@ export const menuData = {  admin: [
       path: "/examboard",
     },
     {
-      id: "modules",
+      id: "Books",
       icon: AiOutlineProfile,
-      label: "Modules",
-      path: "/modules",
-    },
-    {
-      id: "courses",
-      icon: AiOutlineFileText,
-      label: "Courses",
-      path: "/courses",
-    },
-    {
-      id: "subjects",
-      icon: AiOutlineProject,
-      label: "Subjects",
-      path: "/subjects",
+      label: "Books",
+      path: "/books",
     },
     {
       id: "Chapters",
       icon: AiOutlineRead,
       label: "Chapters",
-      path: "/Chapters",
+      path: "/chapters",
     },
     {
       id: "questions",

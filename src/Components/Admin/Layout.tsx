@@ -65,36 +65,25 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
   const handleLogout = () => {
     dispatch(logout());
     onLogout();
+    // Navigate to root path after logout
+    navigate('/', { replace: true });
   };
 
   // Group menu items by sections
   const getMenuSections = () => {
     if (role === 'admin') {
-      return [
+      return [  
         {
-          title: "Overview",
-          items: menuItems.filter(item => ['dashboard'].includes(item.id))
-        },
+          title: "Exam Management",
+          items: menuItems.filter(item => ['examgen', 'Books', 'courses', 'Chapters', 'questions','Chapters'].includes(item.id))
+        },  
         {
           title: "User Management",
           items: menuItems.filter(item => ['users'].includes(item.id))
         },
-        {
-          title: "Exam Management",
-          items: menuItems.filter(item => ['examgen', 'modules', 'courses', 'subjects', 'questions','Chapters'].includes(item.id))
-        },
-        {
-          title: "Plans",
-          items: menuItems.filter(item => ['subscription'].includes(item.id))
-        },
-        {
-          title: "Account",
-          items: menuItems.filter(item => ['settings'].includes(item.id))
-        }
       ];
     } else if (role === 'user') {
       return [
-       
         {
           title: "EXAMS",
           items: menuItems.filter(item => ['Create Paper', 'My Papers'].includes(item.id))

@@ -40,7 +40,7 @@ const ChaptersT = () => {
 
   return (
     <>
-      <PageHeader title="Chapters" backButton={true}>
+      <PageHeader title="Chapters muees" backButton={true}>
         <Select
           placeholder="Filter by Module"
           allowClear
