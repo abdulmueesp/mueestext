@@ -110,13 +110,13 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
       width: 140,
       render: (value: string) => <span className="font-local2 text-indigo-600 font-semibold">{value}</span>
     },
-    {
-      title: <span className="font-semibold">Exam Type</span>,
-      dataIndex: "examType",
-      key: "examType",
-      width: 140,
-      render: (value: string) => <span className="font-local2 text-blue-600">{value}</span>
-    },
+    // {
+    //   title: <span className="font-semibold">Exam Type</span>,
+    //   dataIndex: "examType",
+    //   key: "examType",
+    //   width: 140,
+    //   render: (value: string) => <span className="font-local2 text-blue-600">{value}</span>
+    // },
    
     {
       title: <span className="font-semibold">Total Questions</span>,

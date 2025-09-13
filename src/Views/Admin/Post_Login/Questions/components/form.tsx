@@ -531,7 +531,7 @@ const QuestionForm = () => {
                 />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+            {/* <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
               required={false}
                 name="examType"
@@ -544,7 +544,7 @@ const QuestionForm = () => {
                   options={examTypeOptions}
                 />
               </Form.Item>
-            </Col>
+            </Col> */}
            
           </Row>
 

@@ -354,12 +354,12 @@ const QuestionView = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              {/* <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Exam Type:</span>
                 <span className="font-local2 text-lg text-purple-600">
                   {questionData.examType || "N/A"}
                 </span>
-              </div>
+              </div> */}
 
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Chapter:</span>
@@ -368,7 +368,7 @@ const QuestionView = () => {
                 </span>
               </div>
 
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              {/* <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Status:</span>
                 <Tag
                   color={questionData.status ? "green" : "red"}
@@ -378,7 +378,7 @@ const QuestionView = () => {
                 >
                   {questionData.status ? "Active" : "Inactive"}
                 </Tag>
-              </div>
+              </div> */}
             </div>
 
             {/* Questions Display */}
