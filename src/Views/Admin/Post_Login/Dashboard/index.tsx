@@ -16,7 +16,7 @@ const examBoxes = [
     title: "Add Questions",
     color: "bg-gradient-to-br from-yellow-400/60 to-yellow-500/60",
     image: myquestions,
-    path: "/questions",
+    path: "/questionform/new",
   },
   {
     title: "Create Paper",
