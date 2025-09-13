@@ -7,7 +7,7 @@ import img1 from "../../../../assets/match2.jpeg"
 import img2 from "../../../../assets/matching.png"
 const { Title, Text } = Typography;
 
-type QuestionType = 'Short Answer' | 'Matching' | 'Essay' | 'Fill in the blank';
+type QuestionType = 'Short Answer' | 'Matching' | 'Essay' | 'Fill in the blank' | 'Multiple Choice';
 
 interface QuestionItem {
   id: string;
@@ -15,6 +15,7 @@ interface QuestionItem {
   text: string;
   imageUrl?: string;
   defaultMarks: number;
+  options?: string[];
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -33,6 +34,11 @@ const baseQuestions: QuestionItem[] = [
   { id: 'F2', type: 'Fill in the blank', text: 'The capital of France is ____.', defaultMarks: 1 },
   { id: 'F3', type: 'Fill in the blank', text: 'Plants make food by a process called ____.', defaultMarks: 1 },
   { id: 'F4', type: 'Fill in the blank', text: 'The largest planet in our solar system is ____.', defaultMarks: 1 },
+  { id: 'MCQ1', type: 'Multiple Choice', text: 'What is the capital of India?', options: ['Mumbai', 'Delhi', 'Kolkata', 'Chennai'], defaultMarks: 2 },
+  { id: 'MCQ2', type: 'Multiple Choice', text: 'Which planet is closest to the Sun?', options: ['Venus', 'Mercury', 'Earth', 'Mars'], defaultMarks: 2 },
+  { id: 'MCQ3', type: 'Multiple Choice', text: 'What is 2 + 2?', options: ['3', '4', '5', '6'], defaultMarks: 1 },
+  { id: 'MCQ4', type: 'Multiple Choice', text: 'Which is the largest mammal?', options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'], defaultMarks: 2 },
+  { id: 'MCQ5', type: 'Multiple Choice', text: 'What is the chemical symbol for water?', options: ['H2O', 'CO2', 'NaCl', 'O2'], defaultMarks: 2 },
 ];
 
 const allQuestions: QuestionItem[] = (() => {
@@ -106,13 +112,14 @@ const Paper = () => {
       'Short Answer': [],
       'Matching': [],
       'Essay': [],
-      'Fill in the blank': []
+      'Fill in the blank': [],
+      'Multiple Choice': []
     };
     
     let globalCounter = 1;
     
     // Process questions in the order of question types
-    (['Short Answer', 'Matching', 'Essay', 'Fill in the blank'] as QuestionType[]).forEach(type => {
+    (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as QuestionType[]).forEach(type => {
       const questionsOfType = Object.entries(selectedQuestions)
         .map(([id, marks]) => ({ id, marks, question: allQuestions.find(q => q.id === id)! }))
         .filter(({ question }) => question?.type === type)
@@ -246,6 +253,7 @@ const Paper = () => {
     'Matching': { count: 0, marks: 4 },
     'Essay': { count: 0, marks: 8 },
     'Fill in the blank': { count: 0, marks: 1 },
+    'Multiple Choice': { count: 0, marks: 2 },
   });
 
   const applyRandomGeneration = () => {
@@ -336,6 +344,7 @@ const Paper = () => {
       'Matching': { count: 0, marks: 4 },
       'Essay': { count: 0, marks: 8 },
       'Fill in the blank': { count: 0, marks: 1 },
+      'Multiple Choice': { count: 0, marks: 2 },
     });
     
     message.success('All data cleared successfully');
@@ -359,7 +368,7 @@ const Paper = () => {
     }
     
     const paperTitle = `${formValues?.examType || 'Examination'} - ${formValues?.class || ''} ${formValues?.subject || ''}`.trim();
-    const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank'] as QuestionType[])
+    const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as QuestionType[])
       .filter(type => organizedQuestions[type].length > 0)
       .map(type => `
         <div class="section">
@@ -372,6 +381,13 @@ const Paper = () => {
                 ${question.type === 'Matching' && question.imageUrl ? `
                   <div class="question-image">
                     <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
+                  </div>
+                ` : ''}
+                ${question.type === 'Multiple Choice' && question.options ? `
+                  <div class="question-options" style="margin-top: 10px;">
+                    ${question.options.map((option, index) => `
+                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                    `).join('')}
                   </div>
                 ` : ''}
               </div>
@@ -524,6 +540,7 @@ const Paper = () => {
                 { label: 'Matching', value: 'Matching' },
                 { label: 'Essay', value: 'Essay' },
                 { label: 'Fill in the blank', value: 'Fill in the blank' },
+                { label: 'Multiple Choice', value: 'Multiple Choice' },
               ]}
               value={selectedTypes}
               onChange={(vals) => { setSelectedTypes(vals as QuestionType[]); if (lockedAfterRandom || lockedAfterChoose) resetLockedState(); }}
@@ -561,7 +578,7 @@ const Paper = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="text-gray-700 font-medium text-sm">Filter question types</div>
               <div className="flex flex-wrap gap-2">
-                {(['Short Answer','Matching','Essay','Fill in the blank'] as QuestionType[]).map(t => (
+                {(['Short Answer','Matching','Essay','Fill in the blank','Multiple Choice'] as QuestionType[]).map(t => (
                   <Button
                     key={`flt-${t}`}
                     size="small"
@@ -595,6 +612,14 @@ const Paper = () => {
                       <div className="flex-1">
                         <div className="text-xs uppercase text-gray-500">{q.type}</div>
                         <div className="text-gray-800">{q.text}</div>
+                        {q.type === 'Multiple Choice' && q.options && (
+                          <div className="text-xs text-gray-600 mt-2">
+                            <div>A. {q.options[0]}</div>
+                            <div>B. {q.options[1]}</div>
+                            <div>C. {q.options[2]}</div>
+                            <div>D. {q.options[3]}</div>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-3">
                           <Checkbox checked={checked} onChange={() => toggleQuestionSelection(q)} className="font-local2">
                             Choose
@@ -671,7 +696,7 @@ const Paper = () => {
             </div>
           </div>
           
-          {(['Short Answer', 'Matching', 'Essay', 'Fill in the blank'] as QuestionType[]).map(type => {
+          {(['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as QuestionType[]).map(type => {
             const questionsOfType = organizedQuestions[type];
             if (questionsOfType.length === 0) return null;
             
@@ -690,6 +715,15 @@ const Paper = () => {
                           {question.type === 'Matching' && question.imageUrl && (
                             <div className="mt-2">
                               <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
+                            </div>
+                          )}
+                          {question.type === 'Multiple Choice' && question.options && (
+                            <div className="mt-2 space-y-1">
+                              {question.options.map((option, index) => (
+                                <div key={index} className="text-sm text-gray-700">
+                                  {String.fromCharCode(65 + index)}. {option}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>

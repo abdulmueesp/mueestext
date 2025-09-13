@@ -329,7 +329,7 @@ const UsersTable = () => {
           setIsCreateModalOpen(false);
           form.resetFields();
         }}
-        okText="Create"
+        okText="Submit"
         cancelText="Cancel"
         centered
         okButtonProps={{

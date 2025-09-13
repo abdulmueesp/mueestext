@@ -434,69 +434,19 @@ const QuestionForm = () => {
               )}
             </Form.List>
 
-            <Form.Item 
-              name={[questionIndex, 'correctAnswer']} 
-              label="Correct Answer(s)"
-              rules={[{ required: true, message: 'Please select correct answer!' }]}
-            >
-              <Checkbox.Group>
-                <Row>
-                  {(form.getFieldValue(['questions', questionIndex, 'options']) || []).map((option: any, index: number) => (
-                    <Col span={12} key={`option-${questionIndex}-${index}-${questionTypeChangeKey}`}>
-                      <Checkbox value={index}>
-                        Option {index + 1} {option?.text ? `(${option.text.slice(0, 20)}...)` : ''}
-                      </Checkbox>
-                    </Col>
-                  ))}
-                </Row>
-              </Checkbox.Group>
-            </Form.Item>
           </div>
         );
 
       // remove true/false type
 
       case 'fillblank':
-        return (
-          <Form.Item 
-            key={`fillblank-${questionIndex}-${questionTypeChangeKey}`}
-            name={[questionIndex, 'correctAnswer']} 
-            label="Correct Answer"
-            rules={[{ required: true, message: 'Please enter correct answer!' }]}
-          >
-            <Input placeholder="Enter the correct answer" />
-          </Form.Item>
-        );
+        return null;
 
       case 'shortanswer':
-        return (
-          <Form.Item 
-            key={`shortanswer-${questionIndex}-${questionTypeChangeKey}`}
-            name={[questionIndex, 'correctAnswer']} 
-            label="Sample Answer / Key Points"
-            rules={[{ required: true, message: 'Please enter sample answer!' }]}
-          >
-            <TextArea 
-              rows={3}
-              placeholder="Enter sample answer or key points for evaluation" 
-            />
-          </Form.Item>
-        );
+        return null;
 
       case 'essay':
-        return (
-          <Form.Item 
-            key={`essay-${questionIndex}-${questionTypeChangeKey}`}
-            name={[questionIndex, 'correctAnswer']} 
-            label="Sample Answer / Key Points"
-            rules={[{ required: true, message: 'Please enter sample answer!' }]}
-          >
-            <TextArea 
-              rows={4}
-              placeholder="Enter sample answer or key points for evaluation" 
-            />
-          </Form.Item>
-        );
+        return null;
 
       case 'matching':
         return null;
@@ -665,12 +615,12 @@ const QuestionForm = () => {
                         required={false}
                           {...restField}
                           name={[name, 'question']}
-                          label="Question (English)"
+                          label="Question"
                           rules={[{ required: true, message: 'Please enter question!' }]}
                         >
                           <TextArea 
                             rows={3}
-                            placeholder="Enter your question in English" 
+                            placeholder="Enter your question" 
                           />
                         </Form.Item>
                       </Col>
@@ -712,8 +662,6 @@ const QuestionForm = () => {
                       </Row>
                     )}
 
-                    <Divider plain>Answer Options</Divider>
-                    
                     {/* Render question type specific fields */}
                     {renderQuestionTypeFields(
                       form.getFieldValue(['questions', name, 'questionType']),
@@ -740,19 +688,19 @@ const QuestionForm = () => {
           {/* Action Buttons */}
           <Row justify="end" className="mt-6">
             <Space size="middle">
-              <Button size="large" onClick={handleCancel}>
+              <Button size="middle" onClick={handleCancel}>
                 Cancel
               </Button>
               <Button
                 type="primary"
                 htmlType="submit"
-                size="large"
+                size="middle"
                 style={{ 
                   backgroundColor: "#007575", 
                   borderColor: "#007575" 
                 }}
               >
-                {isEdit ? "Update Questions" : "Create Questions"}
+                {isEdit ? "Update Questions" : "Submit"}
               </Button>
             </Space>
           </Row>

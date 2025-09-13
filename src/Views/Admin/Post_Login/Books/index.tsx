@@ -137,7 +137,7 @@ const Books = () => {
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
-        okText="Save"
+        okText="Submit"
         cancelText="Cancel"
         centered
         width={700}

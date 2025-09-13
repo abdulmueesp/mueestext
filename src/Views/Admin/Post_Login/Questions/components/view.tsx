@@ -103,11 +103,11 @@ const QuestionView = () => {
         status: false
       },
       '4': {
-        module: "Banking & Finance",
-        course: "Financial Accounting",
-        subject: "Corporate Finance",
-        textbook: "Principles of Corporate Finance",
-        chapter: "Financial Statements",
+        className: "Class 10",
+        subject: "Biology",
+        title: "Human Anatomy",
+        chapter: "Chapter 4",
+        examType: "2 Midterm",
         questions: [
           {
             exercise: "Balance Sheet Analysis",
@@ -146,11 +146,11 @@ const QuestionView = () => {
         status: true
       },
       '5': {
-        module: "UPSC Preparation",
-        course: "Indian Polity",
-        subject: "Constitutional Law",
-        textbook: "Indian Constitution by D.D. Basu",
-        chapter: "Fundamental Rights",
+        className: "Class 11",
+        subject: "Computer Science",
+        title: "Data Structures",
+        chapter: "Chapter 5",
+        examType: "2 Term",
         questions: [
           {
             exercise: "Article 19 Analysis",
@@ -205,11 +205,11 @@ const QuestionView = () => {
         status: true
       },
       '6': {
-        module: "Digital Marketing",
-        course: "Social Media Marketing",
-        subject: "Social Media Strategy",
-        textbook: "Social Media Marketing Strategy Guide",
-        chapter: "Content Strategy",
+        className: "Class 12",
+        subject: "Mathematics",
+        title: "Calculus",
+        chapter: "Chapter 6",
+        examType: "Unit Test",
         questions: [
           {
             exercise: "Content Planning",
@@ -300,24 +300,6 @@ const QuestionView = () => {
     return typeColors[type] || "default";
   };
 
-  const renderCorrectAnswer = (question: any) => {
-    switch (question.questionType) {
-      case 'mcq':
-        if (Array.isArray(question.correctAnswer)) {
-          return question.correctAnswer.map((index: number) => 
-            question.options[index]?.text
-          ).join(', ');
-        }
-        return 'No answer selected';
-      
-      case 'fillblank':
-      case 'shortanswer':
-      case 'essay':
-      case 'matching':
-      default:
-        return question.correctAnswer;
-    }
-  };
 
   if (!questionData) {
     return (
@@ -354,35 +336,35 @@ const QuestionView = () => {
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Class:</span>
                 <span className="font-local2 text-lg text-orange-600 font-semibold">
-                  {questionData.className}
+                  {questionData.className || questionData.module || "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Title:</span>
                 <span className="font-local2 text-lg text-blue-600">
-                  {questionData.title}
+                  {questionData.title || questionData.course || "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Subject:</span>
                 <span className="font-local2 text-lg text-green-600">
-                  {questionData.subject}
+                  {questionData.subject || "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Exam Type:</span>
                 <span className="font-local2 text-lg text-purple-600">
-                  {questionData.examType}
+                  {questionData.examType || "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                 <span className="font-semibold text-gray-700">Chapter:</span>
                 <span className="font-local2 text-lg text-indigo-600 font-semibold">
-                  {questionData.chapter}
+                  {questionData.chapter || questionData.textbook || "N/A"}
                 </span>
               </div>
 
@@ -456,17 +438,10 @@ const QuestionView = () => {
                         {question.options.map((option: any, optionIndex: number) => (
                           <div 
                             key={optionIndex}
-                            className={`p-2 rounded-lg ${
-                              question.correctAnswer.includes(optionIndex) 
-                                ? 'bg-green-100 border-2 border-green-300' 
-                                : 'bg-gray-100'
-                            }`}
+                            className="p-2 rounded-lg bg-gray-100"
                           >
                             <span className="font-local2">
                               {String.fromCharCode(65 + optionIndex)}. {option.text}
-                              {question.correctAnswer.includes(optionIndex) && 
-                                <Tag color="green" className="ml-2">Correct</Tag>
-                              }
                             </span>
                           </div>
                         ))}
@@ -476,25 +451,7 @@ const QuestionView = () => {
 
                
 
-                  {/* Correct Answer - Hide for matching type */}
-                  {question.questionType !== 'matching' && (
-                    <div className="mb-4 p-3 bg-green-50 rounded-lg">
-                      <span className="font-semibold text-gray-700">Correct Answer: </span>
-                      <div className="font-local2 text-lg text-green-700 mt-2">
-                        {renderCorrectAnswer(question)}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Explanation */}
-                  {question.explanation && (
-                    <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                      <span className="font-semibold text-gray-700">Explanation: </span>
-                      <div className="font-local2 text-gray-900 mt-2">
-                        {question.explanation}
-                      </div>
-                    </div>
-                  )}
                 </Card>
               ))
             ) : (

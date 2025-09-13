@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -75,7 +75,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
       return [
         {
           title: "Overview",
-          items: menuItems.filter(item => ['examgen'].includes(item.id))
+          items: menuItems.filter(item => ['dashboard'].includes(item.id))
         },  
         {
           title: "Question Management",
@@ -231,9 +231,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
         />
 
         {/* Main Content Area */}
-        <main className={`flex-1 overflow-auto px-3 py-2 ${
-        role === "admin" ? "bg-white" : "bg-gradient-to-br from-slate-50 to-slate-100"
-      }`}>
+        <main className={`flex-1 overflow-auto px-3 py-2 bg-white `}>
           <Outlet />
         </main>
       </div>

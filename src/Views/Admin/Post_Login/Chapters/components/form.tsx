@@ -290,7 +290,7 @@ const Chaptersform = () => {
                   borderColor: "#007575" 
                 }}
               >
-                {isEdit ? "Update" : "Create"}
+                {isEdit ? "Update" : "Submit"}
               </Button>
             </Space>
           </Row>

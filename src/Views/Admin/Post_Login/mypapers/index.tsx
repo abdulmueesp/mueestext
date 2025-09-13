@@ -53,7 +53,7 @@ const dummyPapers = [
     duration: 90,
     createdBy: "John Doe",
     createdDate: "Aug 29, 2025",
-    questions: 8,
+    questions: 10,
     organizedQuestions: {
       'Short Answer': [
         { question: { id: 'S1', type: 'Short Answer', text: 'Define photosynthesis.', defaultMarks: 2 }, marks: 2, globalNumber: 1 },
@@ -70,6 +70,10 @@ const dummyPapers = [
       'Fill in the blank': [
         { question: { id: 'F1', type: 'Fill in the blank', text: 'Water boils at ____ degrees Celsius.', defaultMarks: 1 }, marks: 1, globalNumber: 7 },
         { question: { id: 'F2', type: 'Fill in the blank', text: 'The capital of France is ____.', defaultMarks: 1 }, marks: 1, globalNumber: 8 }
+      ],
+      'Multiple Choice': [
+        { question: { id: 'MCQ1', type: 'Multiple Choice', text: 'What is the capital of India?', options: ['Mumbai', 'Delhi', 'Kolkata', 'Chennai'], defaultMarks: 2 }, marks: 2, globalNumber: 9 },
+        { question: { id: 'MCQ2', type: 'Multiple Choice', text: 'Which planet is closest to the Sun?', options: ['Venus', 'Mercury', 'Earth', 'Mars'], defaultMarks: 2 }, marks: 2, globalNumber: 10 }
       ]
     }
   },
@@ -85,7 +89,7 @@ const dummyPapers = [
     duration: 60,
     createdBy: "Jane Smith",
     createdDate: "Aug 28, 2025",
-    questions: 5,
+    questions: 7,
     organizedQuestions: {
       'Short Answer': [
         { question: { id: 'S3', type: 'Short Answer', text: 'What is the process of photosynthesis?', defaultMarks: 2 }, marks: 2, globalNumber: 1 }
@@ -99,6 +103,10 @@ const dummyPapers = [
       'Fill in the blank': [
         { question: { id: 'F3', type: 'Fill in the blank', text: 'Plants make food by a process called ____.', defaultMarks: 1 }, marks: 1, globalNumber: 4 },
         { question: { id: 'F4', type: 'Fill in the blank', text: 'The largest planet in our solar system is ____.', defaultMarks: 1 }, marks: 1, globalNumber: 5 }
+      ],
+      'Multiple Choice': [
+        { question: { id: 'MCQ3', type: 'Multiple Choice', text: 'What is 2 + 2?', options: ['3', '4', '5', '6'], defaultMarks: 1 }, marks: 1, globalNumber: 6 },
+        { question: { id: 'MCQ4', type: 'Multiple Choice', text: 'Which is the largest mammal?', options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'], defaultMarks: 2 }, marks: 2, globalNumber: 7 }
       ]
     }
   }
@@ -121,7 +129,7 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
     }
     
     const paperTitle = `${paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
-    const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank'] as any[])
+    const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[])
       .filter(type => paper.organizedQuestions[type] && paper.organizedQuestions[type].length > 0)
       .map(type => `
         <div class="section">
@@ -134,6 +142,13 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
                 ${question.type === 'Matching' && question.imageUrl ? `
                   <div class="question-image">
                     <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
+                  </div>
+                ` : ''}
+                ${question.type === 'Multiple Choice' && question.options ? `
+                  <div class="question-options" style="margin-top: 10px;">
+                    ${question.options.map((option: string, index: number) => `
+                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                    `).join('')}
                   </div>
                 ` : ''}
               </div>
@@ -258,7 +273,7 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
 
           {/* Sections and Questions */}
           <div className="space-y-8">
-            {(['Short Answer', 'Matching', 'Essay', 'Fill in the blank'] as any[]).map(type => {
+            {(['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[]).map(type => {
               const questionsOfType = paper.organizedQuestions[type];
               if (!questionsOfType || questionsOfType.length === 0) return null;
               
@@ -279,6 +294,15 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
                           {question.type === 'Matching' && question.imageUrl && (
                             <div className="mt-2">
                               <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
+                            </div>
+                          )}
+                          {question.type === 'Multiple Choice' && question.options && (
+                            <div className="mt-2 space-y-1">
+                              {question.options.map((option: string, index: number) => (
+                                <div key={index} className="text-sm text-gray-700 font-local2">
+                                  {String.fromCharCode(65 + index)}. {option}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -334,7 +358,7 @@ const MyPapers = () => {
       }
       
       const paperTitle = `${paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
-      const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank'] as any[])
+      const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[])
         .filter(type => paper.organizedQuestions[type] && paper.organizedQuestions[type].length > 0)
         .map(type => `
           <div class="section">
@@ -347,6 +371,13 @@ const MyPapers = () => {
                   ${question.type === 'Matching' && question.imageUrl ? `
                     <div class="question-image">
                       <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
+                    </div>
+                  ` : ''}
+                  ${question.type === 'Multiple Choice' && question.options ? `
+                    <div class="question-options" style="margin-top: 10px;">
+                      ${question.options.map((option: string, index: number) => `
+                        <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                      `).join('')}
                     </div>
                   ` : ''}
                 </div>
@@ -581,20 +612,21 @@ const MyPapers = () => {
                       <Text strong className="text-lg font-local2">{paper.id}) {paper.title}</Text>
                     </div>
                     
-                    <div className="space-y-1 text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 ml-[3px] h-2 bg-gradient-to-r from-[#007575] to-[#339999] rounded-full"></span>
+                    <div className="space-y-2 text-gray-600">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-gradient-to-r from-[#007575] to-[#339999] rounded-full flex-shrink-0"></div>
                         <Text className="font-local2">Question Paper ID: {paper.id}</Text>
                       </div>
                       
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 ml-[3px] bg-gradient-to-r from-[#007575] to-[#339999] rounded-full"></span>
-                        <Text className="font-local2">Total Marks: {paper.totalMarks} | Duration: {paper.duration} min | Questions: {paper.questions}</Text>
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-gradient-to-r from-[#007575] to-[#339999] rounded-full flex-shrink-0"></div>
+                        <Text className="font-local2">Total Marks: {paper.totalMarks} | Duration: {paper.duration} min</Text>
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <User size={16} className="text-[#007575]" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                          <User size={16} className="text-[#007575]" />
+                        </div>
                         <Text className="font-local2">Created By: {paper.createdBy} ({paper.createdDate})</Text>
                       </div>
                     </div>

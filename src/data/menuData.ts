@@ -12,14 +12,9 @@ import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 
 
 export const menuData = {  admin: [
-       
+  { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
     { id: "users", icon: LuUsersRound, label: "Users", path: "/users" },
-    {
-      id: "examgen",
-      icon: MdOutlineDashboardCustomize,
-      label: "Examboard",
-      path: "/examboard",
-    },
+    
     {
       id: "Books",
       icon: AiOutlineProfile,
