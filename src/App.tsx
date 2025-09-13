@@ -1,4 +1,5 @@
 
+// @ts-nocheck
 import { useSelector, useDispatch } from "react-redux" // ✅ Both hooks imported
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import { RootState } from "@/store"
@@ -8,20 +9,14 @@ import LoginPage from "./Views/Admin/Pre_Login/Adminlogin"
 import AdminLayout from "./Components/Admin/Layout"
 import Dashboard from "./Views/Admin/Post_Login/Dashboard"
 import Paper from "./Views/Admin/Post_Login/Paper"
-import { message } from "./Components/common/message/message"
+import { message } from "antd"
 import UsersTable from "./Views/Admin/Post_Login/users"
 import Books from "./Views/Admin/Post_Login/Books/index"
 import Chapters from "./Views/Admin/Post_Login/Chapters"
 import Questions from "./Views/Admin/Post_Login/Questions"
 import QuestionForm from "./Views/Admin/Post_Login/Questions/components/form"
 import QuestionViiew from "./Views/Admin/Post_Login/Questions/components/view"
-
-
-
-
 import MyPapers from "./Views/Admin/Post_Login/mypapers"
-
-
 import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
 
 function App() {

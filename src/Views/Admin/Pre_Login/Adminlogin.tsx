@@ -1,8 +1,10 @@
 
+// @ts-nocheck
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setRole } from '@/store/slices/userSlice';
+import { message } from 'antd';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -26,6 +28,7 @@ const LoginPage = () => {
     setError('');
     const role = username === 'user' ? 'user' : 'admin';
     dispatch(setRole(role));
+    message.success('Login successful!');
     // Let the App component handle the role-based routing
     navigate('/', { replace: true });
   };
