@@ -126,13 +126,13 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
                   className="text-lg font-bold font-local2 leading-tight"
                   style={{ color: primaryColor }}
                 >
-                  ABCD
+                  {role === 'admin' ? 'ADMIN' : 'ABCD'}
                 </span>
                 <span
                   className="text-xs font-local2 leading-tight"
                   style={{ color: primaryColor }}
                 >
-                  Public School
+                  {role === 'admin' ? 'Dashboard' : 'Public School'}
                 </span>
               </div>
             </div>
