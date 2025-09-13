@@ -104,20 +104,7 @@ const Questions = () => {
             { value: "Chapter 4", label: "Chapter 4" },
           ]}
         />
-        <Select
-          placeholder="Filter by Exam Type"
-          allowClear
-          style={{ width: 200, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Exam Type:", value)}
-          className="font-local2"
-          options={[
-            { value: "Unit Test", label: "Unit Test" },
-            { value: "1 Midterm", label: "1 Midterm" },
-            { value: "1 Term", label: "1 Term" },
-            { value: "2 Midterm", label: "2 Midterm" },
-            { value: "2 Term", label: "2 Term" },
-          ]}
-        />
+       
         
         <Button
           type="primary"
