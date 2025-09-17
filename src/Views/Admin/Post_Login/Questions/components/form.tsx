@@ -587,6 +587,7 @@ const QuestionForm = () => {
                             <Option value="fillblank">Fill in the Blank</Option>
                             <Option value="shortanswer">Short Answer</Option>
                             <Option value="essay">Essay</Option>
+                            <Option value="image">Image</Option>
                             <Option value="matching">Matching</Option>
                           </Select>
                         </Form.Item>
@@ -609,31 +610,34 @@ const QuestionForm = () => {
                       </Col>
                     </Row>
 
-                    <Row gutter={16}>
-                      <Col span={24}>
-                        <Form.Item
-                        required={false}
-                          {...restField}
-                          name={[name, 'question']}
-                          label="Question"
-                          rules={[{ required: true, message: 'Please enter question!' }]}
-                        >
-                          <TextArea 
-                            rows={3}
-                            placeholder="Enter your question" 
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                    {form.getFieldValue(['questions', name, 'questionType']) !== 'image' && (
+                      <Row gutter={16}>
+                        <Col span={24}>
+                          <Form.Item
+                          required={false}
+                            {...restField}
+                            name={[name, 'question']}
+                            label="Question"
+                            rules={[{ required: true, message: 'Please enter question!' }]}
+                          >
+                            <TextArea 
+                              rows={3}
+                              placeholder="Enter your question" 
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    )}
 
-                    {/* Image upload is shown below the question when type is Matching */}
-                    {form.getFieldValue(['questions', name, 'questionType']) === 'matching' && (
+                    {/* Image upload is shown when type is Matching or Image */}
+                    {(form.getFieldValue(['questions', name, 'questionType']) === 'matching' ||
+                      form.getFieldValue(['questions', name, 'questionType']) === 'image') && (
                       <Row gutter={16}>
                         <Col span={24}>
                           <Form.Item 
                             {...restField}
                             name={[name, 'imageFileList']}
-                            label="Upload Matching Image"
+                            label={form.getFieldValue(['questions', name, 'questionType']) === 'matching' ? 'Upload Matching Image' : 'Upload Image'}
                             rules={[{ required: true, message: 'Please upload image for matching!' }]}
                           >
                             <Upload
