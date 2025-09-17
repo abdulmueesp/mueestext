@@ -50,7 +50,7 @@ const UserDashboard = () => {
           </h2>
         </div>
         <p className="text-sm font-semibold text-gray-600 font-local2">
-          Welcome back to Admin Panel
+          Welcome back to Admin Dashboard
         </p>
       </div>
 
