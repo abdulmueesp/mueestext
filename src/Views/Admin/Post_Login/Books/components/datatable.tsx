@@ -1,39 +1,22 @@
 // @ts-nocheck
-import React from "react";
+import React, { useState } from "react";
 import { Table, Tag, Button, Popconfirm } from "antd";
-import { FaEdit, FaRegEye } from "react-icons/fa";
 import {MdDeleteOutline } from "react-icons/md";
 
-const Datatable = ({ onEdit, onDelete, onView }) => {
-  const SUBJECTS = [
-    "Malayalam",
-    "English",
-    "Maths",
-    "GK",
-    "Computer",
-    "EVS",
-    "Social Science",
-    "Science",
-  ];
-
-  const CLASSES = ["0", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8"];
-
-  const data: any[] = [
-    { key: "1", id: 1, title: "Numbers Workbook", subject: "Maths", class: "1" },
-    { key: "2", id: 2, title: "Alphabets Fun", subject: "English", class: "LKG" },
-    { key: "3", id: 3, title: "My First GK", subject: "GK", class: "UKG" },
-    { key: "4", id: 4, title: "Basics of Computing", subject: "Computer", class: "3" },
-    { key: "5", id: 5, title: "Environment Around Us", subject: "EVS", class: "2" },
-    { key: "6", id: 6, title: "Malayalam Reader", subject: "Malayalam", class: "5" },
-    { key: "7", id: 7, title: "General Science", subject: "Science", class: "6" },
-    { key: "8", id: 8, title: "Our Society", subject: "Social Science", class: "7" },
-  ];
+const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams }) => {
 
   const columns: any[] = [
     {
-      title: <span className="font-semi">Title</span>,
-      dataIndex: "title",
-      key: "title",
+      title: <span className="font-semi">Code</span>,
+      dataIndex: "bookCode",
+      key: "bookCode",
+      width: 60,
+      render: (code: string) => <Tag className="font-local2 bg-gray-100" color="default">{code}</Tag>,
+    },
+    {
+      title: <span className="font-semi">Book</span>,
+      dataIndex: "book",
+      key: "book",
       width: 220,
       render: (title: string) => <span className="font-local2 font-semibold">{title}</span>,
     },
@@ -54,23 +37,9 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
     {
       title: <span className="font-semi">Actions</span>,
       key: "actions",
-      width: 150,
+      width: 80,
       render: (_: any, record: any) => (
         <div className="flex gap-2">
-          <Button
-            type="link"
-            icon={<FaRegEye color="black" size={18} />}
-            size="small"
-            onClick={() => onView(record)}
-            title="View"
-          />
-          <Button
-            type="link"
-            icon={<FaEdit color="orange" size={18} />}
-            size="small"
-            onClick={() => onEdit(record)}
-            title="Edit"
-          />
           <Popconfirm
             title="Are you sure you want to delete this book?"
             onConfirm={() => onDelete(record.id)}
@@ -89,20 +58,39 @@ const Datatable = ({ onEdit, onDelete, onView }) => {
     },
   ];
 
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
+
+  const handleTableChange = (pag: any) => {
+    const next = {
+      current: pag.current,
+      pageSize: pag.pageSize,
+    };
+    setPagination(next);
+    if (typeof onChangePageParams === 'function') {
+      onChangePageParams({ page: next.current, pageSize: next.pageSize });
+    }
+  };
+
   return (
     <div className="mt-4">
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={Array.isArray(remoteData) ? remoteData : []}
         pagination={{
-          current: 1,
-          pageSize: 10,
-          total: data.length,
+          current: pagination.current,
+          pageSize: pagination.pageSize,
           showSizeChanger: true,
-          showQuickJumper: true,
+          showQuickJumper: false,
           showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
           pageSizeOptions: ["5", "10", "20", "50"],
+          itemRender: (_: any, type: any) => {
+            if (type === 'page' || type === 'prev' || type === 'next' || type === 'jump-prev' || type === 'jump-next') {
+              return null;
+            }
+            return null;
+          },
         }}
+        onChange={handleTableChange}
         scroll={{ x: 1200 }}
         size="middle"
         className="font-local2"

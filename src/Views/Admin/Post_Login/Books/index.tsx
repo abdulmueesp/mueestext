@@ -1,9 +1,10 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select,message } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { IoIosSearch, IoMdRefresh } from "react-icons/io";
+import { API, GET, POST } from "../../../../Components/common/api";
 
 const { TextArea } = Input;
 
@@ -35,12 +36,13 @@ const Books = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [form] = Form.useForm();
-  const [editingRecord, setEditingRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [tableData, setTableData] = useState<any[]>([]);
+  const [pageSize, setPageSize] = useState<number>(10);
   // Open Modal for Create
   const showModal = () => {
-    setEditingRecord(null);
     setViewRecord(null);
     setIsModalOpen(true);
     form.resetFields();
@@ -49,7 +51,6 @@ const Books = () => {
   // Close Form Modal
   const handleCancel = () => {
     setIsModalOpen(false);
-    setEditingRecord(null);
     setViewRecord(null);
     form.resetFields();
   };
@@ -62,30 +63,16 @@ const Books = () => {
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      if (editingRecord) {
-        message.success("Book updated successfully!");
-      } else {
-        message.success("Book created successfully!");
-      }
+      await POST(API.BOOKS, values);
+      message.success("Book created successfully!");
       setIsModalOpen(false);
-      setEditingRecord(null);
       setViewRecord(null);
       form.resetFields();
+      // Refresh table data after create
+      fetchBooks();
     } catch (error) {
       console.log("Validation Failed:", error);
     }
-  };
-
-  // Handle Edit Click
-  const handleEdit = (record: any) => {
-    setEditingRecord(record);
-    setViewRecord(null);
-    form.setFieldsValue({
-      title: record.title,
-      subject: record.subject,
-      class: record.class,
-    });
-    setIsModalOpen(true);
   };
 
   // Handle Delete Confirm
@@ -100,14 +87,52 @@ const Books = () => {
   };
   const handleSearch = (value: string) => {
     setSearchValue(value);
-    // Add search logic here
   };
+
+  const fetchBooks = async (opts?: { pageSize?: number, q?: string }) => {
+    try {
+      const size = opts?.pageSize ?? pageSize ?? 10;
+      const query: any = { pageSize: size };
+      if (opts?.q) query.q = opts.q;
+      const data = await GET(API.ALL_BOOKS, query);
+      const rows = Array.isArray(data?.results)
+        ? data.results.map((r: any) => ({
+            id: r._id || r.id,
+            key: r._id || r.id,
+            book: r.book || r.title || "",
+            bookCode: r.code || r.bookCode || "",
+            subject: r.subject,
+            class: String(r.class ?? ""),
+          }))
+        : [];
+      setTableData(rows);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks({ pageSize: 10 });
+  }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchValue.trim());
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchValue]);
+
+  // Trigger search on debounce
+  useEffect(() => {
+    fetchBooks({ pageSize, q: debouncedSearch || undefined });
+  }, [debouncedSearch, pageSize]);
 
   return (
     <>
       <PageHeader title="Books" backButton={true}>
       <Input
-              placeholder="Search by Title"
+              placeholder="Search by Book"
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
@@ -129,11 +154,21 @@ const Books = () => {
         
       </PageHeader>
 
-      <Datatable onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
+      <Datatable
+        onDelete={handleDelete}
+        onView={handleView}
+        data={tableData}
+        onChangePageParams={({ pageSize: ps }) => {
+          if (ps && ps !== pageSize) {
+            setPageSize(ps);
+            fetchBooks({ pageSize: ps });
+          }
+        }}
+      />
 
-      {/* Create / Edit Modal */}
+      {/* Create Modal */}
       <Modal
-        title={editingRecord ? "Edit Book" : "Create Book"}
+        title={"Create Book"}
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
@@ -149,15 +184,28 @@ const Books = () => {
         }}
       >
         <Form form={form} layout="vertical">
+        
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item 
-                name="title" 
-                label="Title" 
+                name="book" 
+                label="book" 
                 required={false}
-                rules={[{ required: true, message: 'Please enter book title!' }]}
+                rules={[{ required: true, message: 'Please enter book name' }]}
               >
-                <Input placeholder="Enter book title" />
+                <Input placeholder="Enter book name" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item 
+                name="code" 
+                label="Book Code" 
+                required={false}
+                rules={[{ required: true, message: 'Please enter book code!' }]}
+              >
+                <Input placeholder="Enter book code" />
               </Form.Item>
             </Col>
           </Row>

@@ -11,6 +11,7 @@ import Dashboard from "./Views/Admin/Post_Login/Dashboard"
 import Paper from "./Views/Admin/Post_Login/Paper"
 import { message } from "antd"
 import UsersTable from "./Views/Admin/Post_Login/users"
+import CreateUser from "./Views/Admin/Post_Login/users/CreateUser"
 import Books from "./Views/Admin/Post_Login/Books/index"
 import Chapters from "./Views/Admin/Post_Login/Chapters"
 import Questions from "./Views/Admin/Post_Login/Questions"
@@ -60,7 +61,8 @@ function App() {
           <Route index element={<Navigate to={getDefaultRoute()} replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="paper" element={<Paper />} />
-            <Route path="users" element={<UsersTable />} />
+            <Route path="schools" element={<UsersTable />} />
+            <Route path="schools/new" element={<CreateUser />} />
             <Route path="books" element={<Books />} />
             <Route path="chapters" element={<Chapters />} />
             <Route path="/questions" element={<Questions />} />

@@ -1,16 +1,16 @@
 // @ts-nocheck
 import { useNavigate } from "react-router-dom";
 import { Card } from "antd";
-import teachers from "../../../../assets/Teachers.png"
+import teachers from "../../../../assets/My institute.png"
 import myquestions from "../../../../assets/myquestions.png"
 import evaluate from "../../../../assets/Evaluate.png"
 import blueprint from "../../../../assets/Blueprints.png"
 const examBoxes = [
   {
-    title: "Create User",
+    title: "Create School",
     color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
     image: teachers,
-    path: "/users",
+    path: "/schools/new",
   },
   {
     title: "Add Questions",
