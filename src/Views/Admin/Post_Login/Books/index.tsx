@@ -4,8 +4,8 @@ import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select,
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { IoIosSearch, IoMdRefresh } from "react-icons/io";
-import { API, GET, POST } from "../../../../Components/common/api";
-
+import { API, GET, POST, DELETE as DELETE_REQ } from "../../../../Components/common/api";
+import loadinsvg from "../../../../assets/spinning-dots.svg"
 const { TextArea } = Input;
 
 const Books = () => {
@@ -41,6 +41,8 @@ const Books = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tableData, setTableData] = useState<any[]>([]);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   // Open Modal for Create
   const showModal = () => {
     setViewRecord(null);
@@ -62,6 +64,8 @@ const Books = () => {
   // Save Form
   const handleOk = async () => {
     try {
+      if (submitting) return;
+      setSubmitting(true);
       const values = await form.validateFields();
       await POST(API.BOOKS, values);
       message.success("Book created successfully!");
@@ -73,11 +77,20 @@ const Books = () => {
     } catch (error) {
       console.log("Validation Failed:", error);
     }
+    finally {
+      setSubmitting(false);
+    }
   };
 
   // Handle Delete Confirm
-  const handleDelete = (id: number) => {
-    message.success(`Book ${id} deleted successfully!`);
+  const handleDelete = async (id: string | number) => {
+    try {
+      await DELETE_REQ(`${API.BOOKS}/${id}`);
+      message.success(`Book ${id} deleted successfully!`);
+      fetchBooks();
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to delete book');
+    }
   };
 
   // Handle View Click
@@ -91,9 +104,11 @@ const Books = () => {
 
   const fetchBooks = async (opts?: { pageSize?: number, q?: string }) => {
     try {
+      setLoading(true);
       const size = opts?.pageSize ?? pageSize ?? 10;
       const query: any = { pageSize: size };
-      if (opts?.q) query.q = opts.q;
+      // Backend expects search key as 'quesryname'
+      if (opts?.q) query.search = opts.q;
       const data = await GET(API.ALL_BOOKS, query);
       const rows = Array.isArray(data?.results)
         ? data.results.map((r: any) => ({
@@ -108,6 +123,8 @@ const Books = () => {
       setTableData(rows);
     } catch (e) {
       console.log(e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -154,17 +171,23 @@ const Books = () => {
         
       </PageHeader>
 
-      <Datatable
-        onDelete={handleDelete}
-        onView={handleView}
-        data={tableData}
-        onChangePageParams={({ pageSize: ps }) => {
-          if (ps && ps !== pageSize) {
-            setPageSize(ps);
-            fetchBooks({ pageSize: ps });
-          }
-        }}
-      />
+      {loading ? (
+        <div className="w-full flex justify-center items-center py-16">
+          <img src={loadinsvg} alt="Loading" className="w-14 h-14" />
+        </div>
+      ) : (
+        <Datatable
+          onDelete={handleDelete}
+          onView={handleView}
+          data={tableData}
+          onChangePageParams={({ pageSize: ps }) => {
+            if (ps && ps !== pageSize) {
+              setPageSize(ps);
+              fetchBooks({ pageSize: ps });
+            }
+          }}
+        />
+      )}
 
       {/* Create Modal */}
       <Modal
@@ -172,6 +195,7 @@ const Books = () => {
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
+        confirmLoading={submitting}
         okText="Submit"
         cancelText="Cancel"
         centered

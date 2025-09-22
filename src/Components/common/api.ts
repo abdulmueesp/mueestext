@@ -61,11 +61,33 @@ export const POST = async (
   return res.json();
 };
 
+export const DELETE = async (
+  endpoint: string,
+  query?: Record<string, any>
+) => {
+  const url = buildUrl(endpoint, query);
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `Request failed with status ${res.status}`);
+  }
+  // Some DELETE endpoints return no content
+  if (res.status === 204) return { success: true } as any;
+  return res.json();
+};
+
 export default {
   BASE_URL,
   API,
   GET,
   POST,
+  DELETE,
 };
 
 
