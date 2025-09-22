@@ -1,13 +1,8 @@
 import {BiHome } from "react-icons/bi";
 import { FiFilePlus } from "react-icons/fi";
-import {
-  AiOutlineProfile,
-  AiOutlineRead,
-  AiOutlineFileText,
-} from "react-icons/ai";
-import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 import { LuSchool } from "react-icons/lu";
-
+import { AiOutlineProfile, AiOutlineRead, AiOutlineFileText } from "react-icons/ai";
+import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 export const menuData = {  admin: [
   { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
     { id: "users", icon: LuSchool, label: "List Schools", path: "/schools" },

@@ -1,12 +1,15 @@
 
+/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, InputNumber, Radio, Checkbox, Upload, message } from "antd";
+import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, InputNumber, Upload, message } from "antd";
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
 import img from "../../../../../assets/matching.png"
 import img2 from "../../../../../assets/match2.jpeg"
+import axios from "axios";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -16,6 +19,7 @@ const QuestionForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = id && id !== 'new';
+  const [submitting, setSubmitting] = React.useState(false);
 
   // Complete dummy data for all question types - matching view.tsx structure
   const getDummyData = (id: string) => {
@@ -282,14 +286,7 @@ const QuestionForm = () => {
     { value: "Chapter 6", label: "Chapter 6" }
   ];
 
-  // Exam Type options
-  const examTypeOptions = [
-    { value: "Unit Test", label: "Unit Test" },
-    { value: "1 Midterm", label: "1 Midterm" },
-    { value: "1 Term", label: "1 Term" },
-    { value: "2 Midterm", label: "2 Midterm" },
-    { value: "2 Term", label: "2 Term" },
-  ];
+  // Exam Type options (removed; currently unused)
 
   // remove exercise feature – not needed anymore
 
@@ -298,15 +295,80 @@ const QuestionForm = () => {
   // Force re-render state for question type changes
   const [questionTypeChangeKey, setQuestionTypeChangeKey] = React.useState(0);
 
-  const handleFinish = (values: any) => {
-    console.log("Form values:", values);
-    if (isEdit) {
-      message.success("Questions updated successfully!");
-    } else {
-      message.success("Questions created successfully!");
+  const handleFinish = async (values: any) => {
+    try {
+      setSubmitting(true);
+  
+      // Normalize questions
+      const normalizedQuestions = (values?.questions || []).map((q: any) => {
+        const normalized: any = {
+          questionType: q?.questionType,
+          question: q?.question,
+          marks: q?.marks,
+        };
+  
+        if (q?.questionType === 'mcq') {
+          normalized.options = (q?.options || []).map((opt: any) => ({ text: opt?.text || '' }));
+          normalized.correctAnswer = q?.correctAnswer;
+        }
+  
+        if (
+          q?.questionType === 'fillblank' ||
+          q?.questionType === 'shortanswer' ||
+          q?.questionType === 'essay'
+        ) {
+          normalized.correctAnswer = q?.correctAnswer;
+        }
+  
+        if (q?.questionType === 'matching' || q?.questionType === 'image') {
+          const fileUrl =
+            q?.imageFileList?.[0]?.url ||
+            q?.imageFileList?.[0]?.thumbUrl ||
+            q?.image ||
+            null;
+          normalized.image = fileUrl;
+        } else {
+          normalized.image = null;
+        }
+  
+        return normalized;
+      });
+  
+      // Build payload (no examType here, backend doesn’t use it)
+      const payload = {
+        className: values?.className,
+        subject: values?.subject,
+        title: values?.title,
+        chapter: values?.chapter,
+        status: values?.status ?? true,
+        questions: normalizedQuestions,
+      };
+  
+      console.log("REQ BODY >>>", payload);
+  
+      if (!isEdit) {
+        await axios.post(`https://childcraft-server.onrender.com/quizItems`, payload, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        message.success("Questions created successfully!");
+      } else {
+        // TODO: when PUT API ready
+        message.success("Questions updated successfully!");
+      }
+  
+      navigate("/questions");
+    } catch (error: any) {
+      console.error("Failed to submit questions", error);
+      const description =
+        error?.response?.data?.message || error?.message || "Something went wrong";
+      message.error(`Failed to submit questions: ${description}`);
+    } finally {
+      setSubmitting(false);
     }
-    navigate('/questions');
   };
+  
 
   const handleCancel = () => {
     navigate('/questions');
@@ -703,6 +765,8 @@ const QuestionForm = () => {
                   backgroundColor: "#007575", 
                   borderColor: "#007575" 
                 }}
+                loading={submitting}
+                disabled={submitting}
               >
                 {isEdit ? "Update Questions" : "Submit"}
               </Button>
