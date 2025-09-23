@@ -1,128 +1,153 @@
-
+/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
-import { useState } from "react";
-import { Button, Select, Input } from "antd";
-import { useNavigate } from "react-router-dom";
-import PageHeader from "../../../../Components/common/PageHeader";
-import Datatable from "./components/datatable";
-import { message } from "@/Components/common/message/message";
-import { IoIosSearch } from "react-icons/io";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React from "react";
+import { Card, Row, Col, Button, Table, Tag, Space, message } from "antd";
+import { FaEdit, FaPaperPlane } from "react-icons/fa";
+import Search from "antd/es/input/Search";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import PageHeader from "@/Components/common/PageHeader";
 
-const Questions = () => {
-  const [searchValue, setSearchValue] = useState("");
+type QuestionListItem = {
+  id: string;
+  className: string;
+  subject: string;
+  title: string;
+  chapter: string;
+  question: string;
+  variant: string;
+};
+
+const DUMMY_ITEMS: QuestionListItem[] = [
+  { id: "1A", className: "Class 10", subject: "Mathematics", title: "Algebra Basics", chapter: "Chapter 1", variant: "A", question: "What is the solution to the equation 2x + 5 = 13?" },
+  { id: "1B", className: "Class 10", subject: "Mathematics", title: "Algebra Basics", chapter: "Chapter 1", variant: "B", question: "Solve: 3x - 7 = 14" },
+  { id: "2A", className: "Class 11", subject: "Physics", title: "Mechanics", chapter: "Chapter 2", variant: "A", question: "Which of the following is a valid Python variable name?" },
+  { id: "3A", className: "Class 12", subject: "Chemistry", title: "Organic Chemistry", chapter: "Chapter 3", variant: "A", question: "Analyze the theme of revenge in Hamlet and its impact on the main characters." },
+  { id: "4A", className: "Class 10", subject: "Biology", title: "Human Anatomy", chapter: "Chapter 4", variant: "A", question: "Which of the following is NOT a current asset?" },
+  { id: "5A", className: "Class 11", subject: "Computer Science", title: "Data Structures", chapter: "Chapter 5", variant: "A", question: "Which of the following is NOT guaranteed under Article 19?" },
+];
+
+const Questions: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = React.useState<string>(searchParams.get('q') || "");
 
-  // Show Create Form
-  const showCreateForm = () => {
-    navigate("/questionform/new");
-  };
+  React.useEffect(() => {
+    const q = searchParams.get('q') || "";
+    setSearchQuery(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Handle Edit Click
-  const handleEdit = (record: any) => {
-    navigate(`/questionform/${record.id}`);
-  };
+  const filtered = React.useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return DUMMY_ITEMS.filter((item) =>
+      [item.className, item.subject, item.title, item.chapter, item.question]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [searchQuery]);
 
-  // Handle Delete Confirm
-  const handleDelete = (id: number) => {
-    message.success(`Question set ${id} deleted successfully!`);
-  };
-
-  // Handle View Click
-  const handleView = (record: any) => {
-    navigate(`/Viewquestion/${record.id}`);
-  };
-
-  const handleSearch = (value: string) => {
-    setSearchValue(value);
-    // Add search logic here
-  };
+  const columns: any[] = [
+    { title: "Question", dataIndex: "question", key: "question" },
+    { 
+      title: "Class", 
+      dataIndex: "className", 
+      key: "className", 
+      width: 120,
+      render: (value: string) => <Tag color="geekblue">{value}</Tag>
+    },
+    { 
+      title: "Subject", 
+      dataIndex: "subject", 
+      key: "subject", 
+      width: 140,
+      render: (value: string) => <Tag color="magenta">{value}</Tag>
+    },
+    { 
+      title: "Book", 
+      dataIndex: "title", 
+      key: "title", 
+      width: 180,
+      render: (value: string) => <Tag color="cyan">{value}</Tag>
+    },
+    { title: "Chapter", dataIndex: "chapter", key: "chapter", width: 160 },
+   
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_: unknown, record: QuestionListItem) => (
+        <Space size="middle">
+          <Button
+            type="link"
+            icon={<FaEdit color="orange" size={16} />}
+            size="small"
+            onClick={() => navigate(`/questionform/${record.id}${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
+            title="Edit"
+          />
+        
+        </Space>
+      ),
+    },
+  ];
 
   return (
     <>
       <PageHeader title="Questions" backButton={true}>
-      <Select
-          placeholder="Filter by Class"
-          allowClear
-          style={{ width: 180, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Class:", value)}
-          className="font-local2"
-          options={[
-            { value: "0", label: "0" },
-            { value: "LKG", label: "LKG" },
-            { value: "UKG", label: "UKG" },
-            { value: "1", label: "1" },
-            { value: "2", label: "2" },
-            { value: "3", label: "3" },
-            { value: "4", label: "4" },
-            { value: "5", label: "5" },
-            { value: "6", label: "6" },
-            { value: "7", label: "7" },
-            { value: "8", label: "8" },
-          ]}
-        />
-        <Select
-          placeholder="Filter by Subject"
-          allowClear
-          style={{ width: 180, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Subject:", value)}
-          className="font-local2"
-          options={[
-            { value: "Malayalam", label: "Malayalam" },
-            { value: "English", label: "English" },
-            { value: "Maths", label: "Maths" },
-            { value: "GK", label: "GK" },
-            { value: "Computer", label: "Computer" },
-            { value: "EVS", label: "EVS" },
-            { value: "Social Science", label: "Social Science" },
-            { value: "Science", label: "Science" },
-          ]}
-        />
-        <Select
-          placeholder="Filter by Title"
-          allowClear
-          style={{ width: 200, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Title:", value)}
-          className="font-local2"
-          options={[
-            { value: "Algebra Basics", label: "Algebra Basics" },
-            { value: "Mechanics", label: "Mechanics" },
-            { value: "Organic Chemistry", label: "Organic Chemistry" },
-            { value: "Human Anatomy", label: "Human Anatomy" },
-            { value: "Data Structures", label: "Data Structures" },
-          ]}
-        />
-        <Select
-          placeholder="Filter by Chapter"
-          allowClear
-          style={{ width: 200, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Chapter:", value)}
-          className="font-local2"
-          options={[
-            { value: "Chapter 1", label: "Chapter 1" },
-            { value: "Chapter 2", label: "Chapter 2" },
-            { value: "Chapter 3", label: "Chapter 3" },
-            { value: "Chapter 4", label: "Chapter 4" },
-          ]}
-        />
-       
-        
         <Button
           type="primary"
-          style={{ backgroundColor: "#007575", color: "white" }}
-          className="font-local2"
-          onClick={showCreateForm}
+          size="medium"
+          style={{ backgroundColor: "#007575", borderColor: "#007575" }}
+          onClick={() => navigate(`/questionform/new${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
         >
-          Create Questions
+          Create New
         </Button>
       </PageHeader>
 
-      <Datatable
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
-      />
+      <Card className="w-full mt-4 shadow-md">
+        <div style={{padding: 12, borderRadius: 8 }}>
+          <Row gutter={16} align="middle" justify="start">
+            <Col xs={24} sm={18} md={16} lg={14} xl={12}>
+              <Search
+                placeholder="Search by class, subject, title or chapter"
+                allowClear
+                enterButton
+                size="large"
+                onSearch={(val: string) => {
+                  setSearchQuery(val);
+                  setSearchParams(val ? { q: val } : {});
+                }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  setSearchParams(val ? { q: val } : {});
+                }}
+                value={searchQuery}
+              />
+            </Col>
+          </Row>
+        </div>
+
+        {/* Show table only when searching; otherwise show an empty state */}
+      {searchQuery.trim() ? (
+          <Table
+            className="mt-4"
+            rowKey={(row: QuestionListItem) => row.id}
+            columns={columns as any}
+            dataSource={filtered}
+            pagination={{ pageSize: 5, showSizeChanger: false }}
+          />
+        ) : (
+          <div style={{ marginTop: 24, padding: 24, textAlign: 'center', color: '#888' }}>
+            Start typing to search questions
+          </div>
+        )}
+      </Card>
     </>
   );
 };
 
 export default Questions;
+
+

@@ -15,7 +15,6 @@ import Books from "./Views/Admin/Post_Login/Books/index"
 import Chapters from "./Views/Admin/Post_Login/Chapters"
 import Questions from "./Views/Admin/Post_Login/Questions"
 import QuestionForm from "./Views/Admin/Post_Login/Questions/components/form"
-import QuestionViiew from "./Views/Admin/Post_Login/Questions/components/view"
 import MyPapers from "./Views/Admin/Post_Login/mypapers"
 import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
 
@@ -67,7 +66,6 @@ function App() {
             <Route path="/questions" element={<Questions />} />
             <Route path="chaptersform/:id" element={<Chaptersform />} />
             <Route path="/questionform/:id" element={<QuestionForm/>} />
-            <Route path="/Viewquestion/:id" element={<QuestionViiew/>} />    
             <Route path="/mypapers" element={<MyPapers />} />
         </Route>
         <Route path="*" element={<Navigate to={`/${getDefaultRoute()}`} replace />} />

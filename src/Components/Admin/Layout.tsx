@@ -79,7 +79,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
         },  
         {
           title: "Question Management",
-          items: menuItems.filter(item => ['Books', 'courses', 'Chapters', 'questions','Chapters'].includes(item.id))
+          items: menuItems.filter(item => ['Books', 'courses', 'Chapters', 'questions','Chapters',"listquestions"].includes(item.id))
         },  
         {
           title: "EXAMS",

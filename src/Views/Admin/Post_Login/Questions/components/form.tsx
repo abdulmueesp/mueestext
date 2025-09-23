@@ -5,7 +5,7 @@
 import React from "react";
 import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, InputNumber, Upload, message } from "antd";
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
 import img from "../../../../../assets/matching.png"
 import img2 from "../../../../../assets/match2.jpeg"
@@ -17,6 +17,7 @@ const { TextArea } = Input;
 const QuestionForm = () => {
   const [form] = Form.useForm();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEdit = id && id !== 'new';
   const [submitting, setSubmitting] = React.useState(false);
@@ -358,7 +359,8 @@ const QuestionForm = () => {
         message.success("Questions updated successfully!");
       }
   
-      navigate("/questions");
+      const q = searchParams.get('q');
+      navigate(`/questions${q ? `?q=${encodeURIComponent(q)}` : ''}`);
     } catch (error: any) {
       console.error("Failed to submit questions", error);
       const description =
@@ -371,7 +373,8 @@ const QuestionForm = () => {
   
 
   const handleCancel = () => {
-    navigate('/questions');
+    const q = searchParams.get('q');
+    navigate(`/questions${q ? `?q=${encodeURIComponent(q)}` : ''}`);
   };
 
   // Removed dependency handlers; selectors are independent now
@@ -401,6 +404,36 @@ const QuestionForm = () => {
   // Set initial values if editing (mapping to new fields)
   React.useEffect(() => {
     if (isEdit && id) {
+      // Try to map from Questions list dummy IDs (e.g., 1A, 1B)
+      const listDummy: Record<string, { className: string; subject: string; title: string; chapter: string; question: string; }> = {
+        '1A': { className: 'Class 10', subject: 'Mathematics', title: 'Algebra Basics', chapter: 'Chapter 1', question: 'What is the solution to the equation 2x + 5 = 13?' },
+        '1B': { className: 'Class 10', subject: 'Mathematics', title: 'Algebra Basics', chapter: 'Chapter 1', question: 'Solve: 3x - 7 = 14' },
+        '2A': { className: 'Class 11', subject: 'Physics', title: 'Mechanics', chapter: 'Chapter 2', question: 'Which of the following is a valid Python variable name?' },
+        '3A': { className: 'Class 12', subject: 'Chemistry', title: 'Organic Chemistry', chapter: 'Chapter 3', question: 'Analyze the theme of revenge in Hamlet and its impact on the main characters.' },
+        '4A': { className: 'Class 10', subject: 'Biology', title: 'Human Anatomy', chapter: 'Chapter 4', question: 'Which of the following is NOT a current asset?' },
+        '5A': { className: 'Class 11', subject: 'Computer Science', title: 'Data Structures', chapter: 'Chapter 5', question: 'Which of the following is NOT guaranteed under Article 19?' },
+      };
+
+      const listItem = listDummy[id];
+      if (listItem) {
+        form.setFieldsValue({
+          className: listItem.className,
+          subject: listItem.subject,
+          title: listItem.title,
+          chapter: listItem.chapter,
+          status: true,
+          questions: [
+            {
+              questionType: 'shortanswer',
+              question: listItem.question,
+              marks: 1,
+            },
+          ],
+        });
+        return;
+      }
+
+      // Fallback to legacy dummy mapping
       const dummyData = getDummyData(id);
       if (dummyData) {
         const mapped = {
@@ -423,7 +456,6 @@ const QuestionForm = () => {
           }),
         };
         form.setFieldsValue(mapped);
-        // selectors are independent; no need to set selection state
       }
     }
   }, [form, isEdit, id]);
@@ -520,7 +552,7 @@ const QuestionForm = () => {
 
   return (
     <>
-      <PageHeader title={isEdit ? "Edit Questions" : "Create Questions"} backButton={true} />
+      <PageHeader title={isEdit ? "Edit Question" : "Add Question"} backButton={true} />
       
       <Card className="w-full mt-4 shadow-md">
         <Form
@@ -529,7 +561,8 @@ const QuestionForm = () => {
           onFinish={handleFinish}
           className="font-local2"
           initialValues={{
-            status: true
+            status: true,
+            questions: [{}]
           }}
         >
           {/* Basic Information */}
@@ -614,7 +647,7 @@ const QuestionForm = () => {
 
           {/* Dynamic Questions */}
           <Form.List name="questions">
-            {(fields, { add, remove }) => (
+            {(fields) => (
               <>
                 {fields.map(({ key, name, ...restField }) => (
                   <Card 
@@ -622,15 +655,7 @@ const QuestionForm = () => {
                     size="small" 
                     className="mb-4"
                     style={{ backgroundColor: '#f8f9fa' }}
-                    title={`Question ${name + 1}`}
-                    extra={
-                      <Button
-                        type="text"
-                        icon={<MinusCircleOutlined />}
-                        onClick={() => remove(name)}
-                        danger
-                      />
-                    }
+                    
                   >
                     <Row gutter={16}>
                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -735,18 +760,7 @@ const QuestionForm = () => {
                     )}
                   </Card>
                 ))}
-                <Form.Item>
-                  <Button
-                    type="dashed"
-                    onClick={() => add()}
-                    icon={<PlusOutlined />}
-                    size="large"
-                    className="w-full h-12"
-                    style={{ maxWidth: '800px' }}
-                  >
-                    Add Question
-                  </Button>
-                </Form.Item>
+                
               </>
             )}
           </Form.List>
@@ -768,7 +782,7 @@ const QuestionForm = () => {
                 loading={submitting}
                 disabled={submitting}
               >
-                {isEdit ? "Update Questions" : "Submit"}
+                {isEdit ? "Update Question" : "Submit"}
               </Button>
             </Space>
           </Row>

@@ -22,9 +22,16 @@ export const menuData = {  admin: [
     {
       id: "questions",
       icon: VscGitPullRequestGoToChanges,
-      label: "Questions",
+      label: "Add Question",
+      path: "/questionform/new",
+    },
+    {
+      id: "listquestions",
+      icon: VscGitPullRequestGoToChanges,
+      label: "List Question",
       path: "/questions",
     },
+    
     {
       id: "Create Paper",
       icon: FiFilePlus,
