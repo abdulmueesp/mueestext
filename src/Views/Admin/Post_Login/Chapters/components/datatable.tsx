@@ -5,43 +5,12 @@ import { Table, Tag, Button, Popconfirm, Popover } from "antd";
 import { FaEdit, FaRegEye } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 
-const SubjectDatatable = ({ onEdit, onDelete, onView }) => {
-  const data: any[] = [
-    {
-      key: "1",
-      id: 1,
-      title: "Numbers Workbook",
-      subject: "Maths",
-      class: "1",
-      chapters: ["Counting", "Addition", "Subtraction", "Shapes", "Patterns"],
-      
-    },
-    {
-      key: "2",
-      id: 2,
-      title: "Alphabets Fun",
-      subject: "English",
-      class: "LKG",
-      chapters: ["A to E", "F to J", "K to O", "P to T", "U to Z"],
-      
-    },
-    {
-      key: "3",
-      id: 3,
-      title: "My First GK",
-      subject: "GK",
-      class: "UKG",
-      chapters: ["Animals", "Fruits", "Vehicles"]
-    },
-    {
-      key: "4",
-      id: 4,
-      title: "Basics of Computing",
-      subject: "Computer",
-      class: "3",
-      chapters: ["What is a Computer?", "Input/Output Devices", "Using Mouse", "Typing Basics"]
+const SubjectDatatable = ({ onEdit, onDelete, onView, data = [], loading = false, onChangePageParams, currentPage, pageSize, total }) => {
+  const handleTableChange = (pag: any) => {
+    if (typeof onChangePageParams === 'function') {
+      onChangePageParams({ page: pag.current, pageSize: pag.pageSize });
     }
-  ];
+  };
 
   const columns: any[] = [
     {
@@ -138,15 +107,17 @@ const SubjectDatatable = ({ onEdit, onDelete, onView }) => {
       <Table
         columns={columns}
         dataSource={data}
+        loading={loading}
         pagination={{
-          current: 1,
-          pageSize: 10,
-          total: data.length,
+          current: currentPage || 1,
+          pageSize: pageSize || 10,
+          total: typeof total === 'number' ? total : (Array.isArray(data) ? data.length : 0),
           showSizeChanger: true,
           showQuickJumper: true,
           showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
           pageSizeOptions: ["5", "10", "20", "50"],
         }}
+        onChange={handleTableChange}
         scroll={{ x: 1500 }}
         size="middle"
         className="font-local2"

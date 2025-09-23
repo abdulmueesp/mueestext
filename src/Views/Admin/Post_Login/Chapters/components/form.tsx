@@ -5,7 +5,7 @@ import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, me
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
-import { API, GET } from "@/Components/common/api";
+import { API, GET, POST } from "@/Components/common/api";
 
 
 const { TextArea } = Input;
@@ -43,6 +43,7 @@ const Chaptersform = () => {
   const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
   const [booksOptions, setBooksOptions] = React.useState<Array<{ value: string; label: string }>>([]);
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
+  const [submitting, setSubmitting] = React.useState<boolean>(false);
 
   // Dummy data aligned to Title/Subject/Class/Chapters
   const getDummyData = (id: string) => {
@@ -183,7 +184,9 @@ const Chaptersform = () => {
     }
   };
 
-  const handleFinish = (values: any) => {
+  const handleFinish = async (values: any) => {
+    if (submitting) return;
+    setSubmitting(true);
     // Build clean payload for submission/preview
     const payload = {
       class: values?.class,
@@ -196,24 +199,21 @@ const Chaptersform = () => {
       type: values?.type ?? "Public",
     };
 
-    // Preview JSON payload to the user
-    Modal.info({
-      title: isEdit ? "Update Chapter - Payload" : "Create Chapter - Payload",
-      width: 720,
-      content: (
-        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 12 }}>
-{JSON.stringify(payload, null, 2)}
-        </pre>
-      ),
-      onOk: () => {
-        if (isEdit) {
-          message.success("Chapter updated successfully!");
-        } else {
-          message.success("Chapter created successfully!");
-        }
-        navigate('/chapters');
+    try {
+      if (isEdit) {
+        // If edit flow requires PUT/PATCH, adjust accordingly; using POST to /chapter for now
+        await POST(API.CHAPTER, { id, ...payload });
+        message.success("Chapter updated successfully!");
+      } else {
+        await POST(API.CHAPTER, payload);
+        message.success("Chapter created successfully!");
       }
-    });
+      navigate('/chapters');
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to save chapter');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -376,6 +376,7 @@ const Chaptersform = () => {
                   backgroundColor: "#007575", 
                   borderColor: "#007575" 
                 }}
+                loading={submitting}
               >
                 {isEdit ? "Update" : "Submit"}
               </Button>

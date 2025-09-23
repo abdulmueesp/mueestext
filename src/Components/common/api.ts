@@ -8,6 +8,7 @@ export const API = {
   BASE: "",
   BOOKS: "/books",
   ALL_BOOKS: "/allbooks",
+  CHAPTER: "/chapter",
 };
 
 const buildUrl = (endpoint: string, query?: Record<string, any>) => {
