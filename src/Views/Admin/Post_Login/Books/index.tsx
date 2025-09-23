@@ -1,10 +1,11 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select,message } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { IoIosSearch, IoMdRefresh } from "react-icons/io";
-
+import { API, GET, POST, DELETE as DELETE_REQ } from "../../../../Components/common/api";
+import loadinsvg from "../../../../assets/spinning-dots.svg"
 const { TextArea } = Input;
 
 const Books = () => {
@@ -35,12 +36,17 @@ const Books = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [form] = Form.useForm();
-  const [editingRecord, setEditingRecord] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [tableData, setTableData] = useState<any[]>([]);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   // Open Modal for Create
   const showModal = () => {
-    setEditingRecord(null);
     setViewRecord(null);
     setIsModalOpen(true);
     form.resetFields();
@@ -49,7 +55,6 @@ const Books = () => {
   // Close Form Modal
   const handleCancel = () => {
     setIsModalOpen(false);
-    setEditingRecord(null);
     setViewRecord(null);
     form.resetFields();
   };
@@ -61,36 +66,33 @@ const Books = () => {
   // Save Form
   const handleOk = async () => {
     try {
+      if (submitting) return;
+      setSubmitting(true);
       const values = await form.validateFields();
-      if (editingRecord) {
-        message.success("Book updated successfully!");
-      } else {
-        message.success("Book created successfully!");
-      }
+      await POST(API.BOOKS, values);
+      message.success("Book created successfully!");
       setIsModalOpen(false);
-      setEditingRecord(null);
       setViewRecord(null);
       form.resetFields();
+      // Refresh table data after create
+      fetchBooks();
     } catch (error) {
       console.log("Validation Failed:", error);
     }
-  };
-
-  // Handle Edit Click
-  const handleEdit = (record: any) => {
-    setEditingRecord(record);
-    setViewRecord(null);
-    form.setFieldsValue({
-      title: record.title,
-      subject: record.subject,
-      class: record.class,
-    });
-    setIsModalOpen(true);
+    finally {
+      setSubmitting(false);
+    }
   };
 
   // Handle Delete Confirm
-  const handleDelete = (id: number) => {
-    message.success(`Book ${id} deleted successfully!`);
+  const handleDelete = async (id: string | number) => {
+    try {
+      await DELETE_REQ(`${API.BOOKS}/${id}`);
+      message.success(`Book ${id} deleted successfully!`);
+      fetchBooks();
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to delete book');
+    }
   };
 
   // Handle View Click
@@ -100,14 +102,58 @@ const Books = () => {
   };
   const handleSearch = (value: string) => {
     setSearchValue(value);
-    // Add search logic here
   };
+
+  const fetchBooks = async (opts?: { pageSize?: number, page?: number, q?: string }) => {
+    try {
+      setLoading(true);
+      const size = opts?.pageSize ?? pageSize ?? 10;
+      const page = opts?.page ?? currentPage ?? 1;
+      const query: any = { pageSize: size, page: page };
+      // Backend expects search key as 'quesryname'
+      if (opts?.q) query.book= opts.q;
+      const data = await GET(API.ALL_BOOKS, query);
+      const rows = Array.isArray(data?.results)
+        ? data.results.map((r: any) => ({
+            id: r._id || r.id,
+            key: r._id || r.id,
+            book: r.book || r.title || "",
+            bookCode: r.code || r.bookCode || "",
+            subject: r.subject,
+            class: String(r.class ?? ""),
+          }))
+        : [];
+      setTableData(rows);
+      setTotal(data?.total || data?.count || rows.length);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks({ pageSize: 10 });
+  }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchValue.trim());
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchValue]);
+
+  // Trigger search on debounce
+  useEffect(() => {
+    fetchBooks({ pageSize, page: currentPage, q: debouncedSearch || undefined });
+  }, [debouncedSearch]);
 
   return (
     <>
       <PageHeader title="Books" backButton={true}>
       <Input
-              placeholder="Search by Title"
+              placeholder="Search by Book"
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
@@ -129,14 +175,41 @@ const Books = () => {
         
       </PageHeader>
 
-      <Datatable onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />
+      {loading ? (
+        <div className="w-full flex justify-center items-center py-16">
+          <img src={loadinsvg} alt="Loading" className="w-14 h-14" />
+        </div>
+      ) : (
+        <Datatable
+          onDelete={handleDelete}
+          onView={handleView}
+          data={tableData}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          total={total}
+          onChangePageParams={({ page, pageSize: ps }) => {
+            const newPageSize = ps || pageSize;
+            const newPage = page || currentPage;
+            
+            if (ps && ps !== pageSize) {
+              setPageSize(ps);
+            }
+            if (page && page !== currentPage) {
+              setCurrentPage(page);
+            }
+            
+            fetchBooks({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
+          }}
+        />
+      )}
 
-      {/* Create / Edit Modal */}
+      {/* Create Modal */}
       <Modal
-        title={editingRecord ? "Edit Book" : "Create Book"}
+        title={"Create Book"}
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
+        confirmLoading={submitting}
         okText="Submit"
         cancelText="Cancel"
         centered
@@ -149,15 +222,28 @@ const Books = () => {
         }}
       >
         <Form form={form} layout="vertical">
+        
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item 
-                name="title" 
-                label="Title" 
+                name="book" 
+                label="book" 
                 required={false}
-                rules={[{ required: true, message: 'Please enter book title!' }]}
+                rules={[{ required: true, message: 'Please enter book name' }]}
               >
-                <Input placeholder="Enter book title" />
+                <Input placeholder="Enter book name" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item 
+                name="code" 
+                label="Book Code" 
+                required={false}
+                rules={[{ required: true, message: 'Please enter book code!' }]}
+              >
+                <Input placeholder="Enter book code" />
               </Form.Item>
             </Col>
           </Row>

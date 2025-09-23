@@ -1,6 +1,6 @@
 
 // @ts-nocheck
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Modal, Card, Divider,message } from "antd";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../../../../Components/common/PageHeader";
@@ -9,11 +9,19 @@ import SubjectDatatable from "./components/datatable";
 import { Select } from "antd";
 import { Input } from "antd";
 import { IoIosSearch } from "react-icons/io";
+import { API, GET } from "@/Components/common/api";
 
 const Subjects = () => {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState(null);
   const [searchValue, setSearchValue] = useState("");
+  const [filterClass, setFilterClass] = useState<string | undefined>(undefined);
+  const [filterSubject, setFilterSubject] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [rows, setRows] = useState<any[]>([]);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
   const navigate = useNavigate();
 
   // Show Create Form
@@ -37,10 +45,46 @@ const Subjects = () => {
     setIsViewOpen(true);
   };
 
+  useEffect(() => {
+    fetchChapters({ pageSize, page: currentPage });
+  }, []);
+
+  const fetchChapters = async (opts?: { q?: string, cls?: string, subj?: string, page?: number, pageSize?: number }) => {
+    try {
+      setLoading(true);
+      const size = opts?.pageSize ?? pageSize ?? 10;
+      const page = opts?.page ?? currentPage ?? 1;
+      const query: any = { pageSize: size, page };
+      if (opts?.q) query.book = opts.q;
+      if (opts?.cls) query.class = opts.cls;
+      if (opts?.subj) query.subject = opts.subj;
+      const data = await GET(API.CHAPTER, query);
+      const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+      const mapped = list.map((r: any) => {
+        const chapters = Array.isArray(r?.chapters)
+          ? r.chapters.map((c: any) => (typeof c === 'string' ? c : (c?.chapterName || c?.name || ""))).filter(Boolean)
+          : [];
+        return {
+          id: r?._id || r?.id,
+          key: r?._id || r?.id,
+          title: r?.book || r?.title || "",
+          subject: r?.subject || "",
+          class: String(r?.class ?? ""),
+          chapters,
+        };
+      });
+      setRows(mapped);
+      setTotal(data?.total || data?.count || mapped.length);
+    } catch (e) {
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (value: string) => {
     setSearchValue(value);
-    // Add search logic here
+    fetchChapters({ q: value, cls: filterClass, subj: filterSubject });
   };
 
   return (
@@ -50,7 +94,10 @@ const Subjects = () => {
           placeholder="Filter by Class"
           allowClear
           style={{ width: 180, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Class:", value)}
+          onChange={(value) => {
+            setFilterClass(value);
+            fetchChapters({ q: searchValue, cls: value, subj: filterSubject });
+          }}
           className="font-local2"
           options={[
             { value: "0", label: "0" },
@@ -70,7 +117,10 @@ const Subjects = () => {
           placeholder="Filter by Subject"
           allowClear
           style={{ width: 180, marginRight: 8 }}
-          onChange={(value) => console.log("Selected Subject:", value)}
+          onChange={(value) => {
+            setFilterSubject(value);
+            fetchChapters({ q: searchValue, cls: filterClass, subj: value });
+          }}
           className="font-local2"
           options={[
             { value: "Malayalam", label: "Malayalam" },
@@ -109,6 +159,18 @@ const Subjects = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onView={handleView}
+        data={rows}
+        loading={loading}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        total={total}
+        onChangePageParams={({ page, pageSize: ps }) => {
+          const newPageSize = ps || pageSize;
+          const newPage = page || currentPage;
+          if (ps && ps !== pageSize) setPageSize(ps);
+          if (page && page !== currentPage) setCurrentPage(page);
+          fetchChapters({ q: searchValue || undefined, cls: filterClass, subj: filterSubject, page: newPage, pageSize: newPageSize });
+        }}
       />
 
       {/* View Modal */}

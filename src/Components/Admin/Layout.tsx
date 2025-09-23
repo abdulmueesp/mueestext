@@ -86,7 +86,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
           items: menuItems.filter(item => ['Create Paper', 'My Papers'].includes(item.id))
         },
         {
-          title: "User Management",
+          title: "School Management",
           items: menuItems.filter(item => ['users'].includes(item.id))
         },
       ];

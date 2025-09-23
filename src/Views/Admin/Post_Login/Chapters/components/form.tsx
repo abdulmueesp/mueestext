@@ -1,10 +1,11 @@
 
 // @ts-nocheck
 import React from "react";
-import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, message } from "antd";
+import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, message, Modal } from "antd";
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
+import { API, GET, POST } from "@/Components/common/api";
 
 
 const { TextArea } = Input;
@@ -37,6 +38,12 @@ const Chaptersform = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = id && id !== 'new';
+
+  const [selectedClass, setSelectedClass] = React.useState<string | undefined>(undefined);
+  const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
+  const [booksOptions, setBooksOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
+  const [submitting, setSubmitting] = React.useState<boolean>(false);
 
   // Dummy data aligned to Title/Subject/Class/Chapters
   const getDummyData = (id: string) => {
@@ -122,14 +129,91 @@ const Chaptersform = () => {
 
   // No module/course now
 
-  const handleFinish = (values: any) => {
-    console.log("Form values:", values);
-    if (isEdit) {
-      message.success("Chapter updated successfully!");
-    } else {
-      message.success("Chapter created successfully!");
+  const fetchBooks = async (cls?: string, subj?: string) => {
+    if (!cls || !subj) return;
+    try {
+      setBooksLoading(true);
+      setBooksOptions([]);
+      const data = await GET(API.BOOKS, { class: cls, subject: subj });
+      // Expected shape: { count: number, books: string[] }
+      const list = Array.isArray(data?.books)
+        ? data.books
+        : Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data)
+            ? data
+            : [];
+      const options = list
+        .map((item: any) => {
+          // If API gives strings (book names)
+          if (typeof item === 'string') {
+            return { value: item, label: item };
+          }
+          // Else try object mapping fallback
+          const label = item?.book || item?.title || item?.name || "";
+          const value = item?._id || item?.id || item?.code || label;
+          return label ? { value: String(value), label: String(label) } : null;
+        })
+        .filter(Boolean) as Array<{ value: string; label: string }>;
+      setBooksOptions(options);
+    } catch (e) {
+      // fallback: empty options
+      setBooksOptions([]);
+    } finally {
+      setBooksLoading(false);
     }
-    navigate('/chapters');
+  };
+
+  const onChangeClass = (value: string) => {
+    setSelectedClass(value);
+    // reset book when dependency changes
+    form.setFieldValue('book', undefined);
+    setBooksOptions([]);
+    if (value && selectedSubject) {
+      fetchBooks(value, selectedSubject);
+    }
+  };
+
+  const onChangeSubject = (value: string) => {
+    setSelectedSubject(value);
+    // reset book when dependency changes
+    form.setFieldValue('book', undefined);
+    setBooksOptions([]);
+    if (selectedClass && value) {
+      fetchBooks(selectedClass, value);
+    }
+  };
+
+  const handleFinish = async (values: any) => {
+    if (submitting) return;
+    setSubmitting(true);
+    // Build clean payload for submission/preview
+    const payload = {
+      class: values?.class,
+      subject: values?.subject,
+      book: values?.book,
+      chapters: Array.isArray(values?.chapters)
+        ? values.chapters.map((c: any) => ({ chapterName: c?.chapterName }))
+        : [],
+      status: values?.status ?? true,
+      type: values?.type ?? "Public",
+    };
+
+    try {
+      if (isEdit) {
+        // If edit flow requires PUT/PATCH, adjust accordingly; using POST to /chapter for now
+        await POST(API.CHAPTER, { id, ...payload });
+        message.success("Chapter updated successfully!");
+      } else {
+        await POST(API.CHAPTER, payload);
+        message.success("Chapter created successfully!");
+      }
+      navigate('/chapters');
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to save chapter');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -177,7 +261,7 @@ const Chaptersform = () => {
                 label="Class"
                 rules={[{ required: true, message: 'Please select class!' }]}
               >
-                <Select placeholder="Select class" size="large">
+                <Select placeholder="Select class" size="large" onChange={onChangeClass} allowClear>
                   {CLASS_OPTIONS.map((cls) => (
                     <Option key={cls} value={cls}>{cls}</Option>
                   ))}
@@ -191,7 +275,7 @@ const Chaptersform = () => {
                 label="Subject"
                 rules={[{ required: true, message: 'Please select subject!' }]}
               >
-                <Select placeholder="Select subject" size="large">
+                <Select placeholder="Select subject" size="large" onChange={onChangeSubject} allowClear>
                   {SUBJECT_OPTIONS.map((subj) => (
                     <Option key={subj} value={subj}>{subj}</Option>
                   ))}
@@ -204,15 +288,18 @@ const Chaptersform = () => {
             <Col xs={24} sm={24} md={12} lg={12} xl={12}>
               <Form.Item
               required={false}
-                name="title"
-                label="Title"
-                rules={[{ required: true, message: 'Please select title!' }]}
+                name="book"
+                label="Book"
+                rules={[{ required: true, message: 'Please select book!' }]}
               >
-                <Select placeholder="Select title" size="large" allowClear>
-                  {TITLE_OPTIONS.map((t) => (
-                    <Option key={t} value={t}>{t}</Option>
-                  ))}
-                </Select>
+                <Select
+                  placeholder="Select book"
+                  size="large"
+                  allowClear
+                  loading={booksLoading}
+                  disabled={!selectedClass || !selectedSubject}
+                  options={booksOptions}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -289,6 +376,7 @@ const Chaptersform = () => {
                   backgroundColor: "#007575", 
                   borderColor: "#007575" 
                 }}
+                loading={submitting}
               >
                 {isEdit ? "Update" : "Submit"}
               </Button>
