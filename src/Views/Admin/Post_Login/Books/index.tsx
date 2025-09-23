@@ -41,6 +41,8 @@ const Books = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tableData, setTableData] = useState<any[]>([]);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   // Open Modal for Create
@@ -102,13 +104,14 @@ const Books = () => {
     setSearchValue(value);
   };
 
-  const fetchBooks = async (opts?: { pageSize?: number, q?: string }) => {
+  const fetchBooks = async (opts?: { pageSize?: number, page?: number, q?: string }) => {
     try {
       setLoading(true);
       const size = opts?.pageSize ?? pageSize ?? 10;
-      const query: any = { pageSize: size };
+      const page = opts?.page ?? currentPage ?? 1;
+      const query: any = { pageSize: size, page: page };
       // Backend expects search key as 'quesryname'
-      if (opts?.q) query.search = opts.q;
+      if (opts?.q) query.book= opts.q;
       const data = await GET(API.ALL_BOOKS, query);
       const rows = Array.isArray(data?.results)
         ? data.results.map((r: any) => ({
@@ -121,6 +124,7 @@ const Books = () => {
           }))
         : [];
       setTableData(rows);
+      setTotal(data?.total || data?.count || rows.length);
     } catch (e) {
       console.log(e);
     } finally {
@@ -142,8 +146,8 @@ const Books = () => {
 
   // Trigger search on debounce
   useEffect(() => {
-    fetchBooks({ pageSize, q: debouncedSearch || undefined });
-  }, [debouncedSearch, pageSize]);
+    fetchBooks({ pageSize, page: currentPage, q: debouncedSearch || undefined });
+  }, [debouncedSearch]);
 
   return (
     <>
@@ -180,11 +184,21 @@ const Books = () => {
           onDelete={handleDelete}
           onView={handleView}
           data={tableData}
-          onChangePageParams={({ pageSize: ps }) => {
+          currentPage={currentPage}
+          pageSize={pageSize}
+          total={total}
+          onChangePageParams={({ page, pageSize: ps }) => {
+            const newPageSize = ps || pageSize;
+            const newPage = page || currentPage;
+            
             if (ps && ps !== pageSize) {
               setPageSize(ps);
-              fetchBooks({ pageSize: ps });
             }
+            if (page && page !== currentPage) {
+              setCurrentPage(page);
+            }
+            
+            fetchBooks({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
           }}
         />
       )}

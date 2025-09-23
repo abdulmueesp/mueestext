@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Table, Tag, Button, Popconfirm } from "antd";
 import {MdDeleteOutline } from "react-icons/md";
 
-const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams }) => {
+const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, currentPage, pageSize, total }) => {
 
   const columns: any[] = [
     {
@@ -58,16 +58,9 @@ const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams }) =
     },
   ];
 
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
-
   const handleTableChange = (pag: any) => {
-    const next = {
-      current: pag.current,
-      pageSize: pag.pageSize,
-    };
-    setPagination(next);
     if (typeof onChangePageParams === 'function') {
-      onChangePageParams({ page: next.current, pageSize: next.pageSize });
+      onChangePageParams({ page: pag.current, pageSize: pag.pageSize });
     }
   };
 
@@ -77,8 +70,9 @@ const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams }) =
         columns={columns}
         dataSource={Array.isArray(remoteData) ? remoteData : []}
         pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
+          current: currentPage || 1,
+          pageSize: pageSize || 10,
+          total: total || 0,
           showSizeChanger: true,
           showQuickJumper: false,
           showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
