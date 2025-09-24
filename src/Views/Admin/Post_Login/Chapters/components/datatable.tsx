@@ -14,7 +14,7 @@ const SubjectDatatable = ({ onEdit, onDelete, onView, data = [], loading = false
 
   const columns: any[] = [
     {
-      title: <span className="font-semibold">Title</span>,
+      title: <span className="font-semibold">Book</span>,
       dataIndex: "title",
       key: "title",
       width: 220,

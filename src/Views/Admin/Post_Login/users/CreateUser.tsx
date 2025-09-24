@@ -65,7 +65,7 @@ const CreateUser: React.FC = () => {
   }, [record, form]);
 
   const handleCancel = () => {
-    navigate("/users");
+    navigate("/schools");
   };
 
   const handleFinish = (values: any) => {

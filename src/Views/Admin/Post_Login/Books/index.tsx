@@ -227,7 +227,7 @@ const Books = () => {
             <Col span={24}>
               <Form.Item 
                 name="book" 
-                label="book" 
+                label="Book" 
                 required={false}
                 rules={[{ required: true, message: 'Please enter book name' }]}
               >

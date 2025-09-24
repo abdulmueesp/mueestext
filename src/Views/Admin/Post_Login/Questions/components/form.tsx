@@ -10,6 +10,7 @@ import PageHeader from "@/Components/common/PageHeader";
 import img from "../../../../../assets/matching.png"
 import img2 from "../../../../../assets/match2.jpeg"
 import axios from "axios";
+import { API, GET } from "@/Components/common/api";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -21,6 +22,14 @@ const QuestionForm = () => {
   const navigate = useNavigate();
   const isEdit = id && id !== 'new';
   const [submitting, setSubmitting] = React.useState(false);
+  const [selectedClass, setSelectedClass] = React.useState<string | undefined>(undefined);
+  const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
+  const [booksOptions, setBooksOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
+  const [selectedBook, setSelectedBook] = React.useState<string | undefined>(undefined);
+  const [selectedBookName, setSelectedBookName] = React.useState<string | undefined>(undefined);
+  const [chaptersOptions, setChaptersOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [chaptersLoading, setChaptersLoading] = React.useState<boolean>(false);
 
   // Complete dummy data for all question types - matching view.tsx structure
   const getDummyData = (id: string) => {
@@ -339,7 +348,7 @@ const QuestionForm = () => {
       const payload = {
         className: values?.className,
         subject: values?.subject,
-        title: values?.title,
+        title: values?.book,
         chapter: values?.chapter,
         status: values?.status ?? true,
         questions: normalizedQuestions,
@@ -382,6 +391,101 @@ const QuestionForm = () => {
   
 
   
+
+  const fetchBooks = async (cls?: string, subj?: string) => {
+    if (!cls || !subj) return;
+    try {
+      setBooksLoading(true);
+      setBooksOptions([]);
+      const data = await GET(API.BOOKS, { class: cls, subject: subj });
+      const list = Array.isArray(data?.books)
+        ? data.books
+        : Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data)
+            ? data
+            : [];
+      const options = list
+        .map((item: any) => {
+          if (typeof item === 'string') {
+            return { value: item, label: item };
+          }
+          const label = item?.book || item?.title || item?.name || "";
+          const value = item?._id || item?.id || item?.code || label;
+          return label ? { value: String(value), label: String(label) } : null;
+        })
+        .filter(Boolean) as Array<{ value: string; label: string }>;
+      setBooksOptions(options);
+    } catch (e) {
+      setBooksOptions([]);
+    } finally {
+      setBooksLoading(false);
+    }
+  };
+
+  const onChangeClass = (value: string) => {
+    setSelectedClass(value);
+    form.setFieldValue('book', undefined);
+    setBooksOptions([]);
+    if (value && selectedSubject) {
+      fetchBooks(value, selectedSubject);
+    }
+  };
+
+  const onChangeSubject = (value: string) => {
+    setSelectedSubject(value);
+    form.setFieldValue('book', undefined);
+    setBooksOptions([]);
+    if (selectedClass && value) {
+      fetchBooks(selectedClass, value);
+    }
+    // reset chapter when dependency changes
+    form.setFieldValue('chapter', undefined);
+    setChaptersOptions([]);
+  };
+
+  const fetchChapters = async (cls?: string, subj?: string, book?: string) => {
+    if (!cls || !subj || !book) return;
+    try {
+      setChaptersLoading(true);
+      setChaptersOptions([]);
+      // Using GET helper with direct path
+      const data = await GET('/chapters', { class: cls, subject: subj, book });
+      // Expected shape (per sample): { results: [{ chapters: [{ chapterName, _id }, ...] }] }
+      const chaptersArray = Array.isArray(data?.results) && data.results.length > 0
+        ? data.results[0]?.chapters || []
+        : Array.isArray(data?.chapters)
+          ? data.chapters
+          : Array.isArray(data)
+            ? data
+            : [];
+      const options = (chaptersArray as any[])
+        .map((ch: any) => {
+          const chapterName = typeof ch === 'string' ? ch : (ch?.chapterName || ch?.name || ch?.title || '');
+          return chapterName ? { value: String(chapterName), label: String(chapterName) } : null;
+        })
+        .filter(Boolean) as Array<{ value: string; label: string }>;
+      setChaptersOptions(options);
+    } catch (e) {
+      setChaptersOptions([]);
+    } finally {
+      setChaptersLoading(false);
+    }
+  };
+
+  const onChangeBook = (value: string, option: any) => {
+    setSelectedBook(value);
+    const bookName = option?.label ?? value;
+    setSelectedBookName(bookName);
+    // reset chapter when book changes
+    form.setFieldValue('chapter', undefined);
+    setChaptersOptions([]);
+    if (selectedClass && selectedSubject && bookName) {
+      fetchChapters(selectedClass, selectedSubject, bookName);
+    }
+  };
+
+  // Chapters are fetched only when book changes
 
   
 
@@ -481,10 +585,6 @@ const QuestionForm = () => {
                         >
                           <Input 
                             placeholder={`Option ${name + 1}`}
-                            onChange={() => {
-                              // Force re-render of correct answer checkboxes
-                              setQuestionTypeChangeKey(prev => prev + 1);
-                            }}
                           />
                         </Form.Item>
                       </Col>
@@ -578,6 +678,8 @@ const QuestionForm = () => {
                   placeholder="Select class" 
                   size="large"
                   options={classOptions}
+                  onChange={onChangeClass}
+                  allowClear
                 />
               </Form.Item>
             </Col>
@@ -592,20 +694,26 @@ const QuestionForm = () => {
                   placeholder="Select subject" 
                   size="large"
                   options={subjectOptions}
+                  onChange={onChangeSubject}
+                  allowClear
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
               required={false}
-                name="title"
-                label="Title"
+                name="book"
+                label="Book"
                 rules={[{ required: true, message: 'Please select a title!' }]}
               >
                 <Select 
-                  placeholder="Select title" 
+                  placeholder="Select Book" 
                   size="large"
-                  options={titleOptions}
+                  allowClear
+                  loading={booksLoading}
+                  disabled={!selectedClass || !selectedSubject}
+                  options={booksOptions}
+                  onChange={onChangeBook}
                 />
               </Form.Item>
             </Col>
@@ -622,7 +730,10 @@ const QuestionForm = () => {
                 <Select 
                   placeholder="Select chapter" 
                   size="large"
-                  options={chapterOptions}
+                  allowClear
+                  loading={chaptersLoading}
+                  disabled={!selectedClass || !selectedSubject || !selectedBook}
+                  options={chaptersOptions}
                 />
               </Form.Item>
             </Col>
