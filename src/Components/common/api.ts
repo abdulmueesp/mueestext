@@ -9,6 +9,7 @@ export const API = {
   BOOKS: "/books",
   ALL_BOOKS: "/allbooks",
   CHAPTER: "/chapter",
+  SUBJECT: "/subject",
 };
 
 const buildUrl = (endpoint: string, query?: Record<string, any>) => {

@@ -74,15 +74,15 @@ const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, cur
           pageSize: pageSize || 10,
           total: total || 0,
           showSizeChanger: true,
-          showQuickJumper: false,
+          // showQuickJumper: true,
           showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
           pageSizeOptions: ["5", "10", "20", "50"],
-          itemRender: (_: any, type: any) => {
-            if (type === 'page' || type === 'prev' || type === 'next' || type === 'jump-prev' || type === 'jump-next') {
-              return null;
-            }
-            return null;
-          },
+          // itemRender: (_: any, type: any) => {
+          //   if (type === 'page' || type === 'prev' || type === 'next' || type === 'jump-prev' || type === 'jump-next') {
+          //     return null;
+          //   }
+          //   return null;
+          // },
         }}
         onChange={handleTableChange}
         scroll={{ x: 1200 }}

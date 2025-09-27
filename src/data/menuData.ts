@@ -6,7 +6,7 @@ import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
 export const menuData = {  admin: [
   { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
     { id: "users", icon: LuSchool, label: "List Schools", path: "/schools" },
-    
+    { id: "subjects", icon: LuSchool, label: "Subjects", path: "/subjects" },
     {
       id: "Books",
       icon: AiOutlineProfile,

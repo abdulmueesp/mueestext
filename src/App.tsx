@@ -17,6 +17,7 @@ import Questions from "./Views/Admin/Post_Login/Questions"
 import QuestionForm from "./Views/Admin/Post_Login/Questions/components/form"
 import MyPapers from "./Views/Admin/Post_Login/mypapers"
 import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
+import Subject from "./Views/Admin/Post_Login/Subject"
 
 function App() {
   const { isAuthenticated, role } = useSelector((state: RootState) => state.user);
@@ -67,6 +68,7 @@ function App() {
             <Route path="chaptersform/:id" element={<Chaptersform />} />
             <Route path="/questionform/:id" element={<QuestionForm/>} />
             <Route path="/mypapers" element={<MyPapers />} />
+            <Route path="/subjects" element={<Subject />} />
         </Route>
         <Route path="*" element={<Navigate to={`/${getDefaultRoute()}`} replace />} />
       </>
