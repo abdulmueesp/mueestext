@@ -2,10 +2,10 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Card, Row, Col, Button, Table, Tag, Space, message } from "antd";
-import { FaEdit, FaPaperPlane } from "react-icons/fa";
-import Search from "antd/es/input/Search";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Card, Button, Table, Tag, Space, Select, Input } from "antd";
+import { FaEdit } from "react-icons/fa";
+import { IoIosSearch } from "react-icons/io";
+import { useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
 
 type QuestionListItem = {
@@ -29,25 +29,44 @@ const DUMMY_ITEMS: QuestionListItem[] = [
 
 const Questions: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = React.useState<string>(searchParams.get('q') || "");
 
-  React.useEffect(() => {
-    const q = searchParams.get('q') || "";
-    setSearchQuery(q);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [filterClass, setFilterClass] = React.useState<string | undefined>(undefined);
+  const [filterSubject, setFilterSubject] = React.useState<string | undefined>(undefined);
+  const [filterBook, setFilterBook] = React.useState<string | undefined>(undefined);
+  const [filterChapter, setFilterChapter] = React.useState<string | undefined>(undefined);
+  const [searchValue, setSearchValue] = React.useState<string>("");
+
+  const classOptions = React.useMemo(
+    () => Array.from(new Set(DUMMY_ITEMS.map((i) => i.className))).map((v) => ({ value: v, label: v })),
+    []
+  );
+  const subjectOptions = React.useMemo(
+    () => Array.from(new Set(DUMMY_ITEMS.map((i) => i.subject))).map((v) => ({ value: v, label: v })),
+    []
+  );
+  const bookOptions = React.useMemo(
+    () => Array.from(new Set(DUMMY_ITEMS.map((i) => i.title))).map((v) => ({ value: v, label: v })),
+    []
+  );
+  const chapterOptions = React.useMemo(
+    () => Array.from(new Set(DUMMY_ITEMS.map((i) => i.chapter))).map((v) => ({ value: v, label: v })),
+    []
+  );
 
   const filtered = React.useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return [];
-    return DUMMY_ITEMS.filter((item) =>
-      [item.className, item.subject, item.title, item.chapter, item.question]
+    const query = searchValue.trim().toLowerCase();
+    return DUMMY_ITEMS.filter((item) => {
+      const matchClass = !filterClass || item.className === filterClass;
+      const matchSubject = !filterSubject || item.subject === filterSubject;
+      const matchBook = !filterBook || item.title === filterBook;
+      const matchChapter = !filterChapter || item.chapter === filterChapter;
+      const matchSearch = !query || [item.className, item.subject, item.title, item.chapter, item.question]
         .join(" ")
         .toLowerCase()
-        .includes(query)
-    );
-  }, [searchQuery]);
+        .includes(query);
+      return matchClass && matchSubject && matchBook && matchChapter && matchSearch;
+    });
+  }, [filterClass, filterSubject, filterBook, filterChapter, searchValue]);
 
   const columns: any[] = [
     { title: "Question", dataIndex: "question", key: "question" },
@@ -83,7 +102,7 @@ const Questions: React.FC = () => {
             type="link"
             icon={<FaEdit color="orange" size={16} />}
             size="small"
-            onClick={() => navigate(`/questionform/${record.id}${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
+            onClick={() => navigate(`/questionform/${record.id}`)}
             title="Edit"
           />
         
@@ -95,55 +114,73 @@ const Questions: React.FC = () => {
   return (
     <>
       <PageHeader title="Questions" backButton={true}>
+        <Select
+          placeholder="Filter by Class"
+          allowClear
+          style={{ width: 180, marginRight: 8 }}
+          onChange={(value) => setFilterClass(value)}
+          className="font-local2"
+          options={classOptions}
+          value={filterClass}
+        />
+        <Select
+          placeholder="Filter by Subject"
+          allowClear
+          style={{ width: 180, marginRight: 8 }}
+          onChange={(value) => setFilterSubject(value)}
+          className="font-local2"
+          options={subjectOptions}
+          value={filterSubject}
+        />
+        <Select
+          placeholder="Filter by Book"
+          allowClear
+          style={{ width: 200, marginRight: 8 }}
+          onChange={(value) => setFilterBook(value)}
+          className="font-local2"
+          options={bookOptions}
+          value={filterBook}
+        />
+        <Select
+          placeholder="Filter by Chapter"
+          allowClear
+          style={{ width: 200, marginRight: 8 }}
+          onChange={(value) => setFilterChapter(value)}
+          className="font-local2"
+          options={chapterOptions}
+          value={filterChapter}
+        />
+        <Input
+          placeholder="Search by name"
+          prefix={<IoIosSearch className="text-gray-400" />}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none w-56"
+          style={{
+            backgroundColor: "#f9fafb",
+            color: "#374151",
+            border: "1px solid #d1d5db",
+            marginRight: 8,
+          }}
+        />
         <Button
           type="primary"
           size="medium"
           style={{ backgroundColor: "#007575", borderColor: "#007575" }}
-          onClick={() => navigate(`/questionform/new${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`)}
+          onClick={() => navigate(`/questionform/new`)}
         >
           Create New
         </Button>
       </PageHeader>
 
-      <Card className="w-full mt-4 shadow-md">
-        <div style={{padding: 12, borderRadius: 8 }}>
-          <Row gutter={16} align="middle" justify="start">
-            <Col xs={24} sm={18} md={16} lg={14} xl={12}>
-              <Search
-                placeholder="Search by class, subject, title or chapter"
-                allowClear
-                enterButton
-                size="large"
-                onSearch={(val: string) => {
-                  setSearchQuery(val);
-                  setSearchParams(val ? { q: val } : {});
-                }}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const val = e.target.value;
-                  setSearchQuery(val);
-                  setSearchParams(val ? { q: val } : {});
-                }}
-                value={searchQuery}
-              />
-            </Col>
-          </Row>
-        </div>
-
-        {/* Show table only when searching; otherwise show an empty state */}
-      {searchQuery.trim() ? (
-          <Table
-            className="mt-4"
-            rowKey={(row: QuestionListItem) => row.id}
-            columns={columns as any}
-            dataSource={filtered}
-            pagination={{ pageSize: 5, showSizeChanger: false }}
-          />
-        ) : (
-          <div style={{ marginTop: 24, padding: 24, textAlign: 'center', color: '#888' }}>
-            Start typing to search questions
-          </div>
-        )}
-      </Card>
+        <Table
+          className="mt-4"
+          rowKey={(row: QuestionListItem) => row.id}
+          columns={columns as any}
+          dataSource={filtered}
+          pagination={{ pageSize: 5, showSizeChanger: false }}
+        />
+    
     </>
   );
 };

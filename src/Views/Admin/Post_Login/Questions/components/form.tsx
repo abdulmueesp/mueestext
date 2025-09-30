@@ -25,6 +25,8 @@ const QuestionForm = () => {
   const [selectedClass, setSelectedClass] = React.useState<string | undefined>(undefined);
   const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
   const [booksOptions, setBooksOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [subjectsOptions, setSubjectsOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [subjectsLoading, setSubjectsLoading] = React.useState<boolean>(false);
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
   const [selectedBook, setSelectedBook] = React.useState<string | undefined>(undefined);
   const [selectedBookName, setSelectedBookName] = React.useState<string | undefined>(undefined);
@@ -263,17 +265,26 @@ const QuestionForm = () => {
     { value: "8", label: "8" },
   ];
 
-  // Independent options (no cascading)
-  const subjectOptions = [
-    { value: "Malayalam", label: "Malayalam" },
-    { value: "English", label: "English" },
-    { value: "Maths", label: "Maths" },
-    { value: "GK", label: "GK" },
-    { value: "Computer", label: "Computer" },
-    { value: "EVS", label: "EVS" },
-    { value: "Social Science", label: "Social Science" },
-    { value: "Science", label: "Science" }
-  ];
+  // Fetch subjects similar to Chapters form
+  const fetchSubjects = async () => {
+    try {
+      setSubjectsLoading(true);
+      const data = await GET(API.SUBJECT);
+      const list = Array.isArray(data?.subjects)
+        ? data.subjects.map((s: any) => ({ value: s.name, label: s.name }))
+        : [];
+      setSubjectsOptions(list);
+    } catch (e) {
+    console.log("s");
+    
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   const titleOptions = [
     { value: "Algebra Basics", label: "Algebra Basics" },
@@ -344,11 +355,15 @@ const QuestionForm = () => {
         return normalized;
       });
   
+      // Resolve book name (send name, not id)
+      const resolvedBookName = selectedBookName || (booksOptions.find(b => b.value === values?.book)?.label) || values?.book;
+
       // Build payload (no examType here, backend doesn’t use it)
       const payload = {
         className: values?.className,
         subject: values?.subject,
-        title: values?.book,
+        title: resolvedBookName,
+        book: resolvedBookName,
         chapter: values?.chapter,
         status: values?.status ?? true,
         questions: normalizedQuestions,
@@ -444,13 +459,13 @@ const QuestionForm = () => {
     setChaptersOptions([]);
   };
 
-  const fetchChapters = async (cls?: string, subj?: string, book?: string) => {
-    if (!cls || !subj || !book) return;
+  const fetchChapters = async (cls?: string, subj?: string, bookId?: string) => {
+    if (!cls || !subj || !bookId) return;
     try {
       setChaptersLoading(true);
       setChaptersOptions([]);
       // Using GET helper with direct path
-      const data = await GET('/chapters', { class: cls, subject: subj, book });
+      const data = await GET('/chaptersr', { class: cls, subject: subj, book: bookId });
       // Expected shape (per sample): { results: [{ chapters: [{ chapterName, _id }, ...] }] }
       const chaptersArray = Array.isArray(data?.results) && data.results.length > 0
         ? data.results[0]?.chapters || []
@@ -480,8 +495,8 @@ const QuestionForm = () => {
     // reset chapter when book changes
     form.setFieldValue('chapter', undefined);
     setChaptersOptions([]);
-    if (selectedClass && selectedSubject && bookName) {
-      fetchChapters(selectedClass, selectedSubject, bookName);
+    if (selectedClass && selectedSubject && value) {
+      fetchChapters(selectedClass, selectedSubject, value);
     }
   };
 
@@ -693,7 +708,8 @@ const QuestionForm = () => {
                 <Select 
                   placeholder="Select subject" 
                   size="large"
-                  options={subjectOptions}
+                  options={subjectsOptions}
+                  loading={subjectsLoading}
                   onChange={onChangeSubject}
                   allowClear
                 />

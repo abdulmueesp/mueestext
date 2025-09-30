@@ -25,13 +25,7 @@ const SUBJECT_OPTIONS = [
 
 const CLASS_OPTIONS = ["0", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8"];
 
-const TITLE_OPTIONS = [
-  "Numbers Workbook",
-  "Alphabets Fun",
-  "My First GK",
-  "Basics of Computing",
-  "Environment Around Us",
-];
+
 
 const Chaptersform = () => {
   const [form] = Form.useForm();
@@ -43,6 +37,7 @@ const Chaptersform = () => {
   const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
   const [booksOptions, setBooksOptions] = React.useState<Array<{ value: string; label: string }>>([]);
   const [subjectsOptions, setSubjectsOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [subjectsLoading, setSubjectsLoading] = React.useState<boolean>(false);
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
   const [submitting, setSubmitting] = React.useState<boolean>(false);
   const [selectedBookId, setSelectedBookId] = React.useState<string | undefined>(undefined);
@@ -133,18 +128,16 @@ const Chaptersform = () => {
 
   const fetchSubjects = async () => {
     try {
+      setSubjectsLoading(true);
       const data = await GET(API.SUBJECT);
       const subjectsList = Array.isArray(data?.subjects)
-        ? data.subjects.map((s: any) => ({
-            value: s.name,
-            label: s.name,
-          }))
+        ? data.subjects.map((s: any) => ({ value: s.name, label: s.name }))
         : [];
       setSubjectsOptions(subjectsList);
     } catch (e) {
-      console.log("Failed to fetch subjects:", e);
-      // Fallback to static options
       setSubjectsOptions(SUBJECT_OPTIONS.map(subj => ({ value: subj, label: subj })));
+    } finally {
+      setSubjectsLoading(false);
     }
   };
 
@@ -304,6 +297,7 @@ const Chaptersform = () => {
                   onChange={onChangeSubject} 
                   allowClear
                   options={subjectsOptions}
+                  loading={subjectsLoading}
                 />
               </Form.Item>
             </Col>

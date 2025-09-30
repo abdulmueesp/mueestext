@@ -22,6 +22,8 @@ const Subjects = () => {
   const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
+  const [subjectsOptions, setSubjectsOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
   // Show Create Form
@@ -53,6 +55,7 @@ const Subjects = () => {
 
   useEffect(() => {
     fetchChapters({ pageSize, page: currentPage });
+    fetchSubjects();
   }, []);
 
   const fetchChapters = async (opts?: { q?: string, cls?: string, subj?: string, page?: number, pageSize?: number }) => {
@@ -64,7 +67,7 @@ const Subjects = () => {
       if (opts?.q) query.book = opts.q;
       if (opts?.cls) query.class = opts.cls;
       if (opts?.subj) query.subject = opts.subj;
-      const data = await GET(API.CHAPTER, query);
+      const data = await GET(API.CHAPTERGET, query);
       const list = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
       const mapped = list.map((r: any) => {
         const chapters = Array.isArray(r?.chapters)
@@ -85,6 +88,30 @@ const Subjects = () => {
       setRows([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      setSubjectsLoading(true);
+      const data = await GET(API.SUBJECT);
+      const subjectsList = Array.isArray(data?.subjects)
+        ? data.subjects.map((s: any) => ({ value: s.name, label: s.name }))
+        : [];
+      setSubjectsOptions(subjectsList);
+    } catch (e) {
+      setSubjectsOptions([
+        { value: "Malayalam", label: "Malayalam" },
+        { value: "English", label: "English" },
+        { value: "Maths", label: "Maths" },
+        { value: "GK", label: "GK" },
+        { value: "Computer", label: "Computer" },
+        { value: "EVS", label: "EVS" },
+        { value: "Social Science", label: "Social Science" },
+        { value: "Science", label: "Science" },
+      ]);
+    } finally {
+      setSubjectsLoading(false);
     }
   };
 
@@ -128,16 +155,8 @@ const Subjects = () => {
             fetchChapters({ q: searchValue, cls: filterClass, subj: value });
           }}
           className="font-local2"
-          options={[
-            { value: "Malayalam", label: "Malayalam" },
-            { value: "English", label: "English" },
-            { value: "Maths", label: "Maths" },
-            { value: "GK", label: "GK" },
-            { value: "Computer", label: "Computer" },
-            { value: "EVS", label: "EVS" },
-            { value: "Social Science", label: "Social Science" },
-            { value: "Science", label: "Science" },
-          ]}
+          options={subjectsOptions}
+          loading={subjectsLoading}
         />
         <Input
           placeholder="Search by name"
