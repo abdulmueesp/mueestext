@@ -63,6 +63,29 @@ export const POST = async (
   return res.json();
 };
 
+export const PUT = async (
+  endpoint: string,
+  body?: Record<string, any> | FormData,
+  query?: Record<string, any>
+) => {
+  const url = buildUrl(endpoint, query);
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: isFormData
+      ? { Accept: "application/json" }
+      : { "Content-Type": "application/json", Accept: "application/json" },
+    body: isFormData ? (body as FormData) : JSON.stringify(body || {}),
+  });
+  if (res.status === 400) {
+    const text = await res.text();
+    message.error(text || "Bad Request");
+    throw new Error(text || `Request failed with status ${res.status}`);
+  }
+
+  return res.json();
+};
+
 export const DELETE = async (
   endpoint: string,
   query?: Record<string, any>
@@ -89,6 +112,7 @@ export default {
   API,
   GET,
   POST,
+  PUT,
   DELETE,
 };
 

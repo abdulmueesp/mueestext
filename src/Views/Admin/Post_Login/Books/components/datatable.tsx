@@ -1,9 +1,10 @@
 // @ts-nocheck
 import React, { useState } from "react";
-import { Table, Tag, Button, Popconfirm } from "antd";
-import {MdDeleteOutline } from "react-icons/md";
+import { Table, Tag, Button, Popconfirm, Tooltip } from "antd";
+import { MdDeleteOutline, MdEdit } from "react-icons/md";
+import { FaEdit } from "react-icons/fa";
 
-const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, currentPage, pageSize, total }) => {
+const Datatable = ({ onDelete, onView, onEdit, data: remoteData, onChangePageParams, currentPage, pageSize, total }) => {
 
   const columns: any[] = [
     {
@@ -37,21 +38,38 @@ const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, cur
     {
       title: <span className="font-semi">Actions</span>,
       key: "actions",
-      width: 80,
+      width: 120,
       render: (_: any, record: any) => (
         <div className="flex gap-2">
+          <Tooltip title="Edit Book">
+            <Button
+              type="link"
+              icon={<FaEdit color="orange" size={18}/>}
+              size="small"
+              onClick={() => onEdit(record)}
+              title="Edit"
+            />
+          </Tooltip>
           <Popconfirm
             title="Are you sure you want to delete this book?"
             onConfirm={() => onDelete(record.id)}
             okText="Yes"
             cancelText="No"
+            okButtonProps={{ 
+              style: { 
+                backgroundColor: "#007575", 
+                borderColor: "#007575" 
+              } 
+            }}
           >
-            <Button
-              type="link"
-              icon={<MdDeleteOutline size={18} color="red" />}
-              size="small"
-              title="Delete"
-            />
+            <Tooltip title="Delete Book">
+              <Button
+                type="link"
+                icon={<MdDeleteOutline size={18} color="red" />}
+                size="small"
+                title="Delete"
+              />
+            </Tooltip>
           </Popconfirm>
         </div>
       ),

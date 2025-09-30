@@ -4,7 +4,7 @@ import { Button, Modal, Form, Input, Popconfirm, Card, Row, Col, Switch, Select,
 import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { IoIosSearch, IoMdRefresh } from "react-icons/io";
-import { API, GET, POST, DELETE as DELETE_REQ } from "../../../../Components/common/api";
+import { API, GET, POST, PUT, DELETE as DELETE_REQ } from "../../../../Components/common/api";
 import loadinsvg from "../../../../assets/spinning-dots.svg"
 const { TextArea } = Input;
 
@@ -37,6 +37,8 @@ const Books = () => {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [form] = Form.useForm();
   const [viewRecord, setViewRecord] = useState(null);
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tableData, setTableData] = useState<any[]>([]);
@@ -48,14 +50,29 @@ const Books = () => {
   // Open Modal for Create
   const showModal = () => {
     setViewRecord(null);
+    setEditingRecord(null);
     setIsModalOpen(true);
     form.resetFields();
+  };
+
+  // Open Modal for Edit
+  const showEditModal = (record: any) => {
+    setViewRecord(null);
+    setEditingRecord(record);
+    setIsModalOpen(true);
+    form.setFieldsValue({
+      book: record.book,
+      code: record.bookCode,
+      subject: record.subject,
+      class: record.class,
+    });
   };
 
   // Close Form Modal
   const handleCancel = () => {
     setIsModalOpen(false);
     setViewRecord(null);
+    setEditingRecord(null);
     form.resetFields();
   };
   const handleRefresh = () => {
@@ -69,12 +86,22 @@ const Books = () => {
       if (submitting) return;
       setSubmitting(true);
       const values = await form.validateFields();
-      await POST(API.BOOKS, values);
-      message.success("Book created successfully!");
+      
+      if (editingRecord) {
+        // Update existing book
+        await PUT(`${API.BOOKS}/${editingRecord.id}`, values);
+        message.success("Book updated successfully!");
+      } else {
+        // Create new book
+        await POST(API.BOOKS, values);
+        message.success("Book created successfully!");
+      }
+      
       setIsModalOpen(false);
       setViewRecord(null);
+      setEditingRecord(null);
       form.resetFields();
-      // Refresh table data after create
+      // Refresh table data after create/update
       fetchBooks();
     } catch (error) {
       console.log("Validation Failed:", error);
@@ -102,6 +129,23 @@ const Books = () => {
   };
   const handleSearch = (value: string) => {
     setSearchValue(value);
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const data = await GET(API.SUBJECT);
+      const subjectsList = Array.isArray(data?.subjects)
+        ? data.subjects.map((s: any) => ({
+            value: s.name,
+            label: s.name,
+          }))
+        : [];
+      setSubjects(subjectsList);
+    } catch (e) {
+      console.log("Failed to fetch subjects:", e);
+      // Fallback to static options
+      setSubjects(SUBJECT_OPTIONS.map(subj => ({ value: subj, label: subj })));
+    }
   };
 
   const fetchBooks = async (opts?: { pageSize?: number, page?: number, q?: string }) => {
@@ -134,6 +178,7 @@ const Books = () => {
 
   useEffect(() => {
     fetchBooks({ pageSize: 10 });
+    fetchSubjects();
   }, []);
 
   // Debounce search input
@@ -183,6 +228,7 @@ const Books = () => {
         <Datatable
           onDelete={handleDelete}
           onView={handleView}
+          onEdit={showEditModal}
           data={tableData}
           currentPage={currentPage}
           pageSize={pageSize}
@@ -203,14 +249,14 @@ const Books = () => {
         />
       )}
 
-      {/* Create Modal */}
+      {/* Create/Edit Modal */}
       <Modal
-        title={"Create Book"}
+        title={editingRecord ? "Edit Book" : "Create Book"}
         open={isModalOpen}
         onOk={handleOk}
         onCancel={handleCancel}
         confirmLoading={submitting}
-        okText="Submit"
+        okText={editingRecord ? "Update" : "Submit"}
         cancelText="Cancel"
         centered
         width={700}
@@ -256,11 +302,7 @@ const Books = () => {
                 label="Subject"
                 rules={[{ required: true, message: 'Please select subject!' }]}
               >
-                <Select placeholder="Select subject">
-                  {SUBJECT_OPTIONS.map((subj) => (
-                    <Select.Option key={subj} value={subj}>{subj}</Select.Option>
-                  ))}
-                </Select>
+                <Select placeholder="Select subject" options={subjects} />
               </Form.Item>
             </Col>
             <Col span={12}>

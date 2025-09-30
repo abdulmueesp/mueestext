@@ -9,7 +9,7 @@ import SubjectDatatable from "./components/datatable";
 import { Select } from "antd";
 import { Input } from "antd";
 import { IoIosSearch } from "react-icons/io";
-import { API, GET } from "@/Components/common/api";
+import { API, GET, DELETE as DELETE_REQ } from "@/Components/common/api";
 
 const Subjects = () => {
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -35,8 +35,14 @@ const Subjects = () => {
   };
 
   // Handle Delete Confirm
-  const handleDelete = (id: number) => {
-    message.success(`Chapter ${id} deleted successfully!`);
+  const handleDelete = async (id: string | number) => {
+    try {
+      await DELETE_REQ(`${API.CHAPTER}/${id}`);
+      message.success(`Chapter ${id} deleted successfully!`);
+      fetchChapters({ pageSize, page: currentPage, q: searchValue, cls: filterClass, subj: filterSubject });
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to delete chapter');
+    }
   };
 
   // Handle View Click

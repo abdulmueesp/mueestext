@@ -42,8 +42,10 @@ const Chaptersform = () => {
   const [selectedClass, setSelectedClass] = React.useState<string | undefined>(undefined);
   const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
   const [booksOptions, setBooksOptions] = React.useState<Array<{ value: string; label: string }>>([]);
+  const [subjectsOptions, setSubjectsOptions] = React.useState<Array<{ value: string; label: string }>>([]);
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
   const [submitting, setSubmitting] = React.useState<boolean>(false);
+  const [selectedBookId, setSelectedBookId] = React.useState<string | undefined>(undefined);
 
   // Dummy data aligned to Title/Subject/Class/Chapters
   const getDummyData = (id: string) => {
@@ -129,13 +131,30 @@ const Chaptersform = () => {
 
   // No module/course now
 
+  const fetchSubjects = async () => {
+    try {
+      const data = await GET(API.SUBJECT);
+      const subjectsList = Array.isArray(data?.subjects)
+        ? data.subjects.map((s: any) => ({
+            value: s.name,
+            label: s.name,
+          }))
+        : [];
+      setSubjectsOptions(subjectsList);
+    } catch (e) {
+      console.log("Failed to fetch subjects:", e);
+      // Fallback to static options
+      setSubjectsOptions(SUBJECT_OPTIONS.map(subj => ({ value: subj, label: subj })));
+    }
+  };
+
   const fetchBooks = async (cls?: string, subj?: string) => {
     if (!cls || !subj) return;
     try {
       setBooksLoading(true);
       setBooksOptions([]);
       const data = await GET(API.BOOKS, { class: cls, subject: subj });
-      // Expected shape: { count: number, books: string[] }
+      // Expected shape: {"books":[{"id":"68d7acd91750e70f29944d23","book":"muees23"}]}
       const list = Array.isArray(data?.books)
         ? data.books
         : Array.isArray(data?.results)
@@ -145,14 +164,10 @@ const Chaptersform = () => {
             : [];
       const options = list
         .map((item: any) => {
-          // If API gives strings (book names)
-          if (typeof item === 'string') {
-            return { value: item, label: item };
-          }
-          // Else try object mapping fallback
-          const label = item?.book || item?.title || item?.name || "";
-          const value = item?._id || item?.id || item?.code || label;
-          return label ? { value: String(value), label: String(label) } : null;
+          // Handle the new API response format with id and book fields
+          const bookId = item?.id || item?._id;
+          const bookName = item?.book || item?.title || item?.name || "";
+          return bookId && bookName ? { value: String(bookId), label: String(bookName) } : null;
         })
         .filter(Boolean) as Array<{ value: string; label: string }>;
       setBooksOptions(options);
@@ -167,7 +182,8 @@ const Chaptersform = () => {
   const onChangeClass = (value: string) => {
     setSelectedClass(value);
     // reset book when dependency changes
-    form.setFieldValue('book', undefined);
+    form.setFieldValue('bookId', undefined);
+    setSelectedBookId(undefined);
     setBooksOptions([]);
     if (value && selectedSubject) {
       fetchBooks(value, selectedSubject);
@@ -177,11 +193,16 @@ const Chaptersform = () => {
   const onChangeSubject = (value: string) => {
     setSelectedSubject(value);
     // reset book when dependency changes
-    form.setFieldValue('book', undefined);
+    form.setFieldValue('bookId', undefined);
+    setSelectedBookId(undefined);
     setBooksOptions([]);
     if (selectedClass && value) {
       fetchBooks(selectedClass, value);
     }
+  };
+
+  const onChangeBook = (value: string) => {
+    setSelectedBookId(value);
   };
 
   const handleFinish = async (values: any) => {
@@ -191,8 +212,9 @@ const Chaptersform = () => {
     const payload = {
       class: values?.class,
       subject: values?.subject,
-      book: values?.book,
+      bookid: values?.bookId, // Use bookId from form values
       chapters: Array.isArray(values?.chapters)
+
         ? values.chapters.map((c: any) => ({ chapterName: c?.chapterName }))
         : [],
       status: values?.status ?? true,
@@ -220,10 +242,6 @@ const Chaptersform = () => {
     navigate('/chapters');
   };
 
-  const handleModuleChange = (value: string) => {
-    setSelectedModule(value);
-    form.setFieldValue('course', undefined); // Reset course when module changes
-  };
 
   // Set initial values if editing
   React.useEffect(() => {
@@ -234,6 +252,11 @@ const Chaptersform = () => {
       }
     }
   }, [form, isEdit, id]);
+
+  // Fetch subjects on component mount
+  React.useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   return (
     <>
@@ -275,11 +298,13 @@ const Chaptersform = () => {
                 label="Subject"
                 rules={[{ required: true, message: 'Please select subject!' }]}
               >
-                <Select placeholder="Select subject" size="large" onChange={onChangeSubject} allowClear>
-                  {SUBJECT_OPTIONS.map((subj) => (
-                    <Option key={subj} value={subj}>{subj}</Option>
-                  ))}
-                </Select>
+                <Select 
+                  placeholder="Select subject" 
+                  size="large" 
+                  onChange={onChangeSubject} 
+                  allowClear
+                  options={subjectsOptions}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -288,7 +313,7 @@ const Chaptersform = () => {
             <Col xs={24} sm={24} md={12} lg={12} xl={12}>
               <Form.Item
               required={false}
-                name="book"
+                name="bookId"
                 label="Book"
                 rules={[{ required: true, message: 'Please select book!' }]}
               >
@@ -299,6 +324,7 @@ const Chaptersform = () => {
                   loading={booksLoading}
                   disabled={!selectedClass || !selectedSubject}
                   options={booksOptions}
+                  onChange={onChangeBook}
                 />
               </Form.Item>
             </Col>
