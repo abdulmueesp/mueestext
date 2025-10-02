@@ -200,6 +200,13 @@ const Chaptersform = () => {
 
   const handleFinish = async (values: any) => {
     if (submitting) return;
+    
+    // Check if chapters exist and have at least one item
+    if (!values?.chapters || values.chapters.length === 0) {
+      message.error('At least one chapter is required!');
+      return;
+    }
+
     setSubmitting(true);
     // Build clean payload for submission/preview
     const payload = {
@@ -236,13 +243,49 @@ const Chaptersform = () => {
   };
 
 
-  // Set initial values if editing
-  React.useEffect(() => {
-    if (isEdit && id) {
-      const dummyData = getDummyData(id);
+  // Fetch chapter data for editing
+  const fetchChapterData = async (chapterId: string) => {
+    try {
+      const data = await GET(`${API.CHAPTER}/${chapterId}`);
+      if (data) {
+        // Set form values from API response
+        const formData = {
+          class: data.class,
+          subject: data.subject,
+          bookId: data.bookid || data.bookId,
+          chapters: Array.isArray(data.chapters) 
+            ? data.chapters.map((ch: any) => ({
+                chapterName: typeof ch === 'string' ? ch : (ch?.chapterName || ch?.name || '')
+              }))
+            : []
+        };
+        
+        form.setFieldsValue(formData);
+        
+        // Set state values to enable dependent dropdowns
+        setSelectedClass(data.class);
+        setSelectedSubject(data.subject);
+        setSelectedBookId(data.bookid || data.bookId);
+        
+        // Fetch books if class and subject are available
+        if (data.class && data.subject) {
+          fetchBooks(data.class, data.subject);
+        }
+      }
+    } catch (e: any) {
+      message.error(e?.message || 'Failed to load chapter data');
+      // Fallback to dummy data if API fails
+      const dummyData = getDummyData(chapterId);
       if (dummyData) {
         form.setFieldsValue(dummyData);
       }
+    }
+  };
+
+  // Set initial values if editing
+  React.useEffect(() => {
+    if (isEdit && id) {
+      fetchChapterData(id);
     }
   }, [form, isEdit, id]);
 

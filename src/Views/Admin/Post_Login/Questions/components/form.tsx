@@ -3,14 +3,13 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, InputNumber, Upload, message } from "antd";
+import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, InputNumber, Upload, message, Modal } from "antd";
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
-import img from "../../../../../assets/matching.png"
-import img2 from "../../../../../assets/match2.jpeg"
 import axios from "axios";
-import { API, GET } from "@/Components/common/api";
+import { API, GET, BASE_URL } from "@/Components/common/api";
+// Cropping functionality removed
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -32,222 +31,31 @@ const QuestionForm = () => {
   const [selectedBookName, setSelectedBookName] = React.useState<string | undefined>(undefined);
   const [chaptersOptions, setChaptersOptions] = React.useState<Array<{ value: string; label: string }>>([]);
   const [chaptersLoading, setChaptersLoading] = React.useState<boolean>(false);
+  const [uploadingImages, setUploadingImages] = React.useState<Record<number, boolean>>({});
+  
+  // Image upload modal states
+  const [imageModalVisible, setImageModalVisible] = React.useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState<number | null>(null);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [imgSrc, setImgSrc] = React.useState<string>('');
 
-  // Complete dummy data for all question types - matching view.tsx structure
-  const getDummyData = (id: string) => {
-    const questions = {
-      '1': {
-        className: "Class 10",
-        subject: "Mathematics",
-        title: "Algebra Basics",
-        chapter: "Chapter 1",
-        examType: "Unit Test",
-        questions: [
-          {
-            questionType: "mcq",
-            question: "What is the solution to the equation 2x + 5 = 13?",
-            marks: 2,
-            options: [
-              { text: "x = 4" },
-              { text: "x = 3" },
-              { text: "x = 5" },
-              { text: "x = 6" }
-            ],
-            correctAnswer: [0],
-            image: null
-          },
-          {
-            questionType: "fillblank",
-            question: "If 3x - 7 = 14, then x = ____",
-            marks: 3,
-            correctAnswer: "7",
-            image: null
-          },
-          {
-            questionType: "shortanswer",
-            question: "Explain how to graph the equation y = 2x + 3",
-            marks: 5,
-            correctAnswer: "Start at y-intercept (0,3), use slope 2 (rise 2, run 1) to plot points",
-            image: null
-          }
-        ],
-        status: true
-      },
-      '2': {
-        className: "Class 11",
-        subject: "Physics",
-        title: "Mechanics",
-        chapter: "Chapter 2",
-        examType: "1 Midterm",
-        questions: [
-          {
-            questionType: "mcq",
-            question: "Which of the following is a valid Python variable name?",
-            marks: 1,
-            options: [
-              { text: "2variable" },
-              { text: "_variable" },
-              { text: "variable-name" },
-              { text: "class" }
-            ],
-            correctAnswer: [1],
-            image: null
-          },
-          {
-            questionType: "matching",
-            question: "Match the following diagram parts",
-            marks: 2,
-            image: img,
-            correctAnswer: "Students should match labels to parts on the image"
-          }
-        ],
-        status: true
-      },
-      '3': {
-        className: "Class 12",
-        subject: "Chemistry",
-        title: "Organic Chemistry",
-        chapter: "Chapter 3",
-        examType: "1 Term",
-        questions: [
-          {
-            questionType: "essay",
-            question: "Analyze the theme of revenge in Hamlet and its impact on the main characters.",
-            marks: 15,
-            correctAnswer: "The theme of revenge drives the plot through Hamlet's quest to avenge his father, Laertes seeking revenge for Polonius, and Fortinbras's quest for his father's honor. Each character represents different approaches to revenge with varying consequences.",
-            image: null
-          }
-        ],
-        status: false
-      },
-      '4': {
-        className: "Class 10",
-        subject: "Biology",
-        title: "Human Anatomy",
-        chapter: "Chapter 4",
-        examType: "2 Midterm",
-        questions: [
-          {
-            questionType: "mcq",
-            question: "Which of the following is NOT a current asset?",
-            marks: 2,
-            options: [
-              { text: "Cash and Cash Equivalents" },
-              { text: "Accounts Receivable" },
-              { text: "Property, Plant & Equipment" },
-              { text: "Inventory" }
-            ],
-            correctAnswer: [2],
-            image: null
-          },
-          {
-            questionType: "fillblank",
-            question: "The current ratio is calculated as Current Assets divided by ____",
-            marks: 2,
-            correctAnswer: "Current Liabilities",
-            image: null
-          },
-          {
-            questionType: "shortanswer",
-            question: "Explain the difference between operating cash flow and free cash flow.",
-            marks: 5,
-            correctAnswer: "Operating cash flow is cash generated from core business operations, while free cash flow is operating cash flow minus capital expenditures.",
-            image: null
-          }
-        ],
-        status: true
-      },
-      '5': {
-        className: "Class 11",
-        subject: "Computer Science",
-        title: "Data Structures",
-        chapter: "Chapter 5",
-        examType: "2 Term",
-        questions: [
-          {
-            questionType: "mcq",
-            question: "Which of the following is NOT guaranteed under Article 19?",
-            marks: 2,
-            options: [
-              { text: "Freedom of Speech and Expression" },
-              { text: "Right to Form Associations" },
-              { text: "Right to Practice Religion" },
-              { text: "Right to Move Freely" }
-            ],
-            correctAnswer: [2],
-            image: null
-          },
-          {
-            questionType: "essay",
-            question: "Discuss the significance of the Kesavananda Bharati case in Indian constitutional law.",
-            marks: 10,
-            correctAnswer: "The Kesavananda Bharati case established the basic structure doctrine, limiting Parliament's power to amend the Constitution and ensuring core constitutional principles remain intact.",
-            image: null
-          },
-          {
-            questionType: "fillblank",
-            question: "Article 32 is known as the ____ of the Constitution.",
-            marks: 2,
-            correctAnswer: "Heart and Soul",
-            image: null
-          },
-          {
-            questionType: "matching",
-            question: "Match the data structures with their time complexity",
-            marks: 3,
-            image: img2,
-            correctAnswer: "Students should match data structures with their Big O notation"
-          }
-        ],
-        status: true
-      },
-      '6': {
-        className: "Class 12",
-        subject: "Mathematics",
-        title: "Calculus",
-        chapter: "Chapter 6",
-        examType: "Unit Test",
-        questions: [
-          {
-            questionType: "shortanswer",
-            question: "What are the key elements of a successful content marketing strategy?",
-            marks: 4,
-            correctAnswer: "Target audience identification, content goals, content calendar, performance metrics, and consistent brand voice.",
-            image: null
-          },
-          {
-            questionType: "fillblank",
-            question: "The engagement rate is calculated by dividing total engagements by ____ and multiplying by 100.",
-            marks: 2,
-            correctAnswer: "total reach",
-            image: null
-          },
-          {
-            questionType: "mcq",
-            question: "Which content type typically generates the highest engagement on Instagram?",
-            marks: 2,
-            options: [
-              { text: "Static images with text overlay" },
-              { text: "Carousel posts with multiple images" },
-              { text: "Video content and Reels" },
-              { text: "Long-form captions only" }
-            ],
-            correctAnswer: [2],
-            image: null
-          },
-          {
-            questionType: "matching",
-            question: "Match the following mathematical functions with their derivatives",
-            marks: 3,
-            image: img,
-            correctAnswer: "Students should match functions with their derivative formulas"
-          }
-        ],
-        status: false
+  // Simple image preview utility
+  const onImageLoad = (img: HTMLImageElement) => {
+    console.log('Image loaded for preview:', img);
+  };
+
+  // Fetch question data for editing
+  const fetchQuestionData = async (questionId: string) => {
+    try {
+      const response = await GET(`${API.QUIZ_ITEMS}/${questionId}`);
+      if (response) {
+        return response;
       }
-    };
-
-    return questions[id] || null;
+    } catch (error) {
+      console.error('Failed to fetch question data:', error);
+      message.error('Failed to load question data');
+    }
+    return null;
   };
 
   // Selector options adapted to Class/Subject/Title/Chapter
@@ -286,32 +94,8 @@ const QuestionForm = () => {
     fetchSubjects();
   }, []);
 
-  const titleOptions = [
-    { value: "Algebra Basics", label: "Algebra Basics" },
-    { value: "Calculus", label: "Calculus" },
-    { value: "Mechanics", label: "Mechanics" },
-    { value: "Optics", label: "Optics" },
-    { value: "Organic Chemistry", label: "Organic Chemistry" },
-    { value: "Physical Chemistry", label: "Physical Chemistry" },
-    { value: "Human Anatomy", label: "Human Anatomy" },
-    { value: "Data Structures", label: "Data Structures" },
-    { value: "Algorithms", label: "Algorithms" }
-  ];
 
-  const chapterOptions = [
-    { value: "Chapter 1", label: "Chapter 1" },
-    { value: "Chapter 2", label: "Chapter 2" },
-    { value: "Chapter 3", label: "Chapter 3" },
-    { value: "Chapter 4", label: "Chapter 4" },
-    { value: "Chapter 5", label: "Chapter 5" },
-    { value: "Chapter 6", label: "Chapter 6" }
-  ];
 
-  // Exam Type options (removed; currently unused)
-
-  // remove exercise feature – not needed anymore
-
-  // No dependent selection state needed
 
   // Force re-render state for question type changes
   const [questionTypeChangeKey, setQuestionTypeChangeKey] = React.useState(0);
@@ -320,8 +104,24 @@ const QuestionForm = () => {
     try {
       setSubmitting(true);
   
+      // Validate image questions have images
+      const questions = values?.questions || [];
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (q?.questionType === 'image') {
+          const hasImage = q?.imageFileList?.[0]?.url || 
+                          q?.imageFileList?.[0]?.thumbUrl || 
+                          q?.image;
+          if (!hasImage) {
+            message.error(`Please upload an image for question ${i + 1}`);
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+  
       // Normalize questions
-      const normalizedQuestions = (values?.questions || []).map((q: any) => {
+      const normalizedQuestions = questions.map((q: any) => {
         const normalized: any = {
           questionType: q?.questionType,
           question: q?.question,
@@ -341,7 +141,7 @@ const QuestionForm = () => {
           normalized.correctAnswer = q?.correctAnswer;
         }
   
-        if (q?.questionType === 'matching' || q?.questionType === 'image') {
+        if (q?.questionType === 'image') {
           const fileUrl =
             q?.imageFileList?.[0]?.url ||
             q?.imageFileList?.[0]?.thumbUrl ||
@@ -372,14 +172,18 @@ const QuestionForm = () => {
       console.log("REQ BODY >>>", payload);
   
       if (!isEdit) {
-        await axios.post(`https://childcraft-server.onrender.com/quizItems`, payload, {
+        await axios.post(`${BASE_URL}${API.QUIZ_ITEMS}`, payload, {
           headers: {
             'Content-Type': 'application/json',
           },
         });
         message.success("Questions created successfully!");
       } else {
-        // TODO: when PUT API ready
+        await axios.put(`${BASE_URL}${API.QUIZ_ITEMS}/${id}`, payload, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         message.success("Questions updated successfully!");
       }
   
@@ -504,6 +308,109 @@ const QuestionForm = () => {
 
   
 
+  // Handle image selection - open modal for cropping
+  const handleImageSelect = (file: File, questionIndex: number) => {
+    setCurrentQuestionIndex(questionIndex);
+    setSelectedFile(file);
+    
+    // Create image URL for preview
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImgSrc(reader.result as string);
+      setImageModalVisible(true);
+    });
+    reader.readAsDataURL(file);
+    
+    return false; // Prevent default upload
+  };
+
+  // Handle modal cancel - clear image selection
+  const handleModalCancel = () => {
+    setImageModalVisible(false);
+    setCurrentQuestionIndex(null);
+    setSelectedFile(null);
+    setImgSrc('');
+    
+    // Clear the image from form if modal was cancelled
+    if (currentQuestionIndex !== null) {
+      const questions = form.getFieldValue('questions') || [];
+      if (questions[currentQuestionIndex]) {
+        questions[currentQuestionIndex] = {
+          ...questions[currentQuestionIndex],
+          image: null,
+          imageFileList: []
+        };
+        form.setFieldValue('questions', questions);
+      }
+    }
+  };
+
+  // Handle final image upload
+  const handleImageUpload = async () => {
+    if (!selectedFile || currentQuestionIndex === null) {
+      message.error('Please select an image');
+      return;
+    }
+
+    try {
+      setUploadingImages(prev => ({ ...prev, [currentQuestionIndex]: true }));
+      
+      // Create form data with original image
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+      
+      const response = await axios.post(`${BASE_URL}${API.UPLOAD}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      if (response.data && response.data.url) {
+        // Update the form with the uploaded image URL
+        const questions = form.getFieldValue('questions') || [];
+        if (questions[currentQuestionIndex]) {
+          questions[currentQuestionIndex] = {
+            ...questions[currentQuestionIndex],
+            image: response.data.url,
+            imageFileList: [{
+              uid: selectedFile.name,
+              name: selectedFile.name,
+              status: 'done',
+              url: response.data.url,
+            }]
+          };
+          form.setFieldValue('questions', questions);
+        }
+        message.success('Image uploaded successfully!');
+        
+        // Close modal and reset state
+        setImageModalVisible(false);
+        setCurrentQuestionIndex(null);
+        setSelectedFile(null);
+        setImgSrc('');
+      }
+    } catch (error: any) {
+      console.error('Image upload failed:', error);
+      message.error('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [currentQuestionIndex]: false }));
+    }
+  };
+
+  // Handle image removal
+  const handleImageRemove = (questionIndex: number) => {
+    const questions = form.getFieldValue('questions') || [];
+    if (questions[questionIndex]) {
+      questions[questionIndex] = {
+        ...questions[questionIndex],
+        image: null,
+        imageFileList: []
+      };
+      form.setFieldValue('questions', questions);
+    }
+  };
+
+
   // Handle question type change to force re-render
   const handleQuestionTypeChange = (questionIndex: number, questionType: string) => {
     // Clear existing answer data when question type changes
@@ -520,63 +427,75 @@ const QuestionForm = () => {
     setQuestionTypeChangeKey(prev => prev + 1);
   };
 
-  // Set initial values if editing (mapping to new fields)
+  // Set initial values if editing
   React.useEffect(() => {
+    const loadQuestionData = async () => {
     if (isEdit && id) {
-      // Try to map from Questions list dummy IDs (e.g., 1A, 1B)
-      const listDummy: Record<string, { className: string; subject: string; title: string; chapter: string; question: string; }> = {
-        '1A': { className: 'Class 10', subject: 'Mathematics', title: 'Algebra Basics', chapter: 'Chapter 1', question: 'What is the solution to the equation 2x + 5 = 13?' },
-        '1B': { className: 'Class 10', subject: 'Mathematics', title: 'Algebra Basics', chapter: 'Chapter 1', question: 'Solve: 3x - 7 = 14' },
-        '2A': { className: 'Class 11', subject: 'Physics', title: 'Mechanics', chapter: 'Chapter 2', question: 'Which of the following is a valid Python variable name?' },
-        '3A': { className: 'Class 12', subject: 'Chemistry', title: 'Organic Chemistry', chapter: 'Chapter 3', question: 'Analyze the theme of revenge in Hamlet and its impact on the main characters.' },
-        '4A': { className: 'Class 10', subject: 'Biology', title: 'Human Anatomy', chapter: 'Chapter 4', question: 'Which of the following is NOT a current asset?' },
-        '5A': { className: 'Class 11', subject: 'Computer Science', title: 'Data Structures', chapter: 'Chapter 5', question: 'Which of the following is NOT guaranteed under Article 19?' },
-      };
+        try {
+          const questionData = await fetchQuestionData(id);
+          if (questionData) {
+            // Set form values with real API data
+            const formData = {
+              className: questionData.className,
+              subject: questionData.subject,
+              book: questionData.book || questionData.title,
+              chapter: questionData.chapter,
+              status: questionData.status ?? true,
+              questions: (questionData.questions || []).map((q: any) => {
+                const mappedQuestion: any = {
+                  questionType: q.questionType,
+                  question: q.question,
+                  marks: q.marks,
+                };
 
-      const listItem = listDummy[id];
-      if (listItem) {
-        form.setFieldsValue({
-          className: listItem.className,
-          subject: listItem.subject,
-          title: listItem.title,
-          chapter: listItem.chapter,
-          status: true,
-          questions: [
-            {
-              questionType: 'shortanswer',
-              question: listItem.question,
-              marks: 1,
-            },
-          ],
-        });
-        return;
-      }
+                // Handle MCQ options
+                if (q.questionType === 'mcq' && q.options) {
+                  mappedQuestion.options = q.options;
+                  mappedQuestion.correctAnswer = q.correctAnswer;
+                }
 
-      // Fallback to legacy dummy mapping
-      const dummyData = getDummyData(id);
-      if (dummyData) {
-        const mapped = {
-          ...dummyData,
-          questions: (dummyData.questions || []).map((q: any) => {
-            if (q?.questionType === 'matching' && q?.image) {
-              return {
-                ...q,
-                imageFileList: [
-                  {
+                // Handle text-based answers
+                if (['fillblank', 'shortanswer', 'essay'].includes(q.questionType)) {
+                  mappedQuestion.correctAnswer = q.correctAnswer;
+                }
+
+                // Handle image questions
+                if (q.questionType === 'image' && q.image) {
+                  mappedQuestion.image = q.image;
+                  mappedQuestion.imageFileList = [{
                     uid: '-1',
-                    name: 'matching-image',
+                    name: 'question-image',
                     status: 'done',
-                    url: typeof q.image === 'string' ? q.image : (q.image?.src || ''),
-                  },
-                ],
-              };
-            }
-            return q;
+                    url: q.image,
+                  }];
+                }
+
+                return mappedQuestion;
           }),
         };
-        form.setFieldsValue(mapped);
+
+            form.setFieldsValue(formData);
+            
+            // Set dependent dropdowns
+            if (questionData.className) {
+              setSelectedClass(questionData.className);
+            }
+            if (questionData.subject) {
+              setSelectedSubject(questionData.subject);
+            }
+            if (questionData.book || questionData.title) {
+              setSelectedBook(questionData.book || questionData.title);
+              setSelectedBookName(questionData.book || questionData.title);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load question data:', error);
+          message.error('Failed to load question data');
+        }
       }
-    }
+    };
+
+    loadQuestionData();
   }, [form, isEdit, id]);
 
   // Render question type specific fields
@@ -646,8 +565,6 @@ const QuestionForm = () => {
           </div>
         );
 
-      // remove true/false type
-
       case 'fillblank':
         return null;
 
@@ -657,7 +574,7 @@ const QuestionForm = () => {
       case 'essay':
         return null;
 
-      case 'matching':
+      case 'image':
         return null;
 
       default:
@@ -802,7 +719,6 @@ const QuestionForm = () => {
                             <Option value="shortanswer">Short Answer</Option>
                             <Option value="essay">Essay</Option>
                             <Option value="image">Image</Option>
-                            <Option value="matching">Matching</Option>
                           </Select>
                         </Form.Item>
                       </Col>
@@ -824,7 +740,7 @@ const QuestionForm = () => {
                       </Col>
                     </Row>
 
-                    {form.getFieldValue(['questions', name, 'questionType']) !== 'image' && (
+                    {form.getFieldValue(['questions', name, 'questionType']) && (
                       <Row gutter={16}>
                         <Col span={24}>
                           <Form.Item
@@ -843,36 +759,49 @@ const QuestionForm = () => {
                       </Row>
                     )}
 
-                    {/* Image upload is shown when type is Matching or Image */}
-                    {(form.getFieldValue(['questions', name, 'questionType']) === 'matching' ||
-                      form.getFieldValue(['questions', name, 'questionType']) === 'image') && (
+                    {/* Image upload is shown when type is Image */}
+                    {form.getFieldValue(['questions', name, 'questionType']) === 'image' && (
                       <Row gutter={16}>
                         <Col span={24}>
                           <Form.Item 
                             {...restField}
                             name={[name, 'imageFileList']}
-                            label={form.getFieldValue(['questions', name, 'questionType']) === 'matching' ? 'Upload Matching Image' : 'Upload Image'}
-                            rules={[{ required: true, message: 'Please upload image for matching!' }]}
+                            label="Upload Image"
+                            rules={[{ required: true, message: 'Please upload image!' }]}
                           >
                             <Upload
                               listType="picture-card"
                               maxCount={1}
-                              beforeUpload={() => false}
+                              beforeUpload={(file) => {
+                                handleImageSelect(file, name);
+                                return false; // Prevent default upload
+                              }}
                               defaultFileList={form.getFieldValue(['questions', name, 'imageFileList'])}
                               onChange={({ fileList }) => {
-                                const questions = form.getFieldValue('questions') || [];
-                                if (!questions[name]) return;
-                                questions[name] = {
-                                  ...questions[name],
-                                  imageFileList: fileList,
-                                  image: fileList?.[0]?.url || fileList?.[0]?.thumbUrl || null,
-                                };
-                                form.setFieldValue('questions', questions);
+                                // This will be handled by the beforeUpload function
+                              }}
+                              onRemove={() => {
+                                handleImageRemove(name);
+                                return true;
+                              }}
+                              showUploadList={{
+                                showUploadList: true,
+                                showRemoveIcon: true,
+                                showPreviewIcon: false,
                               }}
                             >
                               <div>
+                                {uploadingImages[name] ? (
+                                  <div>
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                                    <div style={{ marginTop: 8 }}>Uploading...</div>
+                                  </div>
+                                ) : (
+                              <div>
                                 <UploadOutlined />
                                 <div style={{ marginTop: 8 }}>Upload</div>
+                                  </div>
+                                )}
                               </div>
                             </Upload>
                           </Form.Item>
@@ -915,6 +844,49 @@ const QuestionForm = () => {
           </Row>
         </Form>
       </Card>
+
+      {/* Image Upload Modal */}
+      <Modal
+        title="Upload Image"
+        open={imageModalVisible}
+        onCancel={handleModalCancel}
+        width={600}
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={handleModalCancel}
+          >
+            Cancel
+          </Button>,
+          <Button
+            key="upload"
+            type="primary"
+            loading={currentQuestionIndex !== null && uploadingImages[currentQuestionIndex]}
+            onClick={handleImageUpload}
+            disabled={!selectedFile}
+            style={{ 
+              backgroundColor: "#007575", 
+              borderColor: "#007575" 
+            }}
+          >
+            Upload Image
+          </Button>,
+        ]}
+      >
+        <div style={{ textAlign: 'center' }}>
+          {imgSrc && (
+            <img
+              alt="Preview"
+              src={imgSrc}
+              style={{ maxHeight: '400px', maxWidth: '100%', marginBottom: '16px' }}
+              onLoad={onImageLoad}
+            />
+          )}
+          <div style={{ color: '#666' }}>
+            <p>Preview your selected image. Click "Upload Image" to proceed.</p>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };

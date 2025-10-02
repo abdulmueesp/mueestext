@@ -11,6 +11,9 @@ export const API = {
   CHAPTER: "/chapter",
   CHAPTERGET:"/chapterd",
   SUBJECT: "/subject",
+  QUESTION: "/qustion",
+  UPLOAD: "/upload",
+  QUIZ_ITEMS: "/quizItems",
 };
 
 const buildUrl = (endpoint: string, query?: Record<string, any>) => {
