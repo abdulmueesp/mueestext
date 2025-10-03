@@ -2,21 +2,28 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Card, Button, Table, Tag, Space, Select, Input, message } from "antd";
+import { Card, Button, Table, Tag, Space, Select, Input, message, Modal, Popconfirm, Tooltip } from "antd";
 import { FaEdit } from "react-icons/fa";
+import { FaRegEye } from "react-icons/fa";
+import { MdDeleteOutline } from "react-icons/md";
 import { IoIosSearch } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
-import { API, GET } from "@/Components/common/api";
+import { API, GET, DELETE } from "@/Components/common/api";
 
 type QuestionListItem = {
   id: string;
+  quizId: string;
   className: string;
   subject: string;
   title: string;
   chapter: string;
   question: string;
   variant: string;
+  questionType: string;
+  imageUrl?: string;
+  marks?: number;
+  options?: Array<{ text: string; isCorrect: boolean }>;
 };
 
 const DUMMY_ITEMS: QuestionListItem[] = [
@@ -48,6 +55,8 @@ const Questions: React.FC = () => {
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
   const [chaptersOptions, setChaptersOptions] = React.useState<Array<{ value: string; label: string }>>([]);
   const [chaptersLoading, setChaptersLoading] = React.useState<boolean>(false);
+  const [viewModalVisible, setViewModalVisible] = React.useState(false);
+  const [selectedQuestion, setSelectedQuestion] = React.useState<QuestionListItem | null>(null);
 
   const classOptions = React.useMemo(() => (
     [
@@ -147,7 +156,7 @@ const Questions: React.FC = () => {
       setLoading(true);
       const size = opts?.pageSize ?? pageSize ?? 10;
       const page = opts?.page ?? currentPage ?? 1;
-      const query: any = { pageSize: size, page };
+      const query: any = { limit: size, page };
       if (opts?.q) query.q = opts.q;
       if (opts?.cls) query.className = opts.cls;
       if (opts?.subj) query.subject = opts.subj;
@@ -157,12 +166,30 @@ const Questions: React.FC = () => {
       const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []));
       const mapped: QuestionListItem[] = list.map((r: any, idx: number) => {
         const id = r?._id || r?.id || `${page}-${idx}`;
+        const quizId = r?.quizId || r?._id || r?.id || `${page}-${idx}`;
         const className = r?.className || r?.class || r?.class_name || "";
         const subject = r?.subject || "";
         const title = r?.book || r?.title || "";
         const chapter = r?.chapter || r?.chapterName || "";
         const question = r?.question || r?.questionText || "";
-        return { id, className, subject, title, chapter, question, variant: r?.variant || "" } as QuestionListItem;
+        const questionType = r?.questionType || "";
+        const imageUrl = r?.imageUrl || null;
+        const marks = r?.marks || 0;
+        const options = r?.options || [];
+        return { 
+          id, 
+          quizId,
+          className, 
+          subject, 
+          title, 
+          chapter, 
+          question, 
+          variant: r?.variant || "",
+          questionType,
+          imageUrl,
+          marks,
+          options
+        } as QuestionListItem;
       });
       setRows(mapped);
       setTotal(data?.total || data?.count || mapped.length);
@@ -174,8 +201,51 @@ const Questions: React.FC = () => {
     }
   };
 
+  // Handle view question
+  const handleViewQuestion = (record: QuestionListItem) => {
+    setSelectedQuestion(record);
+    setViewModalVisible(true);
+  };
+
+  // Handle delete question
+  const handleDeleteQuestion = async (quizId: string) => {
+    try {
+      await DELETE(`${API.QUIZ_ITEMS}/${quizId}`);
+      message.success('Question deleted successfully!');
+      // Refresh the questions list
+      fetchQuestions({
+        q: searchValue || undefined,
+        cls: filterClass,
+        subj: filterSubject,
+        book: filterBookName,
+        chapter: filterChapter,
+        page: currentPage,
+        pageSize,
+      });
+    } catch (error: any) {
+      console.error('Failed to delete question:', error);
+      message.error('Failed to delete question. Please try again.');
+    }
+  };
+
   const columns: any[] = [
-    { title: "Question", dataIndex: "question", key: "question" },
+    { title: "Question", dataIndex: "question", key: "question", width: 450 },
+    { 
+      title: "Question Type", 
+      dataIndex: "questionType", 
+      key: "questionType", 
+      width: 140,
+      render: (value: string) => {
+        const typeColors: Record<string, string> = {
+          'mcq': 'blue',
+          'fillblank': 'green',
+          'shortanswer': 'orange',
+          'essay': 'purple',
+          'image': 'cyan'
+        };
+        return <Tag color={typeColors[value] || 'default'}>{value?.toUpperCase()}</Tag>;
+      }
+    },
     { 
       title: "Class", 
       dataIndex: "className", 
@@ -198,18 +268,63 @@ const Questions: React.FC = () => {
       render: (value: string) => <Tag color="cyan">{value}</Tag>
     },
     { title: "Chapter", dataIndex: "chapter", key: "chapter", width: 160 },
+    { 
+      title: "Question Type", 
+      dataIndex: "questionType", 
+      key: "questionType", 
+      width: 140,
+      render: (value: string) => {
+        const typeColors: Record<string, string> = {
+          'mcq': 'blue',
+          'fillblank': 'green',
+          'shortanswer': 'orange',
+          'essay': 'purple',
+          'image': 'cyan'
+        };
+        return <Tag color={typeColors[value] || 'default'}>{value?.toUpperCase()}</Tag>;
+      }
+    },
     {
       title: "Actions",
       key: "actions",
+      width: 150,
       render: (_: unknown, record: QuestionListItem) => (
         <Space size="middle">
           <Button
             type="link"
+            icon={<FaRegEye color="black" size={16} />}
+            size="small"
+            onClick={() => handleViewQuestion(record)}
+            title="View"
+          />
+          <Button
+            type="link"
             icon={<FaEdit color="orange" size={16} />}
             size="small"
-            onClick={() => navigate(`/questionform/${record.id}`)}
+            onClick={() => navigate(`/questionform/${record.quizId}`)}
             title="Edit"
           />
+          <Popconfirm
+            title="Are you sure you want to delete this question?"
+            onConfirm={() => handleDeleteQuestion(record.quizId)}
+            okText="Yes"
+            cancelText="No"
+            okButtonProps={{ 
+              style: { 
+                backgroundColor: "#007575", 
+                borderColor: "#007575" 
+              } 
+            }}
+          >
+            <Tooltip title="Delete Question">
+              <Button
+                type="link"
+                icon={<MdDeleteOutline size={18} color="red" />}
+                size="small"
+                title="Delete"
+              />
+            </Tooltip>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -345,7 +460,14 @@ const Questions: React.FC = () => {
           columns={columns as any}
           dataSource={filtered}
           loading={loading}
-          pagination={{ current: currentPage, pageSize, total, showSizeChanger: true }}
+          scroll={{ x: 1500 }}
+          pagination={{ 
+            current: currentPage, 
+            pageSize, 
+            total, 
+            showSizeChanger: true,
+            showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`
+          }}
           onChange={(pagination) => {
             const newPage = pagination.current || currentPage;
             const newPageSize = pagination.pageSize || pageSize;
@@ -362,6 +484,103 @@ const Questions: React.FC = () => {
             });
           }}
         />
+
+      {/* View Question Modal */}
+      <Modal
+        title="Question Details"
+        open={viewModalVisible}
+        onCancel={() => {
+          setViewModalVisible(false);
+          setSelectedQuestion(null);
+        }}
+        width={800}
+        footer={[
+          <Button 
+            key="close" 
+            onClick={() => {
+              setViewModalVisible(false);
+              setSelectedQuestion(null);
+            }}
+          >
+            Close
+          </Button>,
+        ]}
+      >
+        {selectedQuestion && (
+          <div className="space-y-4">
+            <div>
+              <strong>Question:</strong>
+              <p className="mt-1 p-3 bg-gray-50 rounded">{selectedQuestion.question}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <strong>Class:</strong>
+                <Tag color="geekblue" className="ml-2">{selectedQuestion.className}</Tag>
+              </div>
+              <div>
+                <strong>Subject:</strong>
+                <Tag color="magenta" className="ml-2">{selectedQuestion.subject}</Tag>
+              </div>
+              <div>
+                <strong>Book:</strong>
+                <Tag color="cyan" className="ml-2">{selectedQuestion.title}</Tag>
+              </div>
+              <div>
+                <strong>Chapter:</strong>
+                <span className="ml-2">{selectedQuestion.chapter}</span>
+              </div>
+              <div>
+                <strong>Question Type:</strong>
+                <Tag color={
+                  selectedQuestion.questionType === 'mcq' ? 'blue' :
+                  selectedQuestion.questionType === 'fillblank' ? 'green' :
+                  selectedQuestion.questionType === 'shortanswer' ? 'orange' :
+                  selectedQuestion.questionType === 'essay' ? 'purple' :
+                  selectedQuestion.questionType === 'image' ? 'cyan' : 'default'
+                } className="ml-2">
+                  {selectedQuestion.questionType?.toUpperCase()}
+                </Tag>
+              </div>
+              <div>
+                <strong>Marks:</strong>
+                <span className="ml-2 font-semibold">{selectedQuestion.marks}</span>
+              </div>
+            </div>
+
+            {selectedQuestion.questionType === 'mcq' && selectedQuestion.options && selectedQuestion.options.length > 0 && (
+              <div>
+                <strong>Options:</strong>
+                <div className="mt-2 space-y-2">
+                  {selectedQuestion.options.map((option, index) => (
+                    <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
+                      <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
+                      <span className="flex-1">{option.text}</span>
+                      {option.isCorrect && (
+                        <Tag color="green" size="small">Correct</Tag>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedQuestion.questionType === 'image' && selectedQuestion.imageUrl && (
+              <div>
+                <strong>Image:</strong>
+                <div className="mt-2">
+                  <img 
+                    src={selectedQuestion.imageUrl} 
+                    alt="Question Image" 
+                    className="max-w-full h-auto rounded border"
+                    style={{ maxHeight: '300px' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     
     </>
   );

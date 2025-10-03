@@ -3,7 +3,7 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, InputNumber, Upload, message, Modal } from "antd";
+import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, InputNumber, Upload, message, Modal, Spin } from "antd";
 import { PlusOutlined, MinusCircleOutlined, UploadOutlined } from "@ant-design/icons";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
@@ -16,10 +16,10 @@ const { TextArea } = Input;
 
 const QuestionForm = () => {
   const [form] = Form.useForm();
-  const { id } = useParams();
+  const { id: quizId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const isEdit = id && id !== 'new';
+  const isEdit = quizId && quizId !== 'new';
   const [submitting, setSubmitting] = React.useState(false);
   const [selectedClass, setSelectedClass] = React.useState<string | undefined>(undefined);
   const [selectedSubject, setSelectedSubject] = React.useState<string | undefined>(undefined);
@@ -29,9 +29,11 @@ const QuestionForm = () => {
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
   const [selectedBook, setSelectedBook] = React.useState<string | undefined>(undefined);
   const [selectedBookName, setSelectedBookName] = React.useState<string | undefined>(undefined);
+  const [selectedChapter, setSelectedChapter] = React.useState<string | undefined>(undefined);
   const [chaptersOptions, setChaptersOptions] = React.useState<Array<{ value: string; label: string }>>([]);
   const [chaptersLoading, setChaptersLoading] = React.useState<boolean>(false);
   const [uploadingImages, setUploadingImages] = React.useState<Record<number, boolean>>({});
+  const [loadingQuestionData, setLoadingQuestionData] = React.useState<boolean>(false);
   
   // Image upload modal states
   const [imageModalVisible, setImageModalVisible] = React.useState(false);
@@ -45,15 +47,18 @@ const QuestionForm = () => {
   };
 
   // Fetch question data for editing
-  const fetchQuestionData = async (questionId: string) => {
+  const fetchQuestionData = async (quizId: string) => {
     try {
-      const response = await GET(`${API.QUIZ_ITEMS}/${questionId}`);
+      setLoadingQuestionData(true);
+      const response = await GET(`${API.QUIZ_ITEMS}/${quizId}`);
       if (response) {
         return response;
       }
     } catch (error) {
       console.error('Failed to fetch question data:', error);
       message.error('Failed to load question data');
+    } finally {
+      setLoadingQuestionData(false);
     }
     return null;
   };
@@ -111,7 +116,7 @@ const QuestionForm = () => {
         if (q?.questionType === 'image') {
           const hasImage = q?.imageFileList?.[0]?.url || 
                           q?.imageFileList?.[0]?.thumbUrl || 
-                          q?.image;
+                          q?.imageUrl;
           if (!hasImage) {
             message.error(`Please upload an image for question ${i + 1}`);
             setSubmitting(false);
@@ -147,9 +152,9 @@ const QuestionForm = () => {
             q?.imageFileList?.[0]?.thumbUrl ||
             q?.image ||
             null;
-          normalized.image = fileUrl;
+          normalized.imageUrl = fileUrl;
         } else {
-          normalized.image = null;
+          normalized.imageUrl = null;
         }
   
         return normalized;
@@ -158,13 +163,13 @@ const QuestionForm = () => {
       // Resolve book name (send name, not id)
       const resolvedBookName = selectedBookName || (booksOptions.find(b => b.value === values?.book)?.label) || values?.book;
 
-      // Build payload (no examType here, backend doesn’t use it)
+      // Build payload (no examType here, backend doesn't use it)
       const payload = {
-        className: values?.className,
-        subject: values?.subject,
-        title: resolvedBookName,
-        book: resolvedBookName,
-        chapter: values?.chapter,
+        className: isEdit ? selectedClass : values?.className,
+        subject: isEdit ? selectedSubject : values?.subject,
+        title: isEdit ? selectedBookName : resolvedBookName,
+        book: isEdit ? selectedBookName : resolvedBookName,
+        chapter: isEdit ? selectedChapter : values?.chapter,
         status: values?.status ?? true,
         questions: normalizedQuestions,
       };
@@ -179,7 +184,7 @@ const QuestionForm = () => {
         });
         message.success("Questions created successfully!");
       } else {
-        await axios.put(`${BASE_URL}${API.QUIZ_ITEMS}/${id}`, payload, {
+        await axios.put(`${BASE_URL}${API.QUIZ_ITEMS}/${quizId}`, payload, {
           headers: {
             'Content-Type': 'application/json',
           },
@@ -337,7 +342,7 @@ const QuestionForm = () => {
       if (questions[currentQuestionIndex]) {
         questions[currentQuestionIndex] = {
           ...questions[currentQuestionIndex],
-          image: null,
+          imageUrl: null,
           imageFileList: []
         };
         form.setFieldValue('questions', questions);
@@ -371,7 +376,7 @@ const QuestionForm = () => {
         if (questions[currentQuestionIndex]) {
           questions[currentQuestionIndex] = {
             ...questions[currentQuestionIndex],
-            image: response.data.url,
+            imageUrl: response.data.url,
             imageFileList: [{
               uid: selectedFile.name,
               name: selectedFile.name,
@@ -403,13 +408,13 @@ const QuestionForm = () => {
     if (questions[questionIndex]) {
       questions[questionIndex] = {
         ...questions[questionIndex],
-        image: null,
+        imageUrl: null,
         imageFileList: []
       };
       form.setFieldValue('questions', questions);
     }
   };
-
+  
 
   // Handle question type change to force re-render
   const handleQuestionTypeChange = (questionIndex: number, questionType: string) => {
@@ -430,9 +435,9 @@ const QuestionForm = () => {
   // Set initial values if editing
   React.useEffect(() => {
     const loadQuestionData = async () => {
-    if (isEdit && id) {
+    if (isEdit && quizId) {
         try {
-          const questionData = await fetchQuestionData(id);
+          const questionData = await fetchQuestionData(quizId);
           if (questionData) {
             // Set form values with real API data
             const formData = {
@@ -460,13 +465,13 @@ const QuestionForm = () => {
                 }
 
                 // Handle image questions
-                if (q.questionType === 'image' && q.image) {
-                  mappedQuestion.image = q.image;
+                if (q.questionType === 'image' && q.imageUrl) {
+                  mappedQuestion.imageUrl = q.imageUrl;
                   mappedQuestion.imageFileList = [{
                     uid: '-1',
                     name: 'question-image',
                     status: 'done',
-                    url: q.image,
+                    url: q.imageUrl,
                   }];
                 }
 
@@ -487,6 +492,9 @@ const QuestionForm = () => {
               setSelectedBook(questionData.book || questionData.title);
               setSelectedBookName(questionData.book || questionData.title);
             }
+            if (questionData.chapter) {
+              setSelectedChapter(questionData.chapter);
+            }
           }
         } catch (error) {
           console.error('Failed to load question data:', error);
@@ -496,7 +504,7 @@ const QuestionForm = () => {
     };
 
     loadQuestionData();
-  }, [form, isEdit, id]);
+  }, [form, isEdit, quizId]);
 
   // Render question type specific fields
   const renderQuestionTypeFields = (questionType: string, questionIndex: number) => {
@@ -587,105 +595,110 @@ const QuestionForm = () => {
       <PageHeader title={isEdit ? "Edit Question" : "Add Question"} backButton={true} />
       
       <Card className="w-full mt-4 shadow-md">
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFinish}
-          className="font-local2"
-          initialValues={{
-            status: true,
-            questions: [{}]
-          }}
-        >
-          {/* Basic Information */}
-          <Row gutter={24}>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-                required={false}
-                name="className"
-                label="Class"
-                rules={[{ required: true, message: 'Please select a class!' }]}
-              >
-                <Select 
-                  placeholder="Select class" 
-                  size="large"
-                  options={classOptions}
-                  onChange={onChangeClass}
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-              required={false}
-                name="subject"
-                label="Subject"
-                rules={[{ required: true, message: 'Please select a subject!' }]}
-              >
-                <Select 
-                  placeholder="Select subject" 
-                  size="large"
-                  options={subjectsOptions}
-                  loading={subjectsLoading}
-                  onChange={onChangeSubject}
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-              required={false}
-                name="book"
-                label="Book"
-                rules={[{ required: true, message: 'Please select a title!' }]}
-              >
-                <Select 
-                  placeholder="Select Book" 
-                  size="large"
-                  allowClear
-                  loading={booksLoading}
-                  disabled={!selectedClass || !selectedSubject}
-                  options={booksOptions}
-                  onChange={onChangeBook}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+        <Spin spinning={loadingQuestionData} tip="Loading question data...">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleFinish}
+            className="font-local2"
+            initialValues={{
+              status: true,
+              questions: [{}]
+            }}
+          >
+          {/* Basic Information - Only show when creating new question */}
+          {!isEdit && (
+            <>
+              <Row gutter={24}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Item
+                    required={false}
+                    name="className"
+                    label="Class"
+                    rules={[{ required: true, message: 'Please select a class!' }]}
+                  >
+                    <Select 
+                      placeholder="Select class" 
+                      size="large"
+                      options={classOptions}
+                      onChange={onChangeClass}
+                      allowClear
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Item
+                  required={false}
+                    name="subject"
+                    label="Subject"
+                    rules={[{ required: true, message: 'Please select a subject!' }]}
+                  >
+                    <Select 
+                      placeholder="Select subject" 
+                      size="large"
+                      options={subjectsOptions}
+                      loading={subjectsLoading}
+                      onChange={onChangeSubject}
+                      allowClear
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Item
+                  required={false}
+                    name="book"
+                    label="Book"
+                    rules={[{ required: true, message: 'Please select a title!' }]}
+                  >
+                    <Select 
+                      placeholder="Select Book" 
+                      size="large"
+                      allowClear
+                      loading={booksLoading}
+                      disabled={!selectedClass || !selectedSubject}
+                      options={booksOptions}
+                      onChange={onChangeBook}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-          <Row gutter={24}>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-              required={false}
-                name="chapter"
-                label="Chapter"
-                rules={[{ required: true, message: 'Please select a chapter!' }]}
-              >
-                <Select 
-                  placeholder="Select chapter" 
-                  size="large"
-                  allowClear
-                  loading={chaptersLoading}
-                  disabled={!selectedClass || !selectedSubject || !selectedBook}
-                  options={chaptersOptions}
-                />
-              </Form.Item>
-            </Col>
-            {/* <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-              required={false}
-                name="examType"
-                label="Exam Type"
-                rules={[{ required: true, message: 'Please select an exam type!' }]}
-              >
-                <Select 
-                  placeholder="Select exam type" 
-                  size="large"
-                  options={examTypeOptions}
-                />
-              </Form.Item>
-            </Col> */}
-           
-          </Row>
+              <Row gutter={24}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Item
+                  required={false}
+                    name="chapter"
+                    label="Chapter"
+                    rules={[{ required: true, message: 'Please select a chapter!' }]}
+                  >
+                    <Select 
+                      placeholder="Select chapter" 
+                      size="large"
+                      allowClear
+                      loading={chaptersLoading}
+                      disabled={!selectedClass || !selectedSubject || !selectedBook}
+                      options={chaptersOptions}
+                    />
+                  </Form.Item>
+                </Col>
+                {/* <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Item
+                  required={false}
+                    name="examType"
+                    label="Exam Type"
+                    rules={[{ required: true, message: 'Please select an exam type!' }]}
+                  >
+                    <Select 
+                      placeholder="Select exam type" 
+                      size="large"
+                      options={examTypeOptions}
+                    />
+                  </Form.Item>
+                </Col> */}
+               
+              </Row>
+            </>
+          )}
 
           <Divider orientation="left">Questions</Divider>
 
@@ -842,7 +855,8 @@ const QuestionForm = () => {
               </Button>
             </Space>
           </Row>
-        </Form>
+          </Form>
+        </Spin>
       </Card>
 
       {/* Image Upload Modal */}
