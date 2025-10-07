@@ -132,19 +132,13 @@ const CreateUser: React.FC = () => {
   const handleFinish = async (values: any) => {
     const { confirmPassword, ...rest } = values || {};
     
-    // Convert book IDs to book names for API
-    const bookNames = Array.isArray(rest.books) ? rest.books.map((bookId: string) => {
-      const bookOption = titleOptions.find(option => option.value === bookId);
-      return bookOption ? (bookOption as any).labelText?.split(' - ')[0] : bookId;
-    }) : [];
-    
     const payload = {
       schoolName: rest.schoolName,
       schoolCode: rest.schoolCode,
       executive: rest.executive,
       phone1: rest.phone1,
       phone2: rest.phone2,
-      books: bookNames,
+      books: Array.isArray(rest.books) ? rest.books : [], // Send book IDs directly
       principalName: rest.principalName,
       examIncharge: rest.examIncharge,
       email: rest.email,
