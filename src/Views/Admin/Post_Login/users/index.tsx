@@ -6,7 +6,7 @@ import { IoIosSearch } from "react-icons/io";
 import { MdDeleteOutline } from "react-icons/md";
 import PageHeader from "../../../../Components/common/PageHeader";
 import { useNavigate } from "react-router-dom";
-import { API, GET } from "../../../../Components/common/api";
+import { API, GET, PATCH } from "../../../../Components/common/api";
 import loadinsvg from "../../../../assets/spinning-dots.svg";
 
 const UsersTable = () => {
@@ -25,6 +25,7 @@ const UsersTable = () => {
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<any>(null);
+  const [statusLoading, setStatusLoading] = useState<Record<string, boolean>>({});
 
   // Load schools data on mount
   useEffect(() => {
@@ -120,15 +121,33 @@ const UsersTable = () => {
 
   // Create user handled in dedicated form page
 
-  // Toggle status instead of delete
-  const handleToggleStatus = (userId: number) => {
-    const updatedData = tableData.map(user =>
-      user.id === userId
-        ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' }
-        : user
-    );
-    setTableData(updatedData);
-    message.success("Status updated successfully!");
+  // Toggle status with API call
+  const handleToggleStatus = async (userId: string) => {
+    try {
+      setStatusLoading(prev => ({ ...prev, [userId]: true }));
+      
+      const user = tableData.find(u => u.id === userId);
+      if (!user) return;
+      
+      const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+      
+      await PATCH(`/schools/${userId}/status`, { status: newStatus === 'Active' });
+      
+      // Update local state
+      const updatedData = tableData.map(u =>
+        u.id === userId
+          ? { ...u, status: newStatus }
+          : u
+      );
+      setTableData(updatedData);
+      
+      message.success("Status updated successfully!");
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      message.error("Failed to update status. Please try again.");
+    } finally {
+      setStatusLoading(prev => ({ ...prev, [userId]: false }));
+    }
   };
 
   // Toggle password visibility
@@ -214,12 +233,17 @@ const UsersTable = () => {
   	  dataIndex: "status",
   	  key: "status",
   	  width: 120,
-  	  render: (status: string) => (
+  	  render: (status: string, record: any) => (
   	    <Tag 
   	      color={status === "Active" ? "green" : "red"} 
-  	      className="font-local2"
+  	      className="font-local2 cursor-pointer"
+  	      onClick={() => handleToggleStatus(record.id)}
+  	      style={{ 
+  	        cursor: statusLoading[record.id] ? 'not-allowed' : 'pointer',
+  	        opacity: statusLoading[record.id] ? 0.6 : 1
+  	      }}
   	    >
-  	      {status}
+  	      {statusLoading[record.id] ? 'Updating...' : status}
   	    </Tag>
   	  ),
   	},
@@ -243,19 +267,6 @@ const UsersTable = () => {
   	        onClick={() => handleEdit(record)}
   	        title="Edit"
   	      />
-          <Popconfirm
-            title={`Change status for ${record.schoolName}?`}
-            onConfirm={() => handleToggleStatus(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-  	        <Button
-  	          type="link"
-  	          icon={<MdDeleteOutline size={18} color="red" />}
-  	          size="small"
-              title="Toggle Status"
-  	        />
-  	      </Popconfirm>
   	    </div>
   	  ),
   	},

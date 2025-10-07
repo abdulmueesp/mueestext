@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Card, Row, Col, Select, Space, InputNumber, message, Tag } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
-import { API, GET, POST } from "../../../../Components/common/api";
+import { API, GET, POST, PUT } from "../../../../Components/common/api";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const { TextArea } = Input;
@@ -48,13 +48,24 @@ const CreateUser: React.FC = () => {
 
   useEffect(() => {
     if (record) {
-        form.setFieldsValue({
+      // For edit mode, we need to map book names to IDs
+      const bookNames = (record as any)?.books ?? (record as any)?.titles ?? [];
+      const bookIds = bookNames.map((bookName: string) => {
+        // Find matching book ID from titleOptions
+        const matchingBook = titleOptions.find(option => 
+          option.labelText?.includes(bookName) || 
+          (option as any).labelText?.split(' - ')[0] === bookName
+        );
+        return matchingBook?.value || bookName; // fallback to bookName if no match
+      });
+
+      form.setFieldsValue({
         schoolName: record.schoolName,
         schoolCode: record.schoolCode,
         executive: record.executive,
         phone1: record.phone1,
         phone2: record.phone2,
-        books: (record as any)?.books ?? (record as any)?.titles ?? [],
+        books: bookIds,
         principalName: record.principalName,
         examIncharge: record.examIncharge,
         email: record.email,
@@ -67,7 +78,7 @@ const CreateUser: React.FC = () => {
     } else {
       form.resetFields();
     }
-  }, [record, form]);
+  }, [record, form, titleOptions]);
 
   // Load books for "Book Name" select on mount
   useEffect(() => {
@@ -120,13 +131,20 @@ const CreateUser: React.FC = () => {
 
   const handleFinish = async (values: any) => {
     const { confirmPassword, ...rest } = values || {};
+    
+    // Convert book IDs to book names for API
+    const bookNames = Array.isArray(rest.books) ? rest.books.map((bookId: string) => {
+      const bookOption = titleOptions.find(option => option.value === bookId);
+      return bookOption ? (bookOption as any).labelText?.split(' - ')[0] : bookId;
+    }) : [];
+    
     const payload = {
       schoolName: rest.schoolName,
       schoolCode: rest.schoolCode,
       executive: rest.executive,
       phone1: rest.phone1,
       phone2: rest.phone2,
-      books: Array.isArray(rest.books) ? rest.books : [],
+      books: bookNames,
       principalName: rest.principalName,
       examIncharge: rest.examIncharge,
       email: rest.email,
@@ -138,9 +156,12 @@ const CreateUser: React.FC = () => {
     try {
       setSubmitting(true);
       if (record) {
+        // Edit mode - make PUT request with school ID
         console.log("Edit User submit:", { id: record.id, ...payload });
-        message.success("Record updated successfully!");
+        await PUT(`/schools/${record.id}`, payload);
+        message.success("School updated successfully!");
       } else {
+        // Create mode - make POST request
         await POST("/school-user", payload);
         message.success("School created successfully!");
       }
@@ -174,7 +195,7 @@ const CreateUser: React.FC = () => {
             executive: record.executive,
             phone1: record.phone1,
             phone2: record.phone2,
-            books: (record as any)?.books ?? (record as any)?.titles ?? [],
+            books: [], // Will be set via useEffect after titleOptions are loaded
             principalName: record.principalName,
             examIncharge: record.examIncharge,
             email: record.email,

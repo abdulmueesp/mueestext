@@ -102,6 +102,34 @@ export const PUT = async (
   return res.json();
 };
 
+export const PATCH = async (
+  endpoint: string,
+  body?: Record<string, any> | FormData,
+  query?: Record<string, any>
+) => {
+  const url = buildUrl(endpoint, query);
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: isFormData
+      ? { Accept: "application/json" }
+      : { "Content-Type": "application/json", Accept: "application/json" },
+    body: isFormData ? (body as FormData) : JSON.stringify(body || {}),
+  });
+  if (res.status === 400) {
+    const text = await res.text();
+    let msg = text || "Bad Request";
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.message === 'string') msg = parsed.message;
+    } catch {}
+    message.error(msg);
+    throw new Error(msg || `Request failed with status ${res.status}`);
+  }
+
+  return res.json();
+};
+
 export const DELETE = async (
   endpoint: string,
   query?: Record<string, any>
@@ -129,6 +157,7 @@ export default {
   GET,
   POST,
   PUT,
+  PATCH,
   DELETE,
 };
 

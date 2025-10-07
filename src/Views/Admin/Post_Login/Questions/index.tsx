@@ -269,23 +269,14 @@ const Questions: React.FC = () => {
       width: 180,
       render: (value: string) => <Tag color="cyan">{value}</Tag>
     },
-    { title: "Chapter", dataIndex: "chapter", key: "chapter", width: 160 },
     { 
-      title: "Question Type", 
-      dataIndex: "questionType", 
-      key: "questionType", 
-      width: 140,
-      render: (value: string) => {
-        const typeColors: Record<string, string> = {
-          'mcq': 'blue',
-          'fillblank': 'green',
-          'shortanswer': 'orange',
-          'essay': 'purple',
-          'image': 'cyan'
-        };
-        return <Tag color={typeColors[value] || 'default'}>{value?.toUpperCase()}</Tag>;
-      }
+      title: "Chapter", 
+      dataIndex: "chapter", 
+      key: "chapter", 
+      width: 160,
+      render: (value: string) => <Tag color="purple">{value}</Tag>
     },
+   
     {
       title: "Actions",
       key: "actions",
