@@ -331,7 +331,7 @@ const UsersTable = () => {
               total: total,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} records`,
+              showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
               pageSizeOptions: ["5", "10", "20", "50"],
             }}
             onChange={handleTableChange}
@@ -416,58 +416,59 @@ const UsersTable = () => {
           setViewRecord(null);
         }}
         centered
+        width={900}
       >
         {viewRecord && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <div className="text-xs text-gray-500">School Code</div>
-                <div className="font-local2">{viewRecord.schoolCode || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">School Code</div>
+                <div className="font-local2 text-lg">{viewRecord.schoolCode || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Username</div>
-                <div className="font-local2">{viewRecord.username || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Username</div>
+                <div className="font-local2 text-lg">{viewRecord.username || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Executive</div>
-                <div className="font-local2">{viewRecord.executive || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Executive</div>
+                <div className="font-local2 text-lg">{viewRecord.executive || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Phone 1</div>
-                <div className="font-local2">{viewRecord.phone1 || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Phone 1</div>
+                <div className="font-local2 text-lg">{viewRecord.phone1 || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Phone 2</div>
-                <div className="font-local2">{viewRecord.phone2 || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Phone 2</div>
+                <div className="font-local2 text-lg">{viewRecord.phone2 || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Principal</div>
-                <div className="font-local2">{viewRecord.principalName || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Principal</div>
+                <div className="font-local2 text-lg">{viewRecord.principalName || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Exam Incharge</div>
-                <div className="font-local2">{viewRecord.examIncharge || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Exam Incharge</div>
+                <div className="font-local2 text-lg">{viewRecord.examIncharge || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Email</div>
-                <div className="font-local2">{viewRecord.email || '-'}</div>
+                <div className="text-base text-gray-500 font-semibold mb-2">Email</div>
+                <div className="font-local2 text-lg">{viewRecord.email || '-'}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-500">Status</div>
-                <div className="font-local2">
-                  <Tag color={viewRecord.status === 'Active' ? 'green' : 'red'}>{viewRecord.status}</Tag>
+                <div className="text-base text-gray-500 font-semibold mb-2">Status</div>
+                <div className="font-local2 text-lg">
+                  <Tag color={viewRecord.status === 'Active' ? 'green' : 'red'} className="text-base px-3 py-1">{viewRecord.status}</Tag>
                 </div>
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-500">Address</div>
-              <div className="font-local2">{viewRecord.address || '-'}</div>
+              <div className="text-base text-gray-500 font-semibold mb-2">Address</div>
+              <div className="font-local2 text-lg">{viewRecord.address || '-'}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Books</div>
-              <div className="flex flex-wrap gap-1">
+              <div className="text-base text-gray-500 font-semibold mb-3">Books</div>
+              <div className="flex flex-wrap gap-3">
                 {Array.isArray(viewRecord.titles) && viewRecord.titles.map((t: string, idx: number) => (
-                  <Tag key={t} color={getRandomColor(t, `${viewRecord.id}-${idx}`)} className="font-local2">{t}</Tag>
+                  <Tag key={t} color={getRandomColor(t, `${viewRecord.id}-${idx}`)} className="font-local2 text-base px-3 py-1">{t}</Tag>
                 ))}
               </div>
             </div>

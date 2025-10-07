@@ -59,7 +59,7 @@ const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, cur
           total: total || 0,
           showSizeChanger: true,
           showTotal: (total: any, range: any) => 
-            `${range[0]}-${range[1]} of ${total} subjects`,
+            `${range[0]}-${range[1]} of ${total} items`,
           pageSizeOptions: ["5", "10", "20", "50"],
         }}
         onChange={handleTableChange}

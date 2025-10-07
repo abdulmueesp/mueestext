@@ -132,12 +132,11 @@ const CreateUser: React.FC = () => {
   const handleFinish = async (values: any) => {
     const { confirmPassword, ...rest } = values || {};
     
-    const payload = {
+    const payload: any = {
       schoolName: rest.schoolName,
       schoolCode: rest.schoolCode,
       executive: rest.executive,
       phone1: rest.phone1,
-      phone2: rest.phone2,
       books: Array.isArray(rest.books) ? rest.books : [], // Send book IDs directly
       principalName: rest.principalName,
       examIncharge: rest.examIncharge,
@@ -146,6 +145,11 @@ const CreateUser: React.FC = () => {
       username: rest.username,
       password: rest.password,
     };
+
+    // Only include phone2 if it has a value
+    if (rest.phone2 && rest.phone2.trim() !== '') {
+      payload.phone2 = rest.phone2;
+    }
 
     try {
       setSubmitting(true);
@@ -242,7 +246,12 @@ const CreateUser: React.FC = () => {
                 label="Phone Number 1"
                 rules={[{ required: true, message: "Please enter phone number" }]}
               >
-                <Input size="large" placeholder="Enter phone number 1" />
+                <InputNumber 
+                  size="large" 
+                  placeholder="Enter phone number 1" 
+                  style={{ width: '100%' }}
+                  controls={false}
+                />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -252,7 +261,12 @@ const CreateUser: React.FC = () => {
                 label="Phone Number 2"
                 rules={[]}
               >
-                <Input size="large" placeholder="Enter phone number 2 (optional)" />
+                <InputNumber 
+                  size="large" 
+                  placeholder="Enter phone number 2 (optional)" 
+                  style={{ width: '100%' }}
+                  controls={false}
+                />
               </Form.Item>
             </Col>
            

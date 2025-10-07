@@ -113,7 +113,7 @@ const SubjectDatatable = ({ onEdit, onDelete, onView, data = [], loading = false
           pageSize: pageSize || 10,
           total: typeof total === 'number' ? total : (Array.isArray(data) ? data.length : 0),
           showSizeChanger: true,
-          showQuickJumper: true,
+          showQuickJumper: false,
           showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
           pageSizeOptions: ["5", "10", "20", "50"],
         }}
