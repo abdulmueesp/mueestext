@@ -5,7 +5,7 @@ import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, me
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
-import { API, GET, POST } from "@/Components/common/api";
+import { API, GET, POST, PUT } from "@/Components/common/api";
 
 
 const { TextArea } = Input;
@@ -129,10 +129,12 @@ const Chaptersform = () => {
   const fetchSubjects = async () => {
     try {
       setSubjectsLoading(true);
-      const data = await GET(API.SUBJECT);
-      const subjectsList = Array.isArray(data?.subjects)
-        ? data.subjects.map((s: any) => ({ value: s.name, label: s.name }))
-        : [];
+      const data = await GET(API.ALL_SUBJECTS);
+      const subjectsList = Array.isArray(data?.results)
+        ? data.results.map((s: any) => ({ value: s.subject, label: s.subject }))
+        : Array.isArray(data?.subjects)
+          ? data.subjects.map((s: any) => ({ value: s.name ?? s.subject, label: s.name ?? s.subject }))
+          : [];
       setSubjectsOptions(subjectsList);
     } catch (e) {
       setSubjectsOptions(SUBJECT_OPTIONS.map(subj => ({ value: subj, label: subj })));
@@ -212,9 +214,8 @@ const Chaptersform = () => {
     const payload = {
       class: values?.class,
       subject: values?.subject,
-      bookid: values?.bookId, // Use bookId from form values
+      bookid: values?.bookId,
       chapters: Array.isArray(values?.chapters)
-
         ? values.chapters.map((c: any) => ({ chapterName: c?.chapterName }))
         : [],
       status: values?.status ?? true,
@@ -223,8 +224,8 @@ const Chaptersform = () => {
 
     try {
       if (isEdit) {
-        // If edit flow requires PUT/PATCH, adjust accordingly; using POST to /chapter for now
-        await POST(API.CHAPTER, { id, ...payload });
+        // Update only chapters via PUT /chapter/:id
+        await PUT(`${API.CHAPTER}/${id}`, { chapters: payload.chapters });
         message.success("Chapter updated successfully!");
       } else {
         await POST(API.CHAPTER, payload);
@@ -311,61 +312,64 @@ const Chaptersform = () => {
             type: "Public"
           }}
         >
-          {/* Basic Information */}
-          <Row gutter={24}>
-            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-            <Form.Item
-            required={false}
-                name="class"
-                label="Class"
-                rules={[{ required: true, message: 'Please select class!' }]}
-              >
-                <Select placeholder="Select class" size="large" onChange={onChangeClass} allowClear>
-                  {CLASS_OPTIONS.map((cls) => (
-                    <Option key={cls} value={cls}>{cls}</Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-              <Form.Item
-              required={false}
-                name="subject"
-                label="Subject"
-                rules={[{ required: true, message: 'Please select subject!' }]}
-              >
-                <Select 
-                  placeholder="Select subject" 
-                  size="large" 
-                  onChange={onChangeSubject} 
-                  allowClear
-                  options={subjectsOptions}
-                  loading={subjectsLoading}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          {!isEdit && (
+            <>
+              <Row gutter={24}>
+                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                  <Form.Item
+                    required={false}
+                    name="class"
+                    label="Class"
+                    rules={[{ required: true, message: 'Please select class!' }]}
+                  >
+                    <Select placeholder="Select class" size="large" onChange={onChangeClass} allowClear>
+                      {CLASS_OPTIONS.map((cls) => (
+                        <Option key={cls} value={cls}>{cls}</Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                  <Form.Item
+                    required={false}
+                    name="subject"
+                    label="Subject"
+                    rules={[{ required: true, message: 'Please select subject!' }]}
+                  >
+                    <Select 
+                      placeholder="Select subject" 
+                      size="large" 
+                      onChange={onChangeSubject} 
+                      allowClear
+                      options={subjectsOptions}
+                      loading={subjectsLoading}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
 
-          <Row gutter={24}>
-            <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-              <Form.Item
-              required={false}
-                name="bookId"
-                label="Book"
-                rules={[{ required: true, message: 'Please select book!' }]}
-              >
-                <Select
-                  placeholder="Select book"
-                  size="large"
-                  allowClear
-                  loading={booksLoading}
-                  disabled={!selectedClass || !selectedSubject}
-                  options={booksOptions}
-                  onChange={onChangeBook}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+              <Row gutter={24}>
+                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                  <Form.Item
+                    required={false}
+                    name="bookId"
+                    label="Book"
+                    rules={[{ required: true, message: 'Please select book!' }]}
+                  >
+                    <Select
+                      placeholder="Select book"
+                      size="large"
+                      allowClear
+                      loading={booksLoading}
+                      disabled={!selectedClass || !selectedSubject}
+                      options={booksOptions}
+                      onChange={onChangeBook}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
 
           <Divider orientation="left">Chapters</Divider>
 

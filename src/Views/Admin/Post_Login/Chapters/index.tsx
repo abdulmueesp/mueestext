@@ -94,10 +94,12 @@ const Subjects = () => {
   const fetchSubjects = async () => {
     try {
       setSubjectsLoading(true);
-      const data = await GET(API.SUBJECT);
-      const subjectsList = Array.isArray(data?.subjects)
-        ? data.subjects.map((s: any) => ({ value: s.name, label: s.name }))
-        : [];
+      const data = await GET(API.ALL_SUBJECTS);
+      const subjectsList = Array.isArray(data?.results)
+        ? data.results.map((s: any) => ({ value: s.subject, label: s.subject }))
+        : Array.isArray(data?.subjects)
+          ? data.subjects.map((s: any) => ({ value: s.name ?? s.subject, label: s.name ?? s.subject }))
+          : [];
       setSubjectsOptions(subjectsList);
     } catch (e) {
       setSubjectsOptions([

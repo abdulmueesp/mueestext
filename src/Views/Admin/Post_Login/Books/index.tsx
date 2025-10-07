@@ -9,16 +9,7 @@ import loadinsvg from "../../../../assets/spinning-dots.svg"
 const { TextArea } = Input;
 
 const Books = () => {
-  const SUBJECT_OPTIONS = [
-    "Malayalam",
-    "English",
-    "Maths",
-    "GK",
-    "Computer",
-    "EVS",
-    "Social Science",
-    "Science",
-  ];
+  
 
   const CLASS_OPTIONS = [
     "0",
@@ -133,18 +124,17 @@ const Books = () => {
 
   const fetchSubjects = async () => {
     try {
-      const data = await GET(API.SUBJECT);
-      const subjectsList = Array.isArray(data?.subjects)
-        ? data.subjects.map((s: any) => ({
-            value: s.name,
-            label: s.name,
-          }))
-        : [];
+      const data = await GET(API.ALL_SUBJECTS);
+      const subjectsList = Array.isArray(data?.results)
+        ? data.results.map((s: any) => ({ value: s.subject, label: s.subject }))
+        : Array.isArray(data?.subjects)
+          ? data.subjects.map((s: any) => ({ value: s.name ?? s.subject, label: s.name ?? s.subject }))
+          : [];
       setSubjects(subjectsList);
     } catch (e) {
       console.log("Failed to fetch subjects:", e);
-      // Fallback to static options
-      setSubjects(SUBJECT_OPTIONS.map(subj => ({ value: subj, label: subj })));
+      // Fallback to empty options
+      setSubjects([]);
     }
   };
 

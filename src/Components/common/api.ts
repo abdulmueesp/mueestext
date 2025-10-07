@@ -11,9 +11,11 @@ export const API = {
   CHAPTER: "/chapter",
   CHAPTERGET:"/chapterd",
   SUBJECT: "/subject",
+  ALL_SUBJECTS: "/subjectAll",
   QUESTION: "/qustion",
   UPLOAD: "/upload",
   QUIZ_ITEMS: "/quizItems",
+  BOOKED:"/booked"
 };
 
 const buildUrl = (endpoint: string, query?: Record<string, any>) => {
@@ -60,8 +62,13 @@ export const POST = async (
   });
   if (res.status === 400) {
     const text = await res.text();
-    message.error(text || "Bad Request");
-    throw new Error(text || `Request failed with status ${res.status}`);
+    let msg = text || "Bad Request";
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.message === 'string') msg = parsed.message;
+    } catch {}
+    message.error(msg);
+    throw new Error(msg || `Request failed with status ${res.status}`);
   }
 
   return res.json();
@@ -83,8 +90,13 @@ export const PUT = async (
   });
   if (res.status === 400) {
     const text = await res.text();
-    message.error(text || "Bad Request");
-    throw new Error(text || `Request failed with status ${res.status}`);
+    let msg = text || "Bad Request";
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.message === 'string') msg = parsed.message;
+    } catch {}
+    message.error(msg);
+    throw new Error(msg || `Request failed with status ${res.status}`);
   }
 
   return res.json();

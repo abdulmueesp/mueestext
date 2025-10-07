@@ -1,14 +1,23 @@
 // @ts-nocheck
-import { useState } from "react";
-import { Button, Table, Tag, Input, Modal, Select, Popconfirm, message } from "antd";
+import { useState, useEffect } from "react";
+import { Button, Table, Tag, Input, Modal, Select, Popconfirm, message, Popover } from "antd";
 import { FaUserCircle, FaEdit, FaPlus, FaEye, FaEyeSlash } from "react-icons/fa";
 import { IoIosSearch } from "react-icons/io";
 import { MdDeleteOutline } from "react-icons/md";
 import PageHeader from "../../../../Components/common/PageHeader";
 import { useNavigate } from "react-router-dom";
+import { API, GET } from "../../../../Components/common/api";
+import loadinsvg from "../../../../assets/spinning-dots.svg";
 
 const UsersTable = () => {
   const [searchValue, setSearchValue] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [tableData, setTableData] = useState<any[]>([]);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const navigate = useNavigate();
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -17,109 +26,23 @@ const UsersTable = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<any>(null);
 
-  // Dummy data for users
-  const [data, setData] = useState<any[]>([
-  	{
-  	  key: "1",
-  	  id: 1,
-  	  schoolName: "Greenwood School",
-  	  schoolCode: "GW001",
-  	  executive: "John Doe",
-  	  phone1: "9876543210",
-  	  phone2: "",
-  	  principalName: "Priya Kumar",
-  	  examIncharge: "Naveen R",
-  	  email: "contact@greenwood.edu",
-  	  address: "12, Lakeview Road, City",
-  	  username: "greenwood_admin",
-  	  password: "admin123",
-  	  titles: [
-  	    "Alphabets Fun",
-  	    "My First GK"
-  	  ],
-  	  status: "Active"
-  	},
-  	{
-  	  key: "2",
-  	  id: 2,
-  	  schoolName: "Sunrise Public School",
-  	  schoolCode: "SR002",
-  	  executive: "Anita Sharma",
-  	  phone1: "9123456780",
-  	  phone2: "9123456781",
-  	  principalName: "Rakesh Patel",
-  	  examIncharge: "Latha S",
-  	  email: "info@sunrise.edu",
-  	  address: "45, Sunrise Ave, City",
-  	  username: "sunrise_admin",
-  	  password: "sunrise@123",
-  	  titles: [
-  	    "Basics of Computing",
-  	    "Environment Around Us"
-  	  ],
-  	  status: "Active"
-  	},
-  	{
-  	  key: "3",
-  	  id: 3,
-  	  schoolName: "Hillside Academy",
-  	  schoolCode: "HS003",
-  	  executive: "Meera Iyer",
-  	  phone1: "9000000003",
-  	  phone2: "",
-  	  principalName: "Vikram Rao",
-  	  examIncharge: "Sana K",
-  	  email: "hello@hillside.edu",
-  	  address: "9, Hill Street, City",
-  	  username: "hillside_admin",
-  	  password: "hillside#321",
-  	  titles: [
-  	    "Malayalam Reader"
-  	  ],
-  	  status: "Active"
-  	},
-  	{
-  	  key: "4",
-  	  id: 4,
-  	  schoolName: "Riverdale High",
-  	  schoolCode: "RD004",
-  	  executive: "Suresh N",
-  	  phone1: "9000000004",
-  	  phone2: "",
-  	  principalName: "Neha S",
-  	  examIncharge: "Vimal T",
-  	  email: "admin@riverdale.edu",
-  	  address: "22, Riverside Rd, City",
-  	  username: "riverdale_admin",
-  	  password: "river@456",
-  	  titles: [
-  	    "Numbers Workbook",
-  	    "Basics of Computing"
-  	  ],
-  	  status: "Inactive"
-  	},
-  	{
-  	  key: "5",
-  	  id: 5,
-  	  schoolName: "City Central School",
-  	  schoolCode: "CC005",
-  	  executive: "Arun Menon",
-  	  phone1: "9000000005",
-  	  phone2: "9000000006",
-  	  principalName: "Kiran Das",
-  	  examIncharge: "Harini V",
-  	  email: "central@city.edu",
-  	  address: "101, Central Blvd, City",
-  	  username: "citycentral_admin",
-  	  password: "central!789",
-  	  titles: [
-  	    "Alphabets Fun",
-  	    "Environment Around Us",
-  	    "Malayalam Reader"
-  	  ],
-  	  status: "Active"
-  	}
-  ]);
+  // Load schools data on mount
+  useEffect(() => {
+    fetchSchools({ pageSize: 10 });
+  }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchValue.trim());
+    }, 400);
+    return () => clearTimeout(t);
+  }, [searchValue]);
+
+  // Trigger search on debounce
+  useEffect(() => {
+    fetchSchools({ pageSize, page: currentPage, q: debouncedSearch || undefined, status: statusFilter || undefined });
+  }, [debouncedSearch, statusFilter]);
 
   // Handle Edit Click - Open modal
   const handleEdit = (record: any) => {
@@ -132,15 +55,59 @@ const UsersTable = () => {
     setIsViewModalOpen(true);
   };
 
+  // Fetch schools from API
+  const fetchSchools = async (opts?: { pageSize?: number, page?: number, q?: string, status?: string }) => {
+    try {
+      setLoading(true);
+      const size = opts?.pageSize ?? pageSize ?? 10;
+      const page = opts?.page ?? currentPage ?? 1;
+      const query: any = { pageSize: size, page: page };
+      
+      if (opts?.q) query.schoolName = opts.q;
+      if (opts?.status) query.status = opts.status === "true";
+      
+      const data = await GET("/schools", query);
+      const rows = Array.isArray(data?.results)
+        ? data.results.map((r: any) => ({
+            id: r._id || r.id,
+            key: r._id || r.id,
+            schoolName: r.schoolDetails?.schoolName || "",
+            schoolCode: r.schoolDetails?.schoolCode || "",
+            executive: r.schoolDetails?.executive || "",
+            phone1: r.schoolDetails?.phone1 || "",
+            phone2: r.schoolDetails?.phone2 || "",
+            principalName: r.schoolDetails?.principalName || "",
+            examIncharge: r.schoolDetails?.examIncharge || "",
+            email: r.schoolDetails?.email || "",
+            address: r.schoolDetails?.address || "",
+            username: r.username || "",
+            password: r.password || "",
+            titles: Array.isArray(r.schoolDetails?.books) 
+              ? r.schoolDetails.books.map((book: any) => book.book || book.title || "")
+              : [],
+            status: r.status === true ? "Active" : "Inactive"
+          }))
+        : [];
+      setTableData(rows);
+      setTotal(data?.total || data?.count || rows.length);
+    } catch (e) {
+      console.log(e);
+      setTableData([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle status update
   const handleStatusUpdate = () => {
     // Update the user status in the data
-    const updatedData = data.map(user => 
+    const updatedData = tableData.map(user => 
       user.id === selectedUser.id 
         ? { ...user, status: newStatus }
         : user
     );
-    setData(updatedData);
+    setTableData(updatedData);
     
     // Show success message
     message.success(`Status updated successfully!`);
@@ -155,12 +122,12 @@ const UsersTable = () => {
 
   // Toggle status instead of delete
   const handleToggleStatus = (userId: number) => {
-    const updatedData = data.map(user =>
+    const updatedData = tableData.map(user =>
       user.id === userId
         ? { ...user, status: user.status === 'Active' ? 'Inactive' : 'Active' }
         : user
     );
-    setData(updatedData);
+    setTableData(updatedData);
     message.success("Status updated successfully!");
   };
 
@@ -175,32 +142,31 @@ const UsersTable = () => {
   // Handle search
   const handleSearch = (value: string) => {
     setSearchValue(value);
-    // Add search logic here
   };
 
   // Handle refresh
   const handleRefresh = () => {
     setSearchValue("");
-    // Add refresh logic here
+    setStatusFilter(undefined);
+    fetchSchools({ pageSize: 10 });
   };
 
-  const getTitleColor = (title: string) => {
-  	switch (title) {
-  	  case "Numbers Workbook":
-  	    return "geekblue";
-  	  case "Alphabets Fun":
-  	    return "volcano";
-  	  case "My First GK":
-  	    return "green";
-  	  case "Basics of Computing":
-  	    return "purple";
-  	  case "Environment Around Us":
-  	    return "cyan";
-  	  case "Malayalam Reader":
-  	    return "magenta";
-  	  default:
-  	    return "default";
-  	}
+  const handleTableChange = (pag: any) => {
+    const newPageSize = pag.pageSize || pageSize;
+    const newPage = pag.current || currentPage;
+    
+    if (pag.pageSize && pag.pageSize !== pageSize) {
+      setPageSize(pag.pageSize);
+    }
+    if (pag.current && pag.current !== currentPage) {
+      setCurrentPage(pag.current);
+    }
+    
+    fetchSchools({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined, status: statusFilter || undefined });
+  };
+
+  const getRandomColor = (title: string, id?: string) => {
+    return 'blue';
   };
 
   const columns: any[] = [
@@ -214,19 +180,34 @@ const UsersTable = () => {
   	  ),
   	},
   	{
-  	  title: <span className="font-semi">Titles</span>,
+  	  title: <span className="font-semi">Books</span>,
   	  dataIndex: "titles",
   	  key: "titles",
   	  width: 380,
-  	  render: (titles: string[]) => (
-  	    <div className="flex flex-wrap gap-1">
-  	      {Array.isArray(titles) && titles.map((t) => (
-  	        <Tag key={t} color={getTitleColor(t)} className="font-local2">
-  	        	{t}
-  	        </Tag>
-  	      ))}
-  	    </div>
-  	  ),
+  	  render: (titles: string[], record: any) => {
+  	    const maxInline = 2;
+  	    const hasMore = Array.isArray(titles) && titles.length > maxInline;
+  	    const inline = Array.isArray(titles) ? titles.slice(0, maxInline) : [];
+  	    const content = (
+  	      <div className="max-w-xs">
+  	        {Array.isArray(titles) && titles.map((t, idx) => (
+  	          <Tag key={idx} className="mb-1 font-local2" color={getRandomColor(t, `${record.id}-${idx}`)}>{t}</Tag>
+  	        ))}
+  	      </div>
+  	    );
+  	    return (
+  	      <div className="flex items-center gap-1 flex-wrap">
+  	        {inline.map((t, idx) => (
+  	          <Tag key={idx} className="font-local2" color={getRandomColor(t, `${record.id}-${idx}`)}>{t}</Tag>
+  	        ))}
+  	        {hasMore && (
+  	          <Popover content={content} title="All Books">
+  	            <Tag className="cursor-pointer font-local2" color="default">+{titles.length - maxInline} more</Tag>
+  	          </Popover>
+  	        )}
+  	      </div>
+  	    );
+  	  },
   	},
   	{
   	  title: <span className="font-semi">Status</span>,
@@ -284,6 +265,21 @@ const UsersTable = () => {
     <>
       <PageHeader title="Schools" backButton={true}>
         <div className="flex items-center gap-3 w-full">
+        <Select
+            placeholder="Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            allowClear
+            className="w-32"
+            style={{
+              backgroundColor: '#f9fafb',
+              color: '#374151',
+             
+            }}
+          >
+            <Select.Option value="true">Active</Select.Option>
+            <Select.Option value="false">Inactive</Select.Option>
+          </Select>
           <div className="flex-1 max-w-sm sm:max-w-lg">
             <Input
               placeholder="Search by school name"
@@ -298,6 +294,7 @@ const UsersTable = () => {
               }}
             />
           </div>
+         
           <Button
             type="primary"
             onClick={() => navigate('/schools/new')}
@@ -308,25 +305,32 @@ const UsersTable = () => {
         </div>
       </PageHeader>
 
-      <div className="mt-6">
-        <Table
-          columns={columns}
-          dataSource={data}
-          pagination={{
-            current: 1,
-            pageSize: 10,
-            total: data.length,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} records`,
-            pageSizeOptions: ["5", "10", "20", "50"],
-          }}
-          scroll={{ x: 'max-content' }}
-          size="middle"
-          className="font-local2"
-          rowKey="id"
-        />
-      </div>
+      {loading ? (
+        <div className="w-full flex justify-center items-center py-16">
+          <img src={loadinsvg} alt="Loading" className="w-14 h-14" />
+        </div>
+      ) : (
+        <div className="mt-6">
+          <Table
+            columns={columns}
+            dataSource={tableData}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} records`,
+              pageSizeOptions: ["5", "10", "20", "50"],
+            }}
+            onChange={handleTableChange}
+            scroll={{ x: 'max-content' }}
+            size="middle"
+            className="font-local2"
+            rowKey="id"
+          />
+        </div>
+      )}
 
       {/* Edit Status Modal */}
       <Modal
@@ -410,6 +414,10 @@ const UsersTable = () => {
                 <div className="font-local2">{viewRecord.schoolCode || '-'}</div>
               </div>
               <div>
+                <div className="text-xs text-gray-500">Username</div>
+                <div className="font-local2">{viewRecord.username || '-'}</div>
+              </div>
+              <div>
                 <div className="text-xs text-gray-500">Executive</div>
                 <div className="font-local2">{viewRecord.executive || '-'}</div>
               </div>
@@ -445,10 +453,10 @@ const UsersTable = () => {
               <div className="font-local2">{viewRecord.address || '-'}</div>
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">Titles</div>
+              <div className="text-xs text-gray-500 mb-1">Books</div>
               <div className="flex flex-wrap gap-1">
-                {Array.isArray(viewRecord.titles) && viewRecord.titles.map((t: string) => (
-                  <Tag key={t} color={getTitleColor(t)} className="font-local2">{t}</Tag>
+                {Array.isArray(viewRecord.titles) && viewRecord.titles.map((t: string, idx: number) => (
+                  <Tag key={t} color={getRandomColor(t, `${viewRecord.id}-${idx}`)} className="font-local2">{t}</Tag>
                 ))}
               </div>
             </div>

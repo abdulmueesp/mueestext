@@ -1,19 +1,13 @@
 // @ts-nocheck
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Card, Row, Col, Select, Space, InputNumber, message, Tag } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
+import { API, GET, POST } from "../../../../Components/common/api";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const { TextArea } = Input;
 
-const titleOptions = [
-  { value: "Numbers Workbook", label: "Numbers Workbook" },
-  { value: "Alphabets Fun", label: "Alphabets Fun" },
-  { value: "My First GK", label: "My First GK" },
-  { value: "Basics of Computing", label: "Basics of Computing" },
-  { value: "Environment Around Us", label: "Environment Around Us" },
-  { value: "Malayalam Reader", label: "Malayalam Reader" },
-];
+// Book options loaded from API.BOOKED on mount
 
 const getTitleColor = (title: string) => {
   switch (title) {
@@ -34,8 +28,19 @@ const getTitleColor = (title: string) => {
   }
 };
 
+const getSubjectColor = (_subject: string) => {
+  return 'blue';
+};
+
+const getClassColor = (_klass: string) => {
+  return 'red';
+};
+
 const CreateUser: React.FC = () => {
   const [form] = Form.useForm();
+  const [titleOptions, setTitleOptions] = useState<{ value: string; label: string }[]>([]);
+  const [titlesLoading, setTitlesLoading] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -43,13 +48,13 @@ const CreateUser: React.FC = () => {
 
   useEffect(() => {
     if (record) {
-      form.setFieldsValue({
+        form.setFieldsValue({
         schoolName: record.schoolName,
         schoolCode: record.schoolCode,
         executive: record.executive,
         phone1: record.phone1,
         phone2: record.phone2,
-        title: record.titles,
+        books: (record as any)?.books ?? (record as any)?.titles ?? [],
         principalName: record.principalName,
         examIncharge: record.examIncharge,
         email: record.email,
@@ -64,19 +69,93 @@ const CreateUser: React.FC = () => {
     }
   }, [record, form]);
 
+  // Load books for "Book Name" select on mount
+  useEffect(() => {
+    let mounted = true;
+    const loadBooks = async () => {
+      try {
+        setTitlesLoading(true);
+        const data = await GET(API.BOOKED);
+        const list = Array.isArray((data as any)?.results)
+          ? (data as any).results
+          : [];
+        const options = list
+          .map((item: any) => {
+            const bookName = item?.book || '';
+            const klass = item?.class || '';
+            const subject = item?.subject || '';
+            if (!bookName) return null;
+            const labelText = `${bookName} - ${klass}-${subject}`.trim();
+            return {
+              value: String(item?.id || bookName),
+              labelText,
+              klass,
+              subject,
+              label: (
+                <span>
+                  {bookName}
+                  <Tag color={getClassColor(klass)} style={{ marginLeft: 8 }}>{klass}</Tag>
+                  <Tag color={getSubjectColor(subject)} style={{ marginLeft: 4 }}>{subject}</Tag>
+                </span>
+              ),
+            };
+          })
+          .filter((opt: any) => !!opt);
+        if (mounted) setTitleOptions(options);
+      } catch (e: any) {
+        message.error(e?.message || 'Failed to load books');
+      } finally {
+        if (mounted) setTitlesLoading(false);
+      }
+    };
+    loadBooks();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleCancel = () => {
     navigate("/schools");
   };
 
-  const handleFinish = (values: any) => {
-    if (record) {
-      console.log("Edit User submit:", { id: record.id, ...values });
-      message.success("Record updated successfully!");
-    } else {
-      console.log("Create User submit:", values);
-      message.success("User created successfully!");
+  const handleFinish = async (values: any) => {
+    const { confirmPassword, ...rest } = values || {};
+    const payload = {
+      schoolName: rest.schoolName,
+      schoolCode: rest.schoolCode,
+      executive: rest.executive,
+      phone1: rest.phone1,
+      phone2: rest.phone2,
+      books: Array.isArray(rest.books) ? rest.books : [],
+      principalName: rest.principalName,
+      examIncharge: rest.examIncharge,
+      email: rest.email,
+      address: rest.address,
+      username: rest.username,
+      password: rest.password,
+    };
+
+    try {
+      setSubmitting(true);
+      if (record) {
+        console.log("Edit User submit:", { id: record.id, ...payload });
+        message.success("Record updated successfully!");
+      } else {
+        await POST("/school-user", payload);
+        message.success("School created successfully!");
+      }
+      navigate("/schools");
+    } catch (e: any) {
+      const raw = (e && e.message) ? e.message : String(e || '');
+      let friendly = raw || 'Failed to submit form';
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.message === 'string') friendly = parsed.message;
+      } catch {}
+      message.error(friendly || 'Failed to submit form');
+    } finally {
+      setSubmitting(false);
     }
-    navigate("/schools");
   };
 
   return (
@@ -95,7 +174,7 @@ const CreateUser: React.FC = () => {
             executive: record.executive,
             phone1: record.phone1,
             phone2: record.phone2,
-            title: record.titles,
+            books: (record as any)?.books ?? (record as any)?.titles ?? [],
             principalName: record.principalName,
             examIncharge: record.examIncharge,
             email: record.email,
@@ -107,41 +186,40 @@ const CreateUser: React.FC = () => {
           } : {}}
         >
           <Row gutter={24}>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+            <Col xs={24} sm={24} md={17} lg={17} xl={17}>
               <Form.Item
                 required={false}
                 name="schoolName"
                 label="School Name"
                 rules={[{ required: true, message: "Please enter school name" }]}
               >
-                <Input placeholder="Enter school name" />
+                <Input size="large" placeholder="Enter school name" />
               </Form.Item>
             </Col>
 
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+            <Col xs={24} sm={24} md={7} lg={7} xl={7}>
               <Form.Item
                 required={false}
                 name="schoolCode"
                 label="School Code"
                 rules={[{ required: true, message: "Please enter school code" }]}
               >
-                <Input placeholder="Enter school code" />
+                <Input size="large" placeholder="Enter school code" />
               </Form.Item>
             </Col>
+          </Row>
 
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+          <Row gutter={24}>
+          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
                 required={false}
                 name="executive"
                 label="Executive"
                 rules={[{ required: true, message: "Please enter executive" }]}
               >
-                <Input placeholder="Enter executive" />
+                <Input size="large" placeholder="Enter executive" />
               </Form.Item>
             </Col>
-          </Row>
-
-          <Row gutter={24}>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
                 required={false}
@@ -149,7 +227,7 @@ const CreateUser: React.FC = () => {
                 label="Phone Number 1"
                 rules={[{ required: true, message: "Please enter phone number" }]}
               >
-                <Input placeholder="Enter phone number 1" />
+                <Input size="large" placeholder="Enter phone number 1" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -159,27 +237,10 @@ const CreateUser: React.FC = () => {
                 label="Phone Number 2"
                 rules={[]}
               >
-                <Input placeholder="Enter phone number 2 (optional)" />
+                <Input size="large" placeholder="Enter phone number 2 (optional)" />
               </Form.Item>
             </Col>
-
-            <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-              <Form.Item
-                required={false}
-                name="title"
-                label="Title"
-                rules={[{ required: true, message: "Please select title(s)" }]}
-              >
-                <Select
-                  mode="multiple"
-                  allowClear
-                  showSearch
-                  placeholder="Select title(s)"
-                  options={titleOptions}
-                  filterOption={(input, option) => (option?.label || "").toLowerCase().includes(input.toLowerCase())}
-                />
-              </Form.Item>
-            </Col>
+           
           </Row>
 
           <Row gutter={24}>
@@ -190,7 +251,7 @@ const CreateUser: React.FC = () => {
                 label="Principal Name"
                 rules={[{ required: true, message: "Please enter principal name" }]}
               >
-                <Input placeholder="Enter principal name" />
+                <Input size="large" placeholder="Enter principal name" />
               </Form.Item>
             </Col>
 
@@ -201,7 +262,7 @@ const CreateUser: React.FC = () => {
                 label="Examination Incharge"
                 rules={[{ required: true, message: "Please enter examination incharge" }]}
               >
-                <Input placeholder="Enter examination incharge" />
+                <Input size="large" placeholder="Enter examination incharge" />
               </Form.Item>
             </Col>
 
@@ -215,7 +276,32 @@ const CreateUser: React.FC = () => {
                   { type: "email", message: "Please enter a valid email" },
                 ]}
               >
-                <Input placeholder="Enter email" />
+                <Input size="large" placeholder="Enter email" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={24}>
+            <Col span={24}>
+              <Form.Item
+                required={false}
+                name="books"
+                label="Book Name"
+                rules={[{ required: true, message: "Please select book name(s)" }]}
+              >
+                <Select
+                  size="large"
+                  mode="multiple"
+                  allowClear
+                  showSearch
+                  placeholder="Select book name(s)"
+                  options={titleOptions}
+                  loading={titlesLoading}
+                  filterOption={(input, option) => {
+                    const text = `${(option as any)?.labelText || ''} ${(option as any)?.klass || ''} ${(option as any)?.subject || ''}`.toLowerCase();
+                    return text.includes(input.toLowerCase());
+                  }}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -227,7 +313,7 @@ const CreateUser: React.FC = () => {
                 label="Username"
                 rules={[{ required: true, message: "Please enter username" }]}
               >
-                <Input placeholder="Enter username" />
+                <Input size="large" placeholder="Enter username" />
               </Form.Item>
             </Col>
 
@@ -238,7 +324,7 @@ const CreateUser: React.FC = () => {
                 label="Password"
                 rules={[{ required: true, message: "Please enter password" }]}
               >
-                <Input.Password placeholder="Enter password" />
+                <Input.Password size="large" placeholder="Enter password" />
               </Form.Item>
             </Col>
 
@@ -260,7 +346,7 @@ const CreateUser: React.FC = () => {
                   }),
                 ]}
               >
-                <Input.Password placeholder="Confirm password" />
+                <Input.Password size="large" placeholder="Confirm password" />
               </Form.Item>
             </Col>
           </Row>
@@ -273,7 +359,7 @@ const CreateUser: React.FC = () => {
                 label="Address"
                 rules={[{ required: true, message: "Please enter address" }]}
               >
-                <TextArea rows={3} placeholder="Enter address" />
+                <TextArea rows={5} placeholder="Enter address" />
               </Form.Item>
             </Col>
           </Row>
@@ -288,6 +374,7 @@ const CreateUser: React.FC = () => {
               <Button
                 type="primary"
                 htmlType="submit"
+                loading={submitting}
                 style={{ backgroundColor: "#007575", borderColor: "#007575" }}
               >
                 {record ? 'Update' : 'Submit'}
