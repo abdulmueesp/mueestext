@@ -20,36 +20,39 @@ import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
 import Subject from "./Views/Admin/Post_Login/Subject"
 
 function App() {
-  const { isAuthenticated, role } = useSelector((state: RootState) => state.user);
-  const dispatch = useDispatch(); // ✅ Added dispatch hook
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.user);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  console.log('App render - isAuthenticated:', isAuthenticated, 'user:', user);
+
   const handleLogout = () => {
-    // ✅ IMPORTANT: Dispatch logout action to clear persisted state
     dispatch(logout());
     message.success('Logged out successfully!');
-    // Navigate to root path after logout
     navigate('/', { replace: true });
   };
 
   // Determine default route based on user role
   const getDefaultRoute = () => {
-    if (role === 'admin') {
+    if (user?.role === 'admin') {
       return '/dashboard';
-    } else if (role === 'user') {
-      return 'paper';
+    } else if (user?.role === 'school') {
+      return '/paper';
     }
-    return 'paper'; // fallback
+    return '/paper'; // fallback
   };
 
   // Show loading or login based on authentication state
   if (!isAuthenticated) {
+    console.log('Not authenticated, showing login page');
     return (
       <Routes>
         <Route path="*" element={<LoginPage />} />
       </Routes>
     );
   }
+
+  console.log('Authenticated, showing main app for user:', user);
 
 
   return (
@@ -62,6 +65,7 @@ function App() {
             <Route path="paper" element={<Paper />} />
             <Route path="schools" element={<UsersTable />} />
             <Route path="schools/new" element={<CreateUser />} />
+            <Route path="schools/edit/:id" element={<CreateUser />} />
             <Route path="books" element={<Books />} />
             <Route path="chapters" element={<Chapters />} />
             <Route path="/questions" element={<Questions />} />

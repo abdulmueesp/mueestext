@@ -46,8 +46,7 @@ export const menuData = {  admin: [
     },
    
   ],
-  user: [
-    { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
+  school: [
     {
       id: "Create Paper",
       icon: FiFilePlus,

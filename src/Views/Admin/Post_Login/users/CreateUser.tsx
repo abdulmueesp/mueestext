@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Form, Input, Button, Card, Row, Col, Select, Space, InputNumber, message, Tag } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
 import { API, GET, POST, PUT } from "../../../../Components/common/api";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 const { TextArea } = Input;
 
@@ -41,44 +41,73 @@ const CreateUser: React.FC = () => {
   const [titleOptions, setTitleOptions] = useState<{ value: string; label: string }[]>([]);
   const [titlesLoading, setTitlesLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [schoolData, setSchoolData] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { id } = useParams<{ id: string }>();
 
-  const record = (location as any)?.state?.record || null;
+  const isEditMode = !!id;
+  const record = (location as any)?.state?.record || schoolData;
+
+  // Fetch school data by ID when in edit mode
+  useEffect(() => {
+    if (isEditMode && id) {
+      const fetchSchoolData = async () => {
+        try {
+          setLoading(true);
+          const data = await GET(`/schools/${id}`);
+          setSchoolData(data);
+        } catch (error) {
+          console.error('Failed to fetch school data:', error);
+          message.error('Failed to load school data');
+          navigate('/schools');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchSchoolData();
+    }
+  }, [isEditMode, id, navigate]);
 
   useEffect(() => {
-    if (record) {
-      // For edit mode, we need to map book names to IDs
-      const bookNames = (record as any)?.books ?? (record as any)?.titles ?? [];
-      const bookIds = bookNames.map((bookName: string) => {
-        // Find matching book ID from titleOptions
-        const matchingBook = titleOptions.find(option => 
-          option.labelText?.includes(bookName) || 
-          (option as any).labelText?.split(' - ')[0] === bookName
-        );
-        return matchingBook?.value || bookName; // fallback to bookName if no match
-      });
+    if (record && titleOptions.length > 0) {
+      // Handle API response structure with schoolDetails
+      const schoolDetails = record.schoolDetails || record;
+      const books = schoolDetails.books || [];
+      
+      // Map book objects to IDs for form selection with error handling
+      const bookIds = books.map((book: any) => {
+        const bookId = book.id || book._id;
+        // Check if the book ID exists in available options
+        const existsInOptions = titleOptions.some(option => option.value === String(bookId));
+        if (!existsInOptions && bookId) {
+          console.warn(`Book with ID ${bookId} not found in available options`);
+        }
+        return bookId;
+      }).filter(Boolean);
 
       form.setFieldsValue({
-        schoolName: record.schoolName,
-        schoolCode: record.schoolCode,
-        executive: record.executive,
-        phone1: record.phone1,
-        phone2: record.phone2,
+        schoolName: schoolDetails.schoolName,
+        schoolCode: schoolDetails.schoolCode,
+        executive: schoolDetails.executive,
+        phone1: schoolDetails.phone1,
+        phone2: schoolDetails.phone2,
         books: bookIds,
-        principalName: record.principalName,
-        examIncharge: record.examIncharge,
-        email: record.email,
-        address: record.address,
+        principalName: schoolDetails.principalName,
+        examIncharge: schoolDetails.examIncharge,
+        email: schoolDetails.email,
+        address: schoolDetails.address,
         username: record.username,
         password: record.password,
-        confirmPassword: record.password,
+        // Only set confirmPassword for create mode
+        ...(isEditMode ? {} : { confirmPassword: record.password }),
         status: record.status,
       });
-    } else {
+    } else if (!record) {
       form.resetFields();
     }
-  }, [record, form, titleOptions]);
+  }, [record, form, titleOptions, isEditMode]);
 
   // Load books for "Book Name" select on mount
   useEffect(() => {
@@ -92,13 +121,13 @@ const CreateUser: React.FC = () => {
           : [];
         const options = list
           .map((item: any) => {
-            const bookName = item?.book || '';
+            const bookName = item?.book || item?.name || '';
             const klass = item?.class || '';
             const subject = item?.subject || '';
             if (!bookName) return null;
             const labelText = `${bookName} - ${klass}-${subject}`.trim();
             return {
-              value: String(item?.id || bookName),
+              value: String(item?.id || item?._id || bookName),
               labelText,
               klass,
               subject,
@@ -147,16 +176,16 @@ const CreateUser: React.FC = () => {
     };
 
     // Only include phone2 if it has a value
-    if (rest.phone2 && rest.phone2.trim() !== '') {
+    if (rest.phone2 && String(rest.phone2).trim() !== '') {
       payload.phone2 = rest.phone2;
     }
 
     try {
       setSubmitting(true);
-      if (record) {
+      if (isEditMode && id) {
         // Edit mode - make PUT request with school ID
-        console.log("Edit User submit:", { id: record.id, ...payload });
-        await PUT(`/schools/${record.id}`, payload);
+        console.log("Edit User submit:", { id, ...payload });
+        await PUT(`/schools/${id}`, payload);
         message.success("School updated successfully!");
       } else {
         // Create mode - make POST request
@@ -177,9 +206,25 @@ const CreateUser: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <>
+        <PageHeader title={isEditMode ? "Edit School" : "Create School"} backButton={true} />
+        <Card className="w-full mt-4 shadow-md">
+          <div className="flex justify-center items-center py-16">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#007575] mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading school data...</p>
+            </div>
+          </div>
+        </Card>
+      </>
+    );
+  }
+
   return (
     <>
-      <PageHeader title={record ? "Edit School" : "Create School"} backButton={true} />
+      <PageHeader title={isEditMode ? "Edit School" : "Create School"} backButton={true} />
 
       <Card className="w-full mt-4 shadow-md">
         <Form
@@ -239,21 +284,22 @@ const CreateUser: React.FC = () => {
                 <Input size="large" placeholder="Enter executive" />
               </Form.Item>
             </Col>
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-                required={false}
-                name="phone1"
-                label="Phone Number 1"
-                rules={[{ required: true, message: "Please enter phone number" }]}
-              >
-                <InputNumber 
-                  size="large" 
-                  placeholder="Enter phone number 1" 
-                  style={{ width: '100%' }}
-                  controls={false}
-                />
-              </Form.Item>
-            </Col>
+             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+               <Form.Item
+                 required={false}
+                 name="phone1"
+                 label="Phone Number 1"
+                 rules={[{ required: true, message: "Please enter phone number" }]}
+               >
+                 <InputNumber 
+                   size="large" 
+                   placeholder="Enter phone number 1" 
+                   style={{ width: '100%' }}
+                   controls={false}
+                   maxLength={10}
+                 />
+               </Form.Item>
+             </Col>
             <Col xs={24} sm={12} md={8} lg={8} xl={8}>
               <Form.Item
                 required={false}
@@ -266,6 +312,7 @@ const CreateUser: React.FC = () => {
                   placeholder="Enter phone number 2 (optional)" 
                   style={{ width: '100%' }}
                   controls={false}
+                  maxLength={10}
                 />
               </Form.Item>
             </Col>
@@ -357,27 +404,29 @@ const CreateUser: React.FC = () => {
               </Form.Item>
             </Col>
 
-            <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-              <Form.Item
-                required={false}
-                name="confirmPassword"
-                label="Confirm Password"
-                dependencies={["password"]}
-                rules={[
-                  { required: true, message: "Please confirm password" },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue("password") === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error("Passwords do not match"));
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password size="large" placeholder="Confirm password" />
-              </Form.Item>
-            </Col>
+            {!isEditMode && (
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.Item
+                  required={false}
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  dependencies={["password"]}
+                  rules={[
+                    { required: true, message: "Please confirm password" },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue("password") === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("Passwords do not match"));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password size="large" placeholder="Confirm password" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           <Row gutter={24}>

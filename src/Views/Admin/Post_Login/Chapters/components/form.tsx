@@ -149,7 +149,6 @@ const Chaptersform = () => {
       setBooksLoading(true);
       setBooksOptions([]);
       const data = await GET(API.BOOKS, { class: cls, subject: subj });
-      // Expected shape: {"books":[{"id":"68d7acd91750e70f29944d23","book":"muees23"}]}
       const list = Array.isArray(data?.books)
         ? data.books
         : Array.isArray(data?.results)

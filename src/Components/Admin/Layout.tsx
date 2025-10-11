@@ -29,12 +29,12 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const { role } = useSelector((state: RootState) => state.user);
+  const { user } = useSelector((state: RootState) => state.user);
 
   const primaryColor = "#007575";
 
   // Get menu items based on role
-  const menuItems = role ? menuData[role] : [];
+  const menuItems = user?.role ? menuData[user.role] : [];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -46,7 +46,6 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
 
   // Update active menu based on current location
   React.useEffect(() => {
-    console.log("muees path",location.pathname);
     
     const currentMenuItem = menuItems.find(
       (item) => item.path === location.pathname
@@ -71,7 +70,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
 
   // Group menu items by sections
   const getMenuSections = () => {
-    if (role === 'admin') {
+    if (user?.role === 'admin') {
       return [
         {
           title: "Overview",
@@ -90,7 +89,7 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
           items: menuItems.filter(item => ['users'].includes(item.id))
         },
       ];
-    } else if (role === 'user') {
+    } else if (user?.role === 'school') {
       return [
         {
           title: "EXAMS",
@@ -126,13 +125,13 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
                   className="text-lg font-bold font-local2 leading-tight"
                   style={{ color: primaryColor }}
                 >
-                  {role === 'admin' ? 'ADMIN' : 'ABCD'}
+                  {user?.role === 'admin' ? 'ADMIN' : 'SCHOOL'}
                 </span>
                 <span
                   className="text-xs font-local2 leading-tight"
                   style={{ color: primaryColor }}
                 >
-                  {role === 'admin' ? 'Dashboard' : 'Public School'}
+                  {user?.role === 'admin' ? 'Dashboard' : 'School Portal'}
                 </span>
               </div>
             </div>

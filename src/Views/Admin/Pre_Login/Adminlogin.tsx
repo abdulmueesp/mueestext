@@ -1,36 +1,77 @@
 
 // @ts-nocheck
-import { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { setRole } from '@/store/slices/userSlice';
+import { setUser } from '@/store/slices/userSlice';
 import { message } from 'antd';
+import { POST } from '../../../Components/common/api';
+import { RootState } from '@/store';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.user);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle navigation after successful login
+  useEffect(() => {
+    console.log('useEffect triggered - isAuthenticated:', isAuthenticated, 'user:', user);
+    if (isAuthenticated && user) {
+      console.log('User authenticated, navigating...', user);
+      const redirectPath = user.role === 'admin' ? '/dashboard' : '/paper';
+      console.log('Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const isUser = username === 'user' && password === '123';
-    const isAdmin = username === 'admin' && password === '123';
-
-    if (!isUser && !isAdmin) {
-      setError('Invalid credentials');
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password');
       return;
     }
 
-    setError('');
-    const role = username === 'user' ? 'user' : 'admin';
-    dispatch(setRole(role));
-    message.success('Login successful!');
-    // Let the App component handle the role-based routing
-    navigate('/', { replace: true });
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await POST('/login', {
+        username: username.trim(),
+        password: password.trim()
+      });
+
+      // Extract user data from API response
+      const userData = response.user || response;
+      
+      console.log('Login successful, user data:', userData);
+      
+      // Store user data in Redux
+      dispatch(setUser(userData));
+      
+      message.success('Login successful!');
+      
+      // Fallback navigation - navigate directly if useEffect doesn't work
+      setTimeout(() => {
+        const redirectPath = userData.role === 'admin' ? '/dashboard' : '/paper';
+        console.log('Fallback navigation to:', redirectPath);
+        navigate(redirectPath, { replace: true });
+      }, 100);
+      
+      // Navigation will also be handled by useEffect when Redux state updates
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error?.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+      message.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // No social login handlers in this simplified flow
@@ -39,7 +80,7 @@ const LoginPage = () => {
 
   return (
     <div
-      className="pb-4 pl-4 pr-4 pt-7"
+      className="pb-4 pl-4 pr-4 pt-7 flex  items-center"
       style={{
         backgroundColor: lightPrimaryColor,
         minHeight: '100dvh',
@@ -121,33 +162,16 @@ const LoginPage = () => {
           <div>
             <button
               type="submit"
-              className=" bg-gradient-to-br from-[#007575] to-[#339999] w-full h-11 rounded-md font-medium font-local2 text-white border-none shadow-md hover:shadow-xl transition-all duration-200 bg-blue-600 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              // style={{ backgroundColor: '#007575' }}
+              disabled={loading}
+              className=" bg-gradient-to-br from-[#007575] to-[#339999] w-full h-11 rounded-md font-medium font-local2 text-white border-none shadow-md hover:shadow-xl transition-all duration-200 bg-blue-600 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </div>
 
           {/* No social login for this simple flow */}
           
-          <div className='w-[10px] py-[1px]'></div>
-          
-          <div className="mt-6">
-            <hr className="flex-1 border-gray-300 mt-[25px]" />
-            <div className="text-sm leading-relaxed px-2 font-local2 mt-4" style={{ color: '#666666' }}>
-              You can use these account details to log in on both myWeb and Examin. Any changes to these details will impact both the Sites.
-              <br />
-              By continuing, you acknowledge that you are 18 years and above, and you accept our{' '}
-              <a href="#" className="text-blue-500 hover:text-blue-600 no-underline font-local2">
-                Terms of service
-              </a>
-              ,{' '}
-              <a href="#" className="text-blue-500 hover:text-blue-600 no-underline font-local2">
-                Privacy policy
-              </a>
-              .
-            </div>
-          </div>
+         
         </form>
       </div>
     </div>
