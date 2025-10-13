@@ -18,6 +18,7 @@ import QuestionForm from "./Views/Admin/Post_Login/Questions/components/form"
 import MyPapers from "./Views/Admin/Post_Login/mypapers"
 import Chaptersform from "./Views/Admin/Post_Login/Chapters/components/form"
 import Subject from "./Views/Admin/Post_Login/Subject"
+import RoleGuard from "./Components/common/RoleGuard"
 
 function App() {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.user);
@@ -61,18 +62,62 @@ function App() {
       <>
         <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
           <Route index element={<Navigate to={getDefaultRoute()} replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="paper" element={<Paper />} />
-            <Route path="schools" element={<UsersTable />} />
-            <Route path="schools/new" element={<CreateUser />} />
-            <Route path="schools/edit/:id" element={<CreateUser />} />
-            <Route path="books" element={<Books />} />
-            <Route path="chapters" element={<Chapters />} />
-            <Route path="/questions" element={<Questions />} />
-            <Route path="chaptersform/:id" element={<Chaptersform />} />
-            <Route path="/questionform/:id" element={<QuestionForm/>} />
-            <Route path="/mypapers" element={<MyPapers />} />
-            <Route path="/subjects" element={<Subject />} />
+          
+          {/* Admin-only routes */}
+          <Route path="dashboard" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Dashboard />
+            </RoleGuard>
+          } />
+          <Route path="schools" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <UsersTable />
+            </RoleGuard>
+          } />
+          <Route path="schools/new" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <CreateUser />
+            </RoleGuard>
+          } />
+          <Route path="schools/edit/:id" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <CreateUser />
+            </RoleGuard>
+          } />
+          <Route path="books" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Books />
+            </RoleGuard>
+          } />
+          <Route path="chapters" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Chapters />
+            </RoleGuard>
+          } />
+          <Route path="/questions" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Questions />
+            </RoleGuard>
+          } />
+          <Route path="chaptersform/:id" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Chaptersform />
+            </RoleGuard>
+          } />
+          <Route path="/questionform/:id" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <QuestionForm/>
+            </RoleGuard>
+          } />
+          <Route path="/subjects" element={
+            <RoleGuard allowedRoles={['admin']}>
+              <Subject />
+            </RoleGuard>
+          } />
+          
+          {/* Routes accessible by both admin and school */}
+          <Route path="paper" element={<Paper />} />
+          <Route path="/mypapers" element={<MyPapers />} />
         </Route>
         <Route path="*" element={<Navigate to={`/${getDefaultRoute()}`} replace />} />
       </>

@@ -46,28 +46,26 @@ const LoginPage = () => {
         password: password.trim()
       });
 
-      // Extract user data from API response
-      const userData = response.user || response;
-      
-      console.log('Login successful, user data:', userData);
-      
-      // Store user data in Redux
-      dispatch(setUser(userData));
-      
-      message.success('Login successful!');
-      
-      // Fallback navigation - navigate directly if useEffect doesn't work
-      setTimeout(() => {
-        const redirectPath = userData.role === 'admin' ? '/dashboard' : '/paper';
-        console.log('Fallback navigation to:', redirectPath);
-        navigate(redirectPath, { replace: true });
-      }, 100);
-      
-      // Navigation will also be handled by useEffect when Redux state updates
+      // Check if status is 200 before proceeding
+      if (response.status === 200) {
+        // Extract user data from API response
+        const userData = response.data.user;
+        
+        console.log('Login successful, user data:', userData);
+        
+        // Store user data in Redux
+        dispatch(setUser(userData));
+        
+        message.success('Login successful!');
+        
+        // Navigation will be handled by useEffect when Redux state updates
+      } else {
+        throw new Error('Login failed');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       const errorMessage = error?.message || 'Login failed. Please try again.';
-      setError(errorMessage);
+      setError(errorMessage);   
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -153,10 +151,6 @@ const LoginPage = () => {
               </button>
             </div>
           </div>
-
-          {error && (
-            <p className="text-red-500 text-xs mt-1 font-local2">{error}</p>
-          )}
 
           {/* Login Button */}
           <div>

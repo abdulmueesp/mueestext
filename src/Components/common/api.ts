@@ -60,18 +60,21 @@ export const POST = async (
       : { "Content-Type": "application/json", Accept: "application/json" },
     body: isFormData ? (body as FormData) : JSON.stringify(body || {}),
   });
+  
+  const data = await res.json();
+  
   if (res.status === 400) {
-    const text = await res.text();
-    let msg = text || "Bad Request";
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed && typeof parsed.message === 'string') msg = parsed.message;
-    } catch {}
+    let msg = data?.message || "Bad Request";
     message.error(msg);
     throw new Error(msg || `Request failed with status ${res.status}`);
   }
+  
+  if (res.status !== 200) {
+    const errorMsg = data?.message || `Request failed with status ${res.status}`;
+    throw new Error(errorMsg);
+  }
 
-  return res.json();
+  return { data, status: res.status };
 };
 
 export const PUT = async (
