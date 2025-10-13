@@ -122,17 +122,26 @@ const AdminLayout = ({ onLogout }: AdminLayoutProps) => {
               </div>
               <div className="ml-3 flex flex-col">
                 <span
-                  className="text-lg font-bold font-local2 leading-tight"
+                  className={`${user?.role === 'school' ? 'text-base' : 'text-lg'} font-bold font-local2 leading-tight`}
                   style={{ color: primaryColor }}
+                  title={user?.role === 'admin' ? undefined : (user?.displayName || '')}
                 >
-                  {user?.role === 'admin' ? 'ADMIN' : 'SCHOOL'}
+                  {user?.role === 'admin'
+                    ? 'ADMIN'
+                    : (user?.displayName
+                        ? (user.displayName.length > 30
+                            ? `${user.displayName.slice(0,30)}...`
+                            : user.displayName)
+                        : '')}
                 </span>
-                <span
-                  className="text-xs font-local2 leading-tight"
-                  style={{ color: primaryColor }}
-                >
-                  {user?.role === 'admin' ? 'Dashboard' : 'School Portal'}
-                </span>
+                {user?.role === 'admin' && (
+                  <span
+                    className="text-xs font-local2 leading-tight"
+                    style={{ color: primaryColor }}
+                  >
+                    Dashboard
+                  </span>
+                )}
               </div>
             </div>
             <button
