@@ -45,10 +45,7 @@ const Subject = () => {
       const payload = {
         name: values.subjectName,
       };
-
-      // Call API to create subject
       await POST(API.SUBJECT, payload);
-      
       message.success("Subject created successfully!");
       setIsModalOpen(false);
       form.resetFields();
@@ -66,7 +63,7 @@ const Subject = () => {
   const handleDelete = async (id: string | number) => {
     try {
       await DELETE_REQ(`${API.SUBJECT}/${id}`);
-      message.success(`Subject ${id} deleted successfully!`);
+      message.success(`Subject deleted successfully!`);
       fetchSubjects();
     } catch (e: any) {
       message.error(e?.message || 'Failed to delete subject');
@@ -202,7 +199,10 @@ const Subject = () => {
                 required={false}
                 rules={[{ required: true, message: 'Please enter subject name' }]}
               >
-                <Input placeholder="Enter subject name" />
+                <Input 
+                  placeholder="Enter subject name" 
+                  size="large"
+                />
               </Form.Item>
             </Col>
           </Row>

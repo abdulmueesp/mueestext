@@ -25,7 +25,6 @@ function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  console.log('App render - isAuthenticated:', isAuthenticated, 'user:', user);
 
   const handleLogout = () => {
     dispatch(logout());

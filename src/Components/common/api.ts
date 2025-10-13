@@ -69,7 +69,7 @@ export const POST = async (
     throw new Error(msg || `Request failed with status ${res.status}`);
   }
   
-  if (res.status !== 200) {
+  if (res.status !== 200 && res.status !== 201) {
     const errorMsg = data?.message || `Request failed with status ${res.status}`;
     throw new Error(errorMsg);
   }
