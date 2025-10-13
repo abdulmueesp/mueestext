@@ -725,6 +725,7 @@ const QuestionForm = () => {
                           rules={[{ required: true, message: 'Please select question type!' }]}
                         >
                           <Select 
+                          size="large"
                             placeholder="Select type"
                             onChange={(value) => handleQuestionTypeChange(name, value)}
                           >
@@ -745,6 +746,7 @@ const QuestionForm = () => {
                           rules={[{ required: true, message: 'Please enter marks!' }]}
                         >
                           <InputNumber 
+                          size="large"
                             placeholder="Enter marks" 
                             style={{ width: "100%" }} 
                             min={1}

@@ -127,6 +127,7 @@ const Subject = () => {
           placeholder="Search by Subject Name"
           prefix={<IoIosSearch className="text-gray-400" />}
           value={searchValue}
+          allowClear
           onChange={(e) => handleSearch(e.target.value)}
           className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none w-64"
           style={{

@@ -412,6 +412,7 @@ const Questions: React.FC = () => {
         />
         <Input
           placeholder="Search by name"
+          allowClear
           prefix={<IoIosSearch className="text-gray-400" />}
           value={searchValue}
           onChange={(e) => {
@@ -443,7 +444,7 @@ const Questions: React.FC = () => {
           style={{ backgroundColor: "#007575", borderColor: "#007575" }}
           onClick={() => navigate(`/questionform/new`)}
         >
-          Create New
+          Create new
         </Button>
       </PageHeader>
 

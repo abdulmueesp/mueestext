@@ -161,8 +161,9 @@ const Subjects = () => {
           loading={subjectsLoading}
         />
         <Input
-          placeholder="Search by name"
+          placeholder="Search by book"
           prefix={<IoIosSearch className="text-gray-400" />}
+          allowClear
           value={searchValue}
           onChange={(e) => handleSearch(e.target.value)}
           className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none w-56"
@@ -178,7 +179,7 @@ const Subjects = () => {
           className="font-local2"
           onClick={showCreateForm}
         >
-          Create
+          Create Chapter
         </Button>
       </PageHeader>
 

@@ -192,6 +192,7 @@ const Books = () => {
               prefix={<IoIosSearch className="text-gray-400" />}
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
+              allowClear
               className="border-gray-300 focus:border-gray-300 focus:ring-0 focus:outline-none focus:shadow-none w-56"
               style={{
                 backgroundColor: '#f9fafb',
@@ -205,7 +206,7 @@ const Books = () => {
           className="font-local2"
           onClick={showModal}
         >
-          Create
+          Create Book
         </Button>
         
       </PageHeader>
@@ -267,7 +268,7 @@ const Books = () => {
                 required={false}
                 rules={[{ required: true, message: 'Please enter book name' }]}
               >
-                <Input placeholder="Enter book name" />
+                <Input placeholder="Enter book name" size="large" />
               </Form.Item>
             </Col>
           </Row>
@@ -279,7 +280,7 @@ const Books = () => {
                 required={false}
                 rules={[{ required: true, message: 'Please enter book code!' }]}
               >
-                <Input placeholder="Enter book code" />
+                <Input placeholder="Enter book code" size="large" />
               </Form.Item>
             </Col>
           </Row>
@@ -292,7 +293,7 @@ const Books = () => {
                 label="Subject"
                 rules={[{ required: true, message: 'Please select subject!' }]}
               >
-                <Select placeholder="Select subject" options={subjects} />
+                <Select placeholder="Select subject" options={subjects} size="large" />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -302,7 +303,7 @@ const Books = () => {
                 label="Class"
                 rules={[{ required: true, message: 'Please select class!' }]}
               >
-                <Select placeholder="Select class">
+                <Select placeholder="Select class" size="large">
                   {CLASS_OPTIONS.map((cls) => (
                     <Select.Option key={cls} value={cls}>{cls}</Select.Option>
                   ))}
