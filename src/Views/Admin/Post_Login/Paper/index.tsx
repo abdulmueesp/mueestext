@@ -3,11 +3,13 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { Button, Card, Checkbox, Col, Divider, Form, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider } from 'antd';
 import { Download } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import img1 from "../../../../assets/match2.jpeg"
 import img2 from "../../../../assets/matching.png"
+import { API, GET } from "../../../../Components/common/api";
 const { Title, Text } = Typography;
 
-type QuestionType = 'Short Answer' | 'Matching' | 'Essay' | 'Fill in the blank' | 'Multiple Choice';
+type QuestionType = 'shortanswer' | 'essay' | 'fillblank' | 'mcq' | 'Image';
 
 interface QuestionItem {
   id: string;
@@ -19,8 +21,6 @@ interface QuestionItem {
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
-const subjectOptions = ['english', 'Mathematics', 'gk', 'evs', 'social science', 'science', 'malayalam', 'computer'];
-const bookOptions = ['NCERT Book A', 'NCERT Book B', 'Workbook Alpha', 'Practice Set Vol. 1'];
 const examTypes = ['unit text', '1 midterm', '1 term', '2 midterm', '2 term', '3 midterm', '3 term'];
 
 const baseQuestions: QuestionItem[] = [
@@ -74,24 +74,273 @@ const Paper = () => {
   const [lockedAfterRandom, setLockedAfterRandom] = useState(false);
   const [lockedAfterChoose, setLockedAfterChoose] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(10);
   const [modalFilterTypes, setModalFilterTypes] = useState<QuestionType[]>([]);
+  const [subjectsOptions, setSubjectsOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
+  const [booksOptions, setBooksOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [booksLoading, setBooksLoading] = useState<boolean>(false);
+  const [chaptersOptions, setChaptersOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [chaptersLoading, setChaptersLoading] = useState<boolean>(false);
+  const [questionsData, setQuestionsData] = useState<QuestionItem[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState<boolean>(false);
+  const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
+  // Get user from Redux
+  const user = useSelector((state: any) => state.user.user);
+
   const totalMarksField = Form.useWatch('totalMarks', form) || 0;
   const formValues = Form.useWatch([], form);
+  const selectedClass = Form.useWatch('class', form);
+  const selectedSubject = Form.useWatch('subject', form);
+  const selectedBook = Form.useWatch('book', form);
+
+  // Fetch subjects from API (same as Chapters module)
+  const fetchSubjects = async () => {
+    try {
+      setSubjectsLoading(true);
+      const data = await GET(API.ALL_SUBJECTS);
+      const subjectsList = Array.isArray(data?.results)
+        ? data.results.map((s: any) => ({ value: s.subject, label: s.subject }))
+        : Array.isArray(data?.subjects)
+          ? data.subjects.map((s: any) => ({ value: s.name ?? s.subject, label: s.name ?? s.subject }))
+          : [];
+      setSubjectsOptions(subjectsList);
+    } catch (e) {
+      // Fallback to default subjects if API fails
+      setSubjectsOptions([
+        { value: "Malayalam", label: "Malayalam" },
+        { value: "English", label: "English" },
+        { value: "Maths", label: "Maths" },
+        { value: "GK", label: "GK" },
+        { value: "Computer", label: "Computer" },
+        { value: "EVS", label: "EVS" },
+        { value: "Social Science", label: "Social Science" },
+        { value: "Science", label: "Science" },
+      ]);
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
+
+  // Fetch books based on class and subject
+  const fetchBooks = async (classValue: string, subjectValue: string) => {
+    if (!classValue || !subjectValue || !user?.id) {
+      setBooksOptions([]);
+      return;
+    }
+
+    try {
+      setBooksLoading(true);
+      const query = {
+        class: classValue,
+        subject: subjectValue,
+        userId: user.id
+      };
+      const data = await GET("/books/filter", query);
+      const booksList = Array.isArray(data?.results)
+        ? data.results.map((book: any) => ({ 
+            value: book.id || book._id || book.name || book.title, 
+            label: book.name || book.title || book.book 
+          }))
+        : Array.isArray(data?.books)
+          ? data.books.map((book: any) => ({ 
+              value: book.id || book._id || book.name || book.title, 
+              label: book.name || book.title || book.book 
+            }))
+          : Array.isArray(data)
+            ? data.map((book: any) => ({ 
+                value: book.id || book._id || book.name || book.title, 
+                label: book.name || book.title || book.book 
+              }))
+            : [];
+      setBooksOptions(booksList);
+    } catch (e) {
+      console.error('Failed to fetch books:', e);
+      setBooksOptions([]);
+      message.error('Failed to load books');
+    } finally {
+      setBooksLoading(false);
+    }
+  };
+
+  // Load subjects on component mount
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  // Fetch chapters based on class, subject, and book
+  const fetchChapters = async (classValue: string, subjectValue: string, bookId: string) => {
+    if (!classValue || !subjectValue || !bookId) {
+      setChaptersOptions([]);
+      return;
+    }
+
+    try {
+      setChaptersLoading(true);
+      const query = {
+        class: classValue,
+        subject: subjectValue,
+        book: bookId
+      };
+      const data = await GET("/chaptersr", query);
+      const chaptersList = Array.isArray(data?.results)
+        ? data.results.map((chapter: any) => ({ 
+            value: chapter.id || chapter._id || chapter.name || chapter.chapterName, 
+            label: chapter.name || chapter.chapterName || chapter.title 
+          }))
+        : Array.isArray(data?.chapters)
+          ? data.chapters.map((chapter: any) => ({ 
+              value: chapter.id || chapter._id || chapter.name || chapter.chapterName, 
+              label: chapter.name || chapter.chapterName || chapter.title 
+            }))
+          : Array.isArray(data)
+            ? data.map((chapter: any) => ({ 
+                value: chapter.id || chapter._id || chapter.name || chapter.chapterName, 
+                label: chapter.name || chapter.chapterName || chapter.title 
+              }))
+            : [];
+      setChaptersOptions(chaptersList);
+    } catch (e) {
+      console.error('Failed to fetch chapters:', e);
+      setChaptersOptions([]);
+      message.info('no chapters found');
+    } finally {
+      setChaptersLoading(false);
+    }
+  };
+
+  // Watch for class and subject changes to fetch books
+  useEffect(() => {
+    if (selectedClass && selectedSubject && user?.id) {
+      fetchBooks(selectedClass, selectedSubject);
+    } else {
+      setBooksOptions([]);
+      // Clear book and chapters when class or subject is cleared
+      if (!selectedClass || !selectedSubject) {
+        form.setFieldsValue({
+          book: undefined,
+          chapters: undefined
+        });
+      }
+    }
+  }, [selectedClass, selectedSubject, user?.id, form]);
+
+  // Watch for class, subject, and book changes to fetch chapters
+  useEffect(() => {
+    if (selectedClass && selectedSubject && selectedBook) {
+      fetchChapters(selectedClass, selectedSubject, selectedBook);
+    } else {
+      setChaptersOptions([]);
+      // Clear chapters when book is cleared
+      if (!selectedBook) {
+        form.setFieldsValue({
+          chapters: undefined
+        });
+      }
+    }
+  }, [selectedClass, selectedSubject, selectedBook, form]);
+
+  // Fetch questions when filter types change
+  useEffect(() => {
+    if (modalFilterTypes.length > 0 && questionsData.length > 0) {
+      fetchQuestions();
+    }
+  }, [modalFilterTypes]);
+
+  // Fetch questions from API
+  const fetchQuestions = async (customPage?: number, customPageSize?: number) => {
+    const formValues = form.getFieldsValue();
+    if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || selectedTypes.length === 0) {
+      message.error('Please fill all required fields and select question types');
+      return;
+    }
+
+    try {
+      setQuestionsLoading(true);
+      
+      // Get book name from selected book ID
+      const selectedBookName = booksOptions.find(book => book.value === formValues.book)?.label || formValues.book;
+      
+      // Get chapter names from selected chapter IDs
+      const selectedChapterNames = Array.isArray(formValues.chapters) 
+        ? formValues.chapters.map(chapterId => 
+            chaptersOptions.find(chapter => chapter.value === chapterId)?.label || chapterId
+          ).join(',')
+        : formValues.chapters;
+      
+      // Use modalFilterTypes if available, otherwise use selectedTypes
+      const filterTypes = modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes;
+      
+      const query = {
+        limit: customPageSize || pageSize,
+        page: customPage || page,
+        className: formValues.class,
+        subject: formValues.subject,
+        book: selectedBookName,
+        chapters: selectedChapterNames,
+        questionTypes: filterTypes.map(type => type === 'Image' ? 'image' : type).join(',')
+      };
+      const data = await GET("/qustion", query);
+      const questionsList = Array.isArray(data?.data)
+        ? data.data.map((q: any) => ({
+            id: q.questionId || q.id || q._id,
+            type: q.questionType === 'image' ? 'Image' : (q.questionType || q.type),
+            text: q.question || q.text || q.title,
+            imageUrl: q.imageUrl || q.image,
+            defaultMarks: q.marks || q.defaultMarks || 1,
+            options: q.options || q.choices
+          }))
+        : Array.isArray(data?.results)
+          ? data.results.map((q: any) => ({
+              id: q.id || q._id,
+              type: q.questionType || q.type,
+              text: q.question || q.text || q.title,
+              imageUrl: q.imageUrl || q.image,
+              defaultMarks: q.marks || q.defaultMarks || 1,
+              options: q.options || q.choices
+            }))
+          : Array.isArray(data?.questions)
+            ? data.questions.map((q: any) => ({
+                id: q.id || q._id,
+                type: q.questionType || q.type,
+                text: q.question || q.text || q.title,
+                imageUrl: q.imageUrl || q.image,
+                defaultMarks: q.marks || q.defaultMarks || 1,
+                options: q.options || q.choices
+              }))
+            : Array.isArray(data)
+              ? data.map((q: any) => ({
+                  id: q.id || q._id,
+                  type: q.questionType || q.type,
+                  text: q.question || q.text || q.title,
+                  imageUrl: q.imageUrl || q.image,
+                  defaultMarks: q.marks || q.defaultMarks || 1,
+                  options: q.options || q.choices
+                }))
+              : [];
+      setQuestionsData(questionsList);
+      setTotalQuestions(data?.total || 0);
+    } catch (e) {
+      console.error('Failed to fetch questions:', e);
+      setQuestionsData([]);
+      message.error('Failed to load questions');
+    } finally {
+      setQuestionsLoading(false);
+    }
+  };
 
   const availableQuestions = useMemo(() => {
     if (selectedTypes.length === 0) return [] as QuestionItem[];
-    return allQuestions.filter(q => selectedTypes.includes(q.type));
-  }, [selectedTypes]);
+    return questionsData;
+  }, [selectedTypes, questionsData]);
 
   const paginatedQuestions = useMemo(() => {
-    const filterList = modalFilterTypes.length > 0 ? availableQuestions.filter(q => modalFilterTypes.includes(q.type)) : availableQuestions;
-    const start = (page - 1) * pageSize;
-    return filterList.slice(start, start + pageSize);
-  }, [availableQuestions, page, pageSize, modalFilterTypes]);
+    // Use server-side filtering instead of frontend filtering
+    return questionsData;
+  }, [questionsData]);
 
   // Get question numbering for the current page
   const getQuestionNumber = (questionIndex: number) => {
@@ -109,20 +358,20 @@ const Paper = () => {
   // Organize selected questions by type for preview
   const organizedQuestions = useMemo(() => {
     const result: Record<QuestionType, Array<{ question: QuestionItem; marks: number; globalNumber: number }>> = {
-      'Short Answer': [],
-      'Matching': [],
-      'Essay': [],
-      'Fill in the blank': [],
-      'Multiple Choice': []
+      'shortanswer': [],
+      'essay': [],
+      'fillblank': [],
+      'mcq': [],
+      'Image': []
     };
     
     let globalCounter = 1;
     
     // Process questions in the order of question types
-    (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as QuestionType[]).forEach(type => {
+    (['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[]).forEach(type => {
       const questionsOfType = Object.entries(selectedQuestions)
-        .map(([id, marks]) => ({ id, marks, question: allQuestions.find(q => q.id === id)! }))
-        .filter(({ question }) => question?.type === type)
+        .map(([id, marks]) => ({ id, marks, question: questionsData.find(q => q.id === id) }))
+        .filter(({ question }) => question && question.type === type)
         .sort((a, b) => a.id.localeCompare(b.id));
       
       questionsOfType.forEach(({ question, marks }) => {
@@ -131,11 +380,11 @@ const Paper = () => {
     });
     
     return result;
-  }, [selectedQuestions]);
+  }, [selectedQuestions, questionsData]);
 
   const currentSumMarks = useMemo(() => Object.values(selectedQuestions).reduce((a, b) => a + (Number(b) || 0), 0), [selectedQuestions]);
 
-  const handleChooseQuestions = () => {
+  const handleChooseQuestions = async () => {
     // Check if required fields are filled
     const formValues = form.getFieldsValue();
     if (!formValues.class) {
@@ -150,6 +399,10 @@ const Paper = () => {
       message.error('Please fill the Book');
       return;
     }
+    if (!formValues.chapters || formValues.chapters.length === 0) {
+      message.error('Please select at least one Chapter');
+      return;
+    }
     if (selectedTypes.length === 0) {
       message.error('Please select at least one Question Type');
       return;
@@ -158,6 +411,10 @@ const Paper = () => {
       message.warning('Questions are locked after random generation');
       return;
     }
+    
+    // Fetch questions from API
+    await fetchQuestions();
+    
     setLockedAfterChoose(true);
     setShowChooser(true);
     requestAnimationFrame(() => {
@@ -249,11 +506,11 @@ const Paper = () => {
   };
 
   const [randomConfig, setRandomConfig] = useState<Record<QuestionType, { count: number; marks: number }>>({
-    'Short Answer': { count: 0, marks: 2 },
-    'Matching': { count: 0, marks: 4 },
-    'Essay': { count: 0, marks: 8 },
-    'Fill in the blank': { count: 0, marks: 1 },
-    'Multiple Choice': { count: 0, marks: 2 },
+    'shortanswer': { count: 0, marks: 2 },
+    'essay': { count: 0, marks: 8 },
+    'fillblank': { count: 0, marks: 1 },
+    'mcq': { count: 0, marks: 2 },
+    'Image': { count: 0, marks: 3 },
   });
 
   const applyRandomGeneration = () => {
@@ -340,11 +597,11 @@ const Paper = () => {
     
     // Reset random config
     setRandomConfig({
-      'Short Answer': { count: 0, marks: 2 },
-      'Matching': { count: 0, marks: 4 },
-      'Essay': { count: 0, marks: 8 },
-      'Fill in the blank': { count: 0, marks: 1 },
-      'Multiple Choice': { count: 0, marks: 2 },
+      'shortanswer': { count: 0, marks: 2 },
+      'essay': { count: 0, marks: 8 },
+      'fillblank': { count: 0, marks: 1 },
+      'mcq': { count: 0, marks: 2 },
+      'Image': { count: 0, marks: 3 },
     });
     
     message.success('All data cleared successfully');
@@ -368,7 +625,7 @@ const Paper = () => {
     }
     
     const paperTitle = `${formValues?.examType || 'Examination'} - ${formValues?.class || ''} ${formValues?.subject || ''}`.trim();
-    const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as QuestionType[])
+    const sectionsHtml = (['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[])
       .filter(type => organizedQuestions[type].length > 0)
       .map(type => `
         <div class="section">
@@ -378,15 +635,15 @@ const Paper = () => {
               <div class="question-no">${sectionIndex + 1}.</div>
               <div class="question-content">
                 <div class="question-text">${question.text}</div>
-                ${question.type === 'Matching' && question.imageUrl ? `
+                ${(question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
                   <div class="question-image">
                     <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
                   </div>
                 ` : ''}
-                ${question.type === 'Multiple Choice' && question.options ? `
+                ${question.type === 'mcq' && question.options ? `
                   <div class="question-options" style="margin-top: 10px;">
                     ${question.options.map((option, index) => `
-                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option.text || option}</div>
                     `).join('')}
                   </div>
                 ` : ''}
@@ -429,7 +686,7 @@ const Paper = () => {
         <body>
           <div class="header">
             <div class="title">${paperTitle}</div>
-            <div class="subtitle">${formValues?.book || ''} - ${formValues?.chapters?.join(', ') || ''}</div>
+      
           </div>
           <div class="info">
             <div><strong>Time Allowed:</strong> ${formValues?.duration || 60} Minutes</div>
@@ -469,7 +726,9 @@ const Paper = () => {
             <Col xs={24} md={12} lg={8}>
               <Form.Item label="Class" name="class"  required={false}  rules={[{ required: true, message: 'Please select class' }]}> 
                 <Select
+                  size="large"
                   showSearch
+                  allowClear
                   placeholder="Select class"
                   options={classOptions.map(c => ({ label: c, value: c }))}
                   filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
@@ -479,9 +738,12 @@ const Paper = () => {
             <Col xs={24} md={12} lg={8}>
               <Form.Item label="Subject" name="subject"  required={false}  rules={[{ required: true, message: 'Please select subject' }]}> 
                 <Select
+                  size="large"
                   showSearch
+                  allowClear
                   placeholder="Select subject"
-                  options={subjectOptions.map(s => ({ label: s, value: s }))}
+                  options={subjectsOptions}
+                  loading={subjectsLoading}
                   filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
                 />
               </Form.Item>
@@ -489,20 +751,13 @@ const Paper = () => {
             <Col xs={24} md={12} lg={8}>
               <Form.Item label="Book" name="book"  required={false}  rules={[{ required: true, message: 'Please select book' }]}> 
                 <Select
+                  size="large"
                   showSearch
+                  allowClear
                   placeholder="Select book"
-                  options={bookOptions.map(b => ({ label: b, value: b }))}
-                  filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12} lg={8}>
-              <Form.Item label="Examination Type" name="examType"  required={false}  rules={[{ required: true, message: 'Please select exam type' }]}> 
-                <Select
-                  showSearch
-                  placeholder="Select examination type"
-                  options={examTypes.map(e => ({ label: e, value: e }))}
+                  options={booksOptions}
+                  loading={booksLoading}
+                  disabled={!selectedClass || !selectedSubject}
                   filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
                 />
               </Form.Item>
@@ -510,10 +765,25 @@ const Paper = () => {
             <Col xs={24} md={12} lg={8}>
               <Form.Item label="Chapters" name="chapters"  required={false}  rules={[{ required: true, message: 'Please select chapters' }]}> 
                 <Select
+                  size="large"
                   mode="multiple"
                   showSearch
+                  allowClear
                   placeholder="Select chapters"
-                  options={chapterOptions.map(c => ({ label: c, value: c }))}
+                  options={chaptersOptions}
+                  loading={chaptersLoading}
+                  disabled={!selectedClass || !selectedSubject || !selectedBook}
+                  filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12} lg={8}>
+              <Form.Item label="Examination Type" name="examType"  required={false}  rules={[{ required: true, message: 'Please select exam type' }]}> 
+                <Select
+                  size="large"
+                  showSearch
+                  placeholder="Select examination type"
+                  options={examTypes.map(e => ({ label: e, value: e }))}
                   filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
                 />
               </Form.Item>
@@ -536,11 +806,11 @@ const Paper = () => {
             <div className="mb-2 text-gray-700 font-medium">Question Types</div>
             <Checkbox.Group
               options={[
-                { label: 'Short Answer', value: 'Short Answer' },
-                { label: 'Matching', value: 'Matching' },
-                { label: 'Essay', value: 'Essay' },
-                { label: 'Fill in the blank', value: 'Fill in the blank' },
-                { label: 'Multiple Choice', value: 'Multiple Choice' },
+                { label: 'Short Answer', value: 'shortanswer' },
+                { label: 'Essay', value: 'essay' },
+                { label: 'Fill in the blank', value: 'fillblank' },
+                { label: 'Multiple Choice', value: 'mcq' },
+                { label: 'Image', value: 'Image' },
               ]}
               value={selectedTypes}
               onChange={(vals) => { setSelectedTypes(vals as QuestionType[]); if (lockedAfterRandom || lockedAfterChoose) resetLockedState(); }}
@@ -578,16 +848,26 @@ const Paper = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="text-gray-700 font-medium text-sm">Filter question types</div>
               <div className="flex flex-wrap gap-2">
-                {(['Short Answer','Matching','Essay','Fill in the blank','Multiple Choice'] as QuestionType[]).map(t => (
+                {(['shortanswer','essay','fillblank','mcq','Image'] as QuestionType[]).map(t => (
                   <Button
                     key={`flt-${t}`}
                     size="small"
                     disabled={!selectedTypes.includes(t)}
-                    onClick={() => {
+                    onClick={async () => {
                       setPage(1);
-                      setModalFilterTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+                      const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
+                      setModalFilterTypes(newFilterTypes);
+                      
+                      // If no filters selected, show all question types
+                      if (newFilterTypes.length === 0) {
+                        setModalFilterTypes([]);
+                        return;
+                      }
+                      
+                      // Trigger API call with new filter
+                      await fetchQuestions(1, pageSize);
                     }}
-                    className={`font-local2 ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white border-none' : ''}`}
+                    className={`font-local2 ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!text-white' : ''}`}
                   >
                     {t}
                   </Button>
@@ -606,18 +886,21 @@ const Paper = () => {
                       <div className="text-sm font-semibold text-gray-600 min-w-[30px]">
                         {questionNumber}.
                       </div>
-                      {q.type === 'Matching' && q.imageUrl && (
-                        <img src={q.imageUrl} alt="q" className="w-24 h-16 object-cover rounded" />
-                      )}
                       <div className="flex-1">
                         <div className="text-xs uppercase text-gray-500">{q.type}</div>
                         <div className="text-gray-800">{q.text}</div>
-                        {q.type === 'Multiple Choice' && q.options && (
+                        {q.type === 'mcq' && q.options && (
                           <div className="text-xs text-gray-600 mt-2">
-                            <div>A. {q.options[0]}</div>
-                            <div>B. {q.options[1]}</div>
-                            <div>C. {q.options[2]}</div>
-                            <div>D. {q.options[3]}</div>
+                            {q.options.map((option: any, index: number) => (
+                              <div key={index}>
+                                {String.fromCharCode(65 + index)}. {option.text || option}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {(q.type === 'Image' || q.type === 'image') && q.imageUrl && (
+                          <div className="mt-2">
+                            <img src={q.imageUrl} alt="Question Image" className="w-48 h-32 object-cover rounded border" />
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-3">
@@ -639,12 +922,22 @@ const Paper = () => {
               <Pagination 
                 current={page} 
                 pageSize={pageSize} 
-                total={(modalFilterTypes.length ? availableQuestions.filter(q => modalFilterTypes.includes(q.type)) : availableQuestions).length} 
-                onChange={(p, ps) => { 
-                  setPage(p); 
-                  if (ps) setPageSize(ps); 
+                total={totalQuestions} 
+                onChange={async (p, ps) => { 
+                  const newPage = p;
+                  const newPageSize = ps || pageSize;
+                  
+                  // Update states
+                  setPage(newPage);
+                  if (ps && ps !== pageSize) {
+                    setPageSize(newPageSize);
+                  }
+                  
+                  // Fetch questions with the new parameters immediately
+                  await fetchQuestions(newPage, newPageSize);
                 }} 
                 showSizeChanger 
+                pageSizeOptions={['10', '20', '50']}
                 className="font-local2" 
               />
             </div>
@@ -687,16 +980,16 @@ const Paper = () => {
             <h2 className="text-xl font-bold">
               {formValues?.examType || 'Examination'} - {formValues?.class || ''} {formValues?.subject || ''}
             </h2>
-            <p className="text-gray-600 mt-2">
+            {/* <p className="text-gray-600 mt-2">
               {formValues?.book || ''} {formValues?.chapters?.length ? `- ${formValues.chapters.join(', ')}` : ''}
-            </p>
+            </p> */}
             <div className="flex justify-between mt-3 text-sm">
               <span><strong>Time:</strong> {formValues?.duration || 60} minutes</span>
               <span><strong>Total Marks:</strong> {currentSumMarks}</span>
             </div>
           </div>
           
-          {(['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as QuestionType[]).map(type => {
+          {(['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[]).map(type => {
             const questionsOfType = organizedQuestions[type];
             if (questionsOfType.length === 0) return null;
             
@@ -712,16 +1005,16 @@ const Paper = () => {
                         <span className="font-semibold min-w-[30px]">{sectionIndex + 1}.</span>
                         <div className="flex-1">
                           <div>{question.text}</div>
-                          {question.type === 'Matching' && question.imageUrl && (
+                          {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
                             <div className="mt-2">
                               <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
                             </div>
                           )}
-                          {question.type === 'Multiple Choice' && question.options && (
+                          {question.type === 'mcq' && question.options && (
                             <div className="mt-2 space-y-1">
                               {question.options.map((option, index) => (
                                 <div key={index} className="text-sm text-gray-700">
-                                  {String.fromCharCode(65 + index)}. {option}
+                                  {String.fromCharCode(65 + index)}. {option.text || option}
                                 </div>
                               ))}
                             </div>

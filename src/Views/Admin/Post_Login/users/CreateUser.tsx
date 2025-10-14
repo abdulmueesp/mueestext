@@ -289,7 +289,20 @@ const CreateUser: React.FC = () => {
                  required={false}
                  name="phone1"
                  label="Phone Number 1"
-                 rules={[{ required: true, message: "Please enter phone number" }]}
+                 validateTrigger={['onChange', 'onBlur']}
+                 rules={[
+                   { required: true, message: "Please enter phone number" },
+                   {
+                     validator(_, value) {
+                       if (!value) return Promise.resolve();
+                       const phoneStr = String(value);
+                       if (phoneStr.length < 10) {
+                         return Promise.reject(new Error("Phone number must be at least 10 digits"));
+                       }
+                       return Promise.resolve();
+                     }
+                   }
+                 ]}
                >
                  <InputNumber 
                    size="large" 
@@ -305,7 +318,19 @@ const CreateUser: React.FC = () => {
                 required={false}
                 name="phone2"
                 label="Phone Number 2"
-                rules={[]}
+                validateTrigger={['onChange', 'onBlur']}
+                 rules={[
+                   {
+                     validator(_, value) {
+                       if (!value) return Promise.resolve();
+                       const phoneStr = String(value);
+                       if (phoneStr.length < 10) {
+                         return Promise.reject(new Error("Phone number must be at least 10 digits"));
+                       }
+                       return Promise.resolve();
+                     }
+                   }
+                 ]}
               >
                 <InputNumber 
                   size="large" 

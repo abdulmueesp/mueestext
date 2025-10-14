@@ -163,7 +163,7 @@ const Questions: React.FC = () => {
       if (opts?.cls) query.className = opts.cls;
       if (opts?.subj) query.subject = opts.subj;
       if (opts?.book) query.book = opts.book;
-      if (opts?.chapter) query.chapter = opts.chapter;
+      if (opts?.chapter) query.chapters = opts.chapter;
       const data = await GET(API.QUESTION, query);
       const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []));
       const mapped: QuestionListItem[] = list.map((r: any, idx: number) => {
