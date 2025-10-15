@@ -3,10 +3,12 @@ import { FiFilePlus } from "react-icons/fi";
 import { LuSchool } from "react-icons/lu";
 import { AiOutlineProfile, AiOutlineRead, AiOutlineFileText } from "react-icons/ai";
 import { VscGitPullRequestGoToChanges } from "react-icons/vsc";
+import { IoIosList } from "react-icons/io";
+import { LuBook } from "react-icons/lu";
 export const menuData = {  admin: [
   { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
     { id: "users", icon: LuSchool, label: "List Schools", path: "/schools" },
-    { id: "subjects", icon: LuSchool, label: "Subjects", path: "/subjects" },
+    { id: "subjects", icon: LuBook, label: "Subjects", path: "/subjects" },
     {
       id: "Books",
       icon: AiOutlineProfile,
@@ -27,7 +29,7 @@ export const menuData = {  admin: [
     },
     {
       id: "listquestions",
-      icon: VscGitPullRequestGoToChanges,
+      icon: IoIosList,
       label: "List Question",
       path: "/questions",
     },

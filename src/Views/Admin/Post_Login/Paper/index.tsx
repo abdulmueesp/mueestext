@@ -1,11 +1,10 @@
 
 // @ts-nocheck
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Button, Card, Checkbox, Col, Divider, Form, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider } from 'antd';
+import { Button, Card, Checkbox, Col, Divider, Form, Input, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider } from 'antd';
 import { Download } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import img1 from "../../../../assets/match2.jpeg"
-import img2 from "../../../../assets/matching.png"
+import { useNavigate } from 'react-router-dom';
 import { API, GET } from "../../../../Components/common/api";
 const { Title, Text } = Typography;
 
@@ -23,48 +22,12 @@ interface QuestionItem {
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
 const examTypes = ['unit text', '1 midterm', '1 term', '2 midterm', '2 term', '3 midterm', '3 term'];
 
-const baseQuestions: QuestionItem[] = [
-  { id: 'S1', type: 'Short Answer', text: 'Define photosynthesis.', defaultMarks: 2 },
-  { id: 'S2', type: 'Short Answer', text: 'What is a noun?', defaultMarks: 2 },
-  { id: 'E1', type: 'Essay', text: 'Explain the water cycle in detail.', defaultMarks: 10 },
-  { id: 'E2', type: 'Essay', text: 'Describe your favorite festival.', defaultMarks: 8 },
-  { id: 'M1', type: 'Matching', text: 'Match the animals to their habitats.', imageUrl:img1, defaultMarks: 4 },
-  { id: 'M2', type: 'Matching', text: 'Match states to their capitals.', imageUrl:img2, defaultMarks: 4 },
-  { id: 'F1', type: 'Fill in the blank', text: 'Water boils at ____ degrees Celsius.', defaultMarks: 1 },
-  { id: 'F2', type: 'Fill in the blank', text: 'The capital of France is ____.', defaultMarks: 1 },
-  { id: 'F3', type: 'Fill in the blank', text: 'Plants make food by a process called ____.', defaultMarks: 1 },
-  { id: 'F4', type: 'Fill in the blank', text: 'The largest planet in our solar system is ____.', defaultMarks: 1 },
-  { id: 'MCQ1', type: 'Multiple Choice', text: 'What is the capital of India?', options: ['Mumbai', 'Delhi', 'Kolkata', 'Chennai'], defaultMarks: 2 },
-  { id: 'MCQ2', type: 'Multiple Choice', text: 'Which planet is closest to the Sun?', options: ['Venus', 'Mercury', 'Earth', 'Mars'], defaultMarks: 2 },
-  { id: 'MCQ3', type: 'Multiple Choice', text: 'What is 2 + 2?', options: ['3', '4', '5', '6'], defaultMarks: 1 },
-  { id: 'MCQ4', type: 'Multiple Choice', text: 'Which is the largest mammal?', options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'], defaultMarks: 2 },
-  { id: 'MCQ5', type: 'Multiple Choice', text: 'What is the chemical symbol for water?', options: ['H2O', 'CO2', 'NaCl', 'O2'], defaultMarks: 2 },
-];
-
-const allQuestions: QuestionItem[] = (() => {
-  const many: QuestionItem[] = [];
-  for (let i = 0; i < 10; i++) {
-    baseQuestions.forEach((q) => {
-      many.push({ ...q, id: `${q.id}_${i + 1}` });
-    });
-  }
-  return many;
-})();
-
-const chapterOptions = [
-  'Basics',
-  'Numbers',
-  'Plants',
-  'Animals',
-  'Our Earth',
-  'Grammar',
-];
-
 const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
 const Paper = () => {
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>([]);
   const [showChooser, setShowChooser] = useState(false);
@@ -85,6 +48,7 @@ const Paper = () => {
   const [questionsData, setQuestionsData] = useState<QuestionItem[]>([]);
   const [questionsLoading, setQuestionsLoading] = useState<boolean>(false);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
+  const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState<boolean>(false);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -332,11 +296,6 @@ const Paper = () => {
     }
   };
 
-  const availableQuestions = useMemo(() => {
-    if (selectedTypes.length === 0) return [] as QuestionItem[];
-    return questionsData;
-  }, [selectedTypes, questionsData]);
-
   const paginatedQuestions = useMemo(() => {
     // Use server-side filtering instead of frontend filtering
     return questionsData;
@@ -403,6 +362,18 @@ const Paper = () => {
       message.error('Please select at least one Chapter');
       return;
     }
+    if (!formValues.examType) {
+      message.error('Please fill the Examination Type');
+      return;
+    }
+    if (!formValues.totalMarks) {
+      message.error('Please fill the Total Marks');
+      return;
+    }
+    if (!formValues.duration) {
+      message.error('Please fill the Duration');
+      return;
+    }
     if (selectedTypes.length === 0) {
       message.error('Please select at least one Question Type');
       return;
@@ -435,6 +406,22 @@ const Paper = () => {
     }
     if (!formValues.book) {
       message.error('Please fill the Book');
+      return;
+    }
+    if (!formValues.chapters || formValues.chapters.length === 0) {
+      message.error('Please select at least one Chapter');
+      return;
+    }
+    if (!formValues.examType) {
+      message.error('Please fill the Examination Type');
+      return;
+    }
+    if (!formValues.totalMarks) {
+      message.error('Please fill the Total Marks');
+      return;
+    }
+    if (!formValues.duration) {
+      message.error('Please fill the Duration');
       return;
     }
     if (selectedTypes.length === 0) {
@@ -513,65 +500,135 @@ const Paper = () => {
     'Image': { count: 0, marks: 3 },
   });
 
-  const applyRandomGeneration = () => {
-    // Build a selection using available pool per type
-    const next: Record<string, number> = {};
-    let totalGeneratedMarks = 0;
+  const applyRandomGeneration = async () => {
+    const formValues = form.getFieldsValue();
     
-    // First, check if we have enough questions in the pool for each type
-    for (const t of selectedTypes) {
-      const pool = allQuestions.filter(q => q.type === t);
-      const cfg = randomConfig[t];
-      
-      if (pool.length < cfg.count) {
-        Modal.warning({
-          title: 'Insufficient Questions',
-          content: `Not enough ${t} questions available. Required: ${cfg.count}, Available: ${pool.length}. Please reduce the count or add more questions.`,
-          okText: 'OK'
-        });
-        return;
-      }
-    }
-    
-    // Generate questions for each type
-    selectedTypes.forEach(t => {
-      const pool = allQuestions.filter(q => q.type === t);
-      const cfg = randomConfig[t];
-      
-      // Shuffle the pool to get random selection
-      const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
-      
-      let picked = 0;
-      for (let i = 0; i < shuffledPool.length && picked < cfg.count; i++) {
-        const q = shuffledPool[i];
-        next[q.id] = cfg.marks;
-        totalGeneratedMarks += cfg.marks;
-        picked++;
-      }
-    });
-    
-    // Check if total marks exceed the configured total marks
-    if (totalMarksField && totalGeneratedMarks > totalMarksField) {
-      Modal.warning({
-        title: 'Total marks exceeded',
-        content: 'Randomly generated questions exceed Total Mark. Reduce counts or marks.',
-      });
+    // Validate required fields
+    if (!formValues.class) {
+      message.error('Please fill the Class');
       return;
     }
-    
-    // Check if total marks don't match the configured total marks exactly
-    if (totalMarksField && totalGeneratedMarks !== totalMarksField) {
+    if (!formValues.subject) {
+      message.error('Please fill the Subject');
+      return;
+    }
+    if (!formValues.book) {
+      message.error('Please fill the Book');
+      return;
+    }
+    if (!formValues.chapters || formValues.chapters.length === 0) {
+      message.error('Please select at least one Chapter');
+      return;
+    }
+    if (!formValues.examType) {
+      message.error('Please fill the Examination Type');
+      return;
+    }
+    if (!formValues.totalMarks) {
+      message.error('Please fill the Total Marks');
+      return;
+    }
+    if (!formValues.duration) {
+      message.error('Please fill the Duration');
+      return;
+    }
+
+    // Calculate total marks from random config
+    const calculatedTotalMarks = selectedTypes.reduce((total, type) => {
+      const config = randomConfig[type];
+      return total + (config.count * config.marks);
+    }, 0);
+
+    // Validate total marks if totalMarksField is set
+    if (totalMarksField && calculatedTotalMarks !== totalMarksField) {
       Modal.warning({
         title: 'Total marks mismatch',
-        content: `Generated questions total marks (${totalGeneratedMarks}) does not match the configured total marks (${totalMarksField}). Please adjust the count or marks per question to match exactly.`,
+        content: `Calculated marks (${calculatedTotalMarks}) does not match the configured total marks (${totalMarksField}). Please adjust the count or marks per question to match exactly.`,
         okText: 'OK'
       });
       return;
     }
+
+    // Check if at least one question type has count > 0
+    const hasQuestions = selectedTypes.some(type => randomConfig[type].count > 0);
+    if (!hasQuestions) {
+      message.error('Please set at least one question count greater than 0');
+      return;
+    }
+
+    // Get book name from selected book ID
+    const selectedBookName = booksOptions.find(book => book.value === formValues.book)?.label || formValues.book;
     
-    setSelectedQuestions(next);
-    setLockedAfterRandom(true);
-    setRandomOpen(false);
+    // Get chapter names from selected chapter IDs and format as chapter1,chapter2
+    const selectedChapterNames = Array.isArray(formValues.chapters) 
+      ? formValues.chapters.map(chapterId => 
+          chaptersOptions.find(chapter => chapter.value === chapterId)?.label || chapterId
+        )
+      : [formValues.chapters];
+    
+    // Prepare query parameters
+    const query = {
+      subject: formValues.subject,
+      className: formValues.class,
+      book: selectedBookName,
+      chapters: selectedChapterNames.join(','),
+      mcqCount: randomConfig['mcq'].count || 0,
+      shortAnswerCount: randomConfig['shortanswer'].count || 0,
+      essayCount: randomConfig['essay'].count || 0,
+      fillInTheBlankCount: randomConfig['fillblank'].count || 0,
+      imageCount: randomConfig['Image'].count || 0
+    };
+
+    try {
+      message.loading('Generating random questions...', 0);
+      
+      const data = await GET("/random-gen", query);
+      
+      // Process the response and update selected questions
+      if (data && data.questions && Array.isArray(data.questions)) {
+        const next: Record<string, number> = {};
+        const generatedQuestions: QuestionItem[] = [];
+        
+        data.questions.forEach((question: any) => {
+          const questionId = question.questionId || question.id || question._id;
+          const questionType = question.questionType === 'image' ? 'Image' : 
+                              question.questionType === 'shortAnswer' ? 'shortanswer' :
+                              question.questionType === 'longAnswer' ? 'essay' :
+                              question.questionType === 'fillInTheBlank' ? 'fillblank' :
+                              question.questionType;
+          
+          // Use the marks configured in the random generate modal, not from API response
+          const configuredMarks = randomConfig[questionType as QuestionType]?.marks || 1;
+          next[questionId] = configuredMarks;
+          
+          // Store the question data for display
+          generatedQuestions.push({
+            id: questionId,
+            type: questionType as QuestionType,
+            text: question.question,
+            imageUrl: question.imageUrl,
+            defaultMarks: configuredMarks,
+            options: question.options || []
+          });
+        });
+        
+        // Update the questions data and selected questions
+        setQuestionsData(generatedQuestions);
+        setSelectedQuestions(next);
+        setLockedAfterRandom(true);
+        setRandomOpen(false);
+        setShowGeneratedQuestionsModal(true);
+        message.destroy();
+        message.success(`Generated ${data.questions.length} questions successfully!`);
+      } else {
+        message.destroy();
+        message.error('No questions returned from the API');
+      }
+    } catch (error) {
+      console.error('Failed to generate random questions:', error);
+      message.destroy();
+      message.error('Failed to generate random questions. Please try again.');
+    }
   };
 
   const resetLockedState = () => {
@@ -705,6 +762,12 @@ const Paper = () => {
     setTimeout(() => {
       try {
         printWindow.print();
+        
+        // Navigate to mypapers after download is triggered
+        setTimeout(() => {
+          navigate('/mypapers');
+        }, 2000); // Wait 2 seconds for download to start
+        
         // Don't close immediately on mobile
         if (!isMobileDevice()) {
           setTimeout(() => printWindow.close(), 500);
@@ -790,12 +853,12 @@ const Paper = () => {
             </Col>
             <Col xs={24} md={12} lg={4}>
               <Form.Item label="Total Mark" name="totalMarks"  required={false}  rules={[{ required: true }]}>
-                <InputNumber min={1} max={999} className="w-full" />
+                <InputNumber min={1} max={999} size="large" className="w-full" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12} lg={4}>
               <Form.Item label="Duration (min)" name="duration"  required={false}  rules={[{ required: true }]}>
-                <InputNumber min={1} max={999} className="w-full" />
+                <InputNumber min={1} max={999} size="large" className="w-full" />
               </Form.Item>
             </Col>
           </Row>
@@ -1039,7 +1102,7 @@ const Paper = () => {
         open={randomOpen}
         onCancel={() => setRandomOpen(false)}
         onOk={applyRandomGeneration}
-        okText="Ok"
+        okText="Generate"
         okButtonProps={{ className: 'bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2' }}
         cancelButtonProps={{ className: 'bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2' }}
         destroyOnClose
@@ -1047,35 +1110,52 @@ const Paper = () => {
         <div className="space-y-4 font-local2">
           <div className="text-sm text-gray-600">Set how many questions of each selected type to add and the marks per question. After generation, editing will be locked.</div>
           {selectedTypes.map(t => {
-            const availableCount = allQuestions.filter(q => q.type === t).length;
-            const isExceedingAvailable = randomConfig[t].count > availableCount;
-            
             return (
-              <Card key={t} className={`border ${isExceedingAvailable ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+              <Card key={t} className="border border-gray-200">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-gray-800 font-medium">{t}</div>
                     <div className="text-xs text-gray-500">
                       Configure count and marks
-                      {isExceedingAvailable && (
-                        <span className="text-red-500 ml-1">(Max available: {availableCount})</span>
-                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Text type="secondary" className="text-xs">Count</Text>
-                      <InputNumber 
+                      <Text type="secondary" className="text-xs whitespace-nowrap">Count:</Text>
+                      <Input 
+                        type="number"
                         min={0} 
-                        max={availableCount} 
                         value={randomConfig[t].count} 
-                        onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], count: Number(v) || 0 } }))}
-                        status={isExceedingAvailable ? 'error' : undefined}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const numValue = value === '' ? 0 : parseInt(value, 10);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], count: numValue } }));
+                          }
+                        }}
+                        size="small"
+                        style={{ width: 80 }}
+                        placeholder="0"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <Text type="secondary" className="text-xs">Marks</Text>
-                      <InputNumber min={1} max={100} value={randomConfig[t].marks} onChange={(v) => setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], marks: Number(v) || 1 } }))} />
+                      <Text type="secondary" className="text-xs whitespace-nowrap">Marks:</Text>
+                      <Input 
+                        type="number"
+                        min={1} 
+                        max={100} 
+                        value={randomConfig[t].marks} 
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const numValue = value === '' ? 1 : parseInt(value, 10);
+                          if (!isNaN(numValue) && numValue >= 1) {
+                            setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], marks: numValue } }));
+                          }
+                        }}
+                        size="small"
+                        style={{ width: 80 }}
+                        placeholder="1"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1109,6 +1189,84 @@ const Paper = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Generated Questions Display Modal */}
+      <Modal
+        title="Generated Questions"
+        open={showGeneratedQuestionsModal}
+        onCancel={() => setShowGeneratedQuestionsModal(false)}
+        footer={[
+          <Button key="close" onClick={() => setShowGeneratedQuestionsModal(false)} className="font-local2">
+            Close
+          </Button>,
+          <Button 
+            key="preview" 
+            type="primary" 
+            onClick={() => {
+              setShowGeneratedQuestionsModal(false);
+              setPreviewOpen(true);
+            }}
+            className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2"
+          >
+            Preview Paper
+          </Button>
+        ]}
+        width={900}
+        className="font-local2"
+      >
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+          <div className="text-center border-b pb-4">
+            <h3 className="text-lg font-bold text-[#007575]">Generated Questions</h3>
+            <div className="flex justify-center gap-6 mt-3 text-sm">
+              <span><strong>Total Questions:</strong> {Object.keys(selectedQuestions).length}</span>
+              <span><strong>Total Marks:</strong> {currentSumMarks}</span>
+            </div>
+          </div>
+          
+          {(['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[]).map(type => {
+            const questionsOfType = questionsData.filter(q => q.type === type && q.id in selectedQuestions);
+            if (questionsOfType.length === 0) return null;
+            
+            return (
+              <div key={type} className="border rounded-lg p-4">
+                <h4 className="text-md font-semibold mb-3 text-[#007575] border-b pb-2">
+                  Section: {type} ({questionsOfType.length} questions)
+                </h4>
+                <div className="space-y-3">
+                  {questionsOfType.map((question, index) => (
+                    <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded bg-gray-50">
+                      <div className="flex gap-3 flex-1">
+                        <span className="font-semibold min-w-[30px]">{index + 1}.</span>
+                        <div className="flex-1">
+                          <div className="text-gray-800">{question.text}</div>
+                          {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                            <div className="mt-2">
+                              <img src={question.imageUrl} alt="Question" className="w-48 h-32 object-cover rounded border" />
+                            </div>
+                          )}
+                          {question.type === 'mcq' && question.options && question.options.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {question.options.map((option, optIndex) => (
+                                <div key={optIndex} className="text-sm text-gray-700">
+                                  {String.fromCharCode(65 + optIndex)}. {option.text || option}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-gray-600 text-lg">[{selectedQuestions[question.id]} marks]</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
+
       </div>
     </ConfigProvider>
   );
