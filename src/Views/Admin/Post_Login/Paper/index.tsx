@@ -1,7 +1,7 @@
 
 // @ts-nocheck
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Button, Card, Checkbox, Col, Divider, Form, Input, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider } from 'antd';
+import { Button, Card, Checkbox, Col, Divider, Form, Input, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider, Spin } from 'antd';
 import { Download } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -47,8 +47,10 @@ const Paper = () => {
   const [chaptersLoading, setChaptersLoading] = useState<boolean>(false);
   const [questionsData, setQuestionsData] = useState<QuestionItem[]>([]);
   const [questionsLoading, setQuestionsLoading] = useState<boolean>(false);
+  const [filterLoading, setFilterLoading] = useState<boolean>(false);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState<boolean>(false);
+  const [chooseLoading, setChooseLoading] = useState<boolean>(false);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -215,7 +217,7 @@ const Paper = () => {
   }, [modalFilterTypes]);
 
   // Fetch questions from API
-  const fetchQuestions = async (customPage?: number, customPageSize?: number) => {
+  const fetchQuestions = async (customPage?: number, customPageSize?: number, overrideFilterTypes?: QuestionType[]) => {
     const formValues = form.getFieldsValue();
     if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || selectedTypes.length === 0) {
       message.error('Please fill all required fields and select question types');
@@ -235,8 +237,10 @@ const Paper = () => {
           ).join(',')
         : formValues.chapters;
       
-      // Use modalFilterTypes if available, otherwise use selectedTypes
-      const filterTypes = modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes;
+      // Priority: explicit override -> current modalFilterTypes -> selectedTypes
+      const filterTypes = (Array.isArray(overrideFilterTypes) && overrideFilterTypes.length > 0)
+        ? overrideFilterTypes
+        : (modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes);
       
       const query = {
         limit: customPageSize || pageSize,
@@ -382,15 +386,18 @@ const Paper = () => {
       message.warning('Questions are locked after random generation');
       return;
     }
-    
-    // Fetch questions from API
-    await fetchQuestions();
-    
-    setLockedAfterChoose(true);
-    setShowChooser(true);
-    requestAnimationFrame(() => {
-      chooserRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    try {
+      setChooseLoading(true);
+      // Fetch questions from API
+      await fetchQuestions();
+      setLockedAfterChoose(true);
+      setShowChooser(true);
+      requestAnimationFrame(() => {
+        chooserRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    } finally {
+      setChooseLoading(false);
+    }
   };
 
   const handleRandomGenerate = () => {
@@ -881,7 +888,7 @@ const Paper = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-5">
-            <Button type="primary" onClick={handleChooseQuestions} disabled={lockedAfterRandom} className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2">
+            <Button type="primary" onClick={handleChooseQuestions} disabled={lockedAfterRandom || chooseLoading} loading={chooseLoading} className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2">
               Choose Questions
             </Button>
             <Button type="primary" onClick={handleRandomGenerate} disabled={lockedAfterChoose} className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2">
@@ -921,14 +928,20 @@ const Paper = () => {
                       const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
                       setModalFilterTypes(newFilterTypes);
                       
-                      // If no filters selected, show all question types
-                      if (newFilterTypes.length === 0) {
-                        setModalFilterTypes([]);
-                        return;
+                      try {
+                        setFilterLoading(true);
+                        // If no filters selected, show all selectedTypes
+                        if (newFilterTypes.length === 0) {
+                          setModalFilterTypes([]);
+                          await fetchQuestions(1, pageSize, selectedTypes);
+                          return;
+                        }
+
+                        // Trigger API call with new filter types explicitly
+                        await fetchQuestions(1, pageSize, newFilterTypes);
+                      } finally {
+                        setFilterLoading(false);
                       }
-                      
-                      // Trigger API call with new filter
-                      await fetchQuestions(1, pageSize);
                     }}
                     className={`font-local2 ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!text-white' : ''}`}
                   >
@@ -939,7 +952,15 @@ const Paper = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 gap-4">
-              {paginatedQuestions.map((q, index) => {
+              {(questionsLoading || filterLoading) && (
+                <div className="flex justify-center items-center py-8">
+                  <Spin />
+                </div>
+              )}
+              {!questionsLoading && !filterLoading && paginatedQuestions.length === 0 && (
+                <div className="text-center text-gray-500 py-8">No questions found</div>
+              )}
+              {!questionsLoading && !filterLoading && paginatedQuestions.map((q, index) => {
                 const checked = q.id in selectedQuestions;
                 const currentMarks = selectedQuestions[q.id] ?? q.defaultMarks;
                 const questionNumber = getQuestionNumber(index);

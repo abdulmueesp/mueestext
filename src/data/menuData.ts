@@ -30,7 +30,7 @@ export const menuData = {  admin: [
     {
       id: "listquestions",
       icon: IoIosList,
-      label: "List Question",
+      label: "List Questions",
       path: "/questions",
     },
     
