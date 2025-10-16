@@ -13,7 +13,7 @@ const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string>('');
+  
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -34,13 +34,14 @@ const LoginPage = () => {
     e.preventDefault();
 
     if (!username.trim() || !password.trim()) {
-      setError('Please enter both username and password');
+      const msg = 'Please enter username and password';
+      message.error(msg);
       return;
     }
 
     try {
       setLoading(true);
-      setError('');
+      
 
       const response = await POST('/login', {
         username: username.trim(),
@@ -66,7 +67,6 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error('Login error:', error);
       const errorMessage = error?.message || 'Login failed. Please try again.';
-      setError(errorMessage);   
       message.error(errorMessage);
     } finally {
       setLoading(false);
@@ -177,7 +177,7 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className=" bg-gradient-to-br from-[#007575] to-[#339999] w-full h-11 rounded-md font-medium font-local2 text-white border-none shadow-md hover:shadow-xl transition-all duration-200 bg-blue-600 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className=" bg-gradient-to-br from-[#007575] to-[#339999] w-full h-11 rounded-md font-medium font-local2 text-white border-none shadow-md hover:shadow-xl transition-all duration-200 bg-blue-600 hover:bg-gray-500 focus:outline-none focus:ring-0 focus:ring-offset-0 active:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Logging in...' : 'Login'}
                 </button>
