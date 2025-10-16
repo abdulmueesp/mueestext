@@ -5,7 +5,6 @@ import { Button, Modal, Card, Divider,message } from "antd";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "../../../../Components/common/PageHeader";
 import SubjectDatatable from "./components/datatable";
-
 import { Select } from "antd";
 import { Input } from "antd";
 import { IoIosSearch } from "react-icons/io";
@@ -25,6 +24,7 @@ const Subjects = () => {
   const [subjectsOptions, setSubjectsOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const [editingId, setEditingId] = useState<any>(null);
 
   // Show Create Form
   const showCreateForm = () => {
@@ -33,6 +33,7 @@ const Subjects = () => {
 
   // Handle Edit Click
   const handleEdit = (record: any) => {
+    setEditingId(record.id);
     navigate(`/chaptersform/${record.id}`);
   };
 
@@ -192,6 +193,7 @@ const Subjects = () => {
         currentPage={currentPage}
         pageSize={pageSize}
         total={total}
+        editingId={editingId}
         onChangePageParams={({ page, pageSize: ps }) => {
           const newPageSize = ps || pageSize;
           const newPage = page || currentPage;

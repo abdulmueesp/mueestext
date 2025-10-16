@@ -300,14 +300,10 @@ const Questions: React.FC = () => {
           <Popconfirm
             title="Are you sure you want to delete this question?"
             onConfirm={() => handleDeleteQuestion(record.quizId)}
-            okText="Yes"
+            okButtonProps={{ danger: true }}
+             okText="Yes, Delete"
             cancelText="No"
-            okButtonProps={{ 
-              style: { 
-                backgroundColor: "#007575", 
-                borderColor: "#007575" 
-              } 
-            }}
+           
           >
             <Tooltip title="Delete Question">
               <Button

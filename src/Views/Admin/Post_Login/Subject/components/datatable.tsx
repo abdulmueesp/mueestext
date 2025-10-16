@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Table, Button, Popconfirm, Tooltip } from "antd";
 import { MdDeleteOutline } from "react-icons/md";
 
-const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, currentPage, pageSize, total }) => {
+const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, currentPage, pageSize, total, loading = false }) => {
 
   const columns: any[] = [
     {
@@ -53,6 +53,7 @@ const Datatable = ({ onDelete, onView, data: remoteData, onChangePageParams, cur
       <Table
         columns={columns}
         dataSource={Array.isArray(remoteData) ? remoteData : []}
+        loading={loading}
         pagination={{
           current: currentPage || 1,
           pageSize: pageSize || 10,

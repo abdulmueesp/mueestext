@@ -7,8 +7,6 @@ import { MdDeleteOutline } from "react-icons/md";
 import PageHeader from "../../../../Components/common/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { API, GET, PATCH } from "../../../../Components/common/api";
-import loadinsvg from "../../../../assets/spinning-dots.svg";
-
 const UsersTable = () => {
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -253,20 +251,20 @@ const UsersTable = () => {
   	  width: 100,
   	  render: (_: any, record: any) => (
   	    <div className="flex items-center gap-2">
-             <Button
+          <Button
                type="link"
                icon={<FaEye color="black" size={18} />}
                size="small"
                onClick={() => handleView(record)}
                title="View"
              />
-  	      <Button
-  	        type="link"
-  	        icon={<FaEdit color="orange" size={18} />}
-  	        size="small"
-  	        onClick={() => handleEdit(record)}
-  	        title="Edit"
-  	      />
+          <Button
+            type="link"
+            icon={<FaEdit color="orange" size={18} />}
+            size="small"
+            onClick={() => handleEdit(record)}
+            title="Edit"
+          />
   	    </div>
   	  ),
   	},
@@ -316,32 +314,27 @@ const UsersTable = () => {
         </div>
       </PageHeader>
 
-      {loading ? (
-        <div className="w-full flex justify-center items-center py-16">
-          <img src={loadinsvg} alt="Loading" className="w-14 h-14" />
-        </div>
-      ) : (
-        <div className="mt-6">
-          <Table
-            columns={columns}
-            dataSource={tableData}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: total,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
-              pageSizeOptions: ["5", "10", "20", "50"],
-            }}
-            onChange={handleTableChange}
-            scroll={{ x: 'max-content' }}
-            size="middle"
-            className="font-local2"
-            rowKey="id"
-          />
-        </div>
-      )}
+      <div className="mt-6">
+        <Table
+          columns={columns}
+          dataSource={tableData}
+          loading={loading}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`,
+            pageSizeOptions: ["5", "10", "20", "50"],
+          }}
+          onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
+          size="middle"
+          className="font-local2"
+          rowKey="id"
+        />
+      </div>
 
       {/* Edit Status Modal */}
       <Modal

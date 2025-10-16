@@ -4,8 +4,9 @@ import React from "react";
 import { Table, Tag, Button, Popconfirm, Popover } from "antd";
 import { FaEdit, FaRegEye } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
+import { Tooltip } from "antd";
 
-const SubjectDatatable = ({ onEdit, onDelete, onView, data = [], loading = false, onChangePageParams, currentPage, pageSize, total }) => {
+const SubjectDatatable = ({ onEdit, onDelete, onView, data = [], loading = false, onChangePageParams, currentPage, pageSize, total, editingId }) => {
   const handleTableChange = (pag: any) => {
     if (typeof onChangePageParams === 'function') {
       onChangePageParams({ page: pag.current, pageSize: pag.pageSize });
@@ -81,21 +82,25 @@ const SubjectDatatable = ({ onEdit, onDelete, onView, data = [], loading = false
             type="link"
             icon={<FaEdit color="orange" size={18}/>}
             size="small"
+            loading={editingId === record.id}
             onClick={() => onEdit(record)}
             title="Edit"
           />
           <Popconfirm
-            title="Are you sure you want to delete this subject?"
+            title="Are you sure you want to delete these chapters?"
             onConfirm={() => onDelete(record.id)}
-            okText="Yes"
+            okText="Yes, Delete"
             cancelText="No"
+            okButtonProps={{ danger: true }}
           >
+             <Tooltip title="Delete Chapters">
             <Button
               type="link"
               icon={<MdDeleteOutline size={18} color="red" />}
               size="small"
               title="Delete"
             />
+            </Tooltip>
           </Popconfirm>
         </div>
       ),

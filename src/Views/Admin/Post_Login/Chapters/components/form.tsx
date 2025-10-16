@@ -1,7 +1,7 @@
 
 // @ts-nocheck
 import React from "react";
-import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, message, Modal } from "antd";
+import { Form, Input, Select, Button, Card, Row, Col, Space, Divider, Switch, message, Modal, Spin } from "antd";
 import { PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
@@ -41,6 +41,7 @@ const Chaptersform = () => {
   const [booksLoading, setBooksLoading] = React.useState<boolean>(false);
   const [submitting, setSubmitting] = React.useState<boolean>(false);
   const [selectedBookId, setSelectedBookId] = React.useState<string | undefined>(undefined);
+  const [loadingInitial, setLoadingInitial] = React.useState<boolean>(false);
 
   // Dummy data aligned to Title/Subject/Class/Chapters
   const getDummyData = (id: string) => {
@@ -246,6 +247,7 @@ const Chaptersform = () => {
   // Fetch chapter data for editing
   const fetchChapterData = async (chapterId: string) => {
     try {
+      setLoadingInitial(true);
       const data = await GET(`${API.CHAPTER}/${chapterId}`);
       if (data) {
         // Set form values from API response
@@ -279,6 +281,8 @@ const Chaptersform = () => {
       if (dummyData) {
         form.setFieldsValue(dummyData);
       }
+    } finally {
+      setLoadingInitial(false);
     }
   };
 
@@ -301,6 +305,7 @@ const Chaptersform = () => {
       <Card 
         className="w-full mt-4 shadow-md"
       >
+        <Spin spinning={Boolean(isEdit) && loadingInitial}>
         <Form
           form={form}
           layout="vertical"
@@ -449,6 +454,7 @@ const Chaptersform = () => {
             </Space>
           </Row>
         </Form>
+        </Spin>
       </Card>
     </>
   );

@@ -5,7 +5,6 @@ import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { IoIosSearch } from "react-icons/io";
 import { API, GET, POST, DELETE as DELETE_REQ } from "../../../../Components/common/api";
-import loadinsvg from "../../../../assets/spinning-dots.svg";
 
 const Subject = () => {
 
@@ -146,32 +145,27 @@ const Subject = () => {
         </Button>
       </PageHeader>
 
-      {loading ? (
-        <div className="w-full flex justify-center items-center py-16">
-          <img src={loadinsvg} alt="Loading" className="w-14 h-14" />
-        </div>
-      ) : (
-        <Datatable
-          onDelete={handleDelete}
-          data={tableData}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          total={total}
-          onChangePageParams={({ page, pageSize: ps }) => {
-            const newPageSize = ps || pageSize;
-            const newPage = page || currentPage;
-            
-            if (ps && ps !== pageSize) {
-              setPageSize(ps);
-            }
-            if (page && page !== currentPage) {
-              setCurrentPage(page);
-            }
-            
-            fetchSubjects({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
-          }}
-        />
-      )}
+      <Datatable
+        onDelete={handleDelete}
+        data={tableData}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        total={total}
+        loading={loading}
+        onChangePageParams={({ page, pageSize: ps }) => {
+          const newPageSize = ps || pageSize;
+          const newPage = page || currentPage;
+          
+          if (ps && ps !== pageSize) {
+            setPageSize(ps);
+          }
+          if (page && page !== currentPage) {
+            setCurrentPage(page);
+          }
+          
+          fetchSubjects({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
+        }}
+      />
 
       {/* Create Modal */}
       <Modal
@@ -180,7 +174,7 @@ const Subject = () => {
         onOk={handleOk}
         onCancel={handleCancel}
         confirmLoading={submitting}
-        okText="Create Subject"
+        okText="Submit"
         cancelText="Cancel"
         centered
         width={700}

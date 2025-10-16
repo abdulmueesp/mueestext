@@ -4,7 +4,7 @@ import { Table, Tag, Button, Popconfirm, Tooltip } from "antd";
 import { MdDeleteOutline, MdEdit } from "react-icons/md";
 import { FaEdit } from "react-icons/fa";
 
-const Datatable = ({ onDelete, onView, onEdit, data: remoteData, onChangePageParams, currentPage, pageSize, total }) => {
+const Datatable = ({ onDelete, onView, onEdit, data: remoteData, onChangePageParams, currentPage, pageSize, total, loading = false }) => {
 
   const columns: any[] = [
     {
@@ -53,14 +53,9 @@ const Datatable = ({ onDelete, onView, onEdit, data: remoteData, onChangePagePar
           <Popconfirm
             title="Are you sure you want to delete this book?"
             onConfirm={() => onDelete(record.id)}
-            okText="Yes"
+            okText="Yes, Delete"
             cancelText="No"
-            okButtonProps={{ 
-              style: { 
-                backgroundColor: "#007575", 
-                borderColor: "#007575" 
-              } 
-            }}
+            okButtonProps={{ danger: true }}
           >
             <Tooltip title="Delete Book">
               <Button
@@ -87,6 +82,7 @@ const Datatable = ({ onDelete, onView, onEdit, data: remoteData, onChangePagePar
       <Table
         columns={columns}
         dataSource={Array.isArray(remoteData) ? remoteData : []}
+        loading={loading}
         pagination={{
           current: currentPage || 1,
           pageSize: pageSize || 10,

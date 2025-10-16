@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Card, Row, Col, Select, Space, InputNumber, message, Tag } from "antd";
+import { Form, Input, Button, Card, Row, Col, Select, Space, InputNumber, message, Tag, Spin } from "antd";
 import PageHeader from "../../../../Components/common/PageHeader";
 import { API, GET, POST, PUT } from "../../../../Components/common/api";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -206,27 +206,14 @@ const CreateUser: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <>
-        <PageHeader title={isEditMode ? "Edit School" : "Create School"} backButton={true} />
-        <Card className="w-full mt-4 shadow-md">
-          <div className="flex justify-center items-center py-16">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#007575] mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading school data...</p>
-            </div>
-          </div>
-        </Card>
-      </>
-    );
-  }
+  // Keep route visible and show an inline spinner over the form content
 
   return (
     <>
       <PageHeader title={isEditMode ? "Edit School" : "Create School"} backButton={true} />
 
       <Card className="w-full mt-4 shadow-md">
+        <Spin spinning={Boolean(isEditMode) && loading}>
         <Form
           form={form}
           layout="vertical"
@@ -485,6 +472,7 @@ const CreateUser: React.FC = () => {
             </Space>
           </Row>
         </Form>
+        </Spin>
       </Card>
     </>
   );

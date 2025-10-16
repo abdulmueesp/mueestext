@@ -5,7 +5,6 @@ import PageHeader from "../../../../Components/common/PageHeader";
 import Datatable from "./components/datatable";
 import { IoIosSearch, IoMdRefresh } from "react-icons/io";
 import { API, GET, POST, PUT, DELETE as DELETE_REQ } from "../../../../Components/common/api";
-import loadinsvg from "../../../../assets/spinning-dots.svg"
 const { TextArea } = Input;
 
 const Books = () => {
@@ -106,7 +105,7 @@ const Books = () => {
   const handleDelete = async (id: string | number) => {
     try {
       await DELETE_REQ(`${API.BOOKS}/${id}`);
-      message.success(`Book ${id} deleted successfully!`);
+      message.success(`Book deleted successfully!`);
       fetchBooks();
     } catch (e: any) {
       message.error(e?.message || 'Failed to delete book');
@@ -211,34 +210,29 @@ const Books = () => {
         
       </PageHeader>
 
-      {loading ? (
-        <div className="w-full flex justify-center items-center py-16">
-          <img src={loadinsvg} alt="Loading" className="w-14 h-14" />
-        </div>
-      ) : (
-        <Datatable
-          onDelete={handleDelete}
-          onView={handleView}
-          onEdit={showEditModal}
-          data={tableData}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          total={total}
-          onChangePageParams={({ page, pageSize: ps }) => {
-            const newPageSize = ps || pageSize;
-            const newPage = page || currentPage;
-            
-            if (ps && ps !== pageSize) {
-              setPageSize(ps);
-            }
-            if (page && page !== currentPage) {
-              setCurrentPage(page);
-            }
-            
-            fetchBooks({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
-          }}
-        />
-      )}
+      <Datatable
+        onDelete={handleDelete}
+        onView={handleView}
+        onEdit={showEditModal}
+        data={tableData}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        total={total}
+        loading={loading}
+        onChangePageParams={({ page, pageSize: ps }) => {
+          const newPageSize = ps || pageSize;
+          const newPage = page || currentPage;
+          
+          if (ps && ps !== pageSize) {
+            setPageSize(ps);
+          }
+          if (page && page !== currentPage) {
+            setCurrentPage(page);
+          }
+          
+          fetchBooks({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
+        }}
+      />
 
       {/* Create/Edit Modal */}
       <Modal
@@ -286,17 +280,7 @@ const Books = () => {
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item 
-               required={false}
-                name="subject" 
-                label="Subject"
-                rules={[{ required: true, message: 'Please select subject!' }]}
-              >
-                <Select placeholder="Select subject" options={subjects} size="large" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
+          <Col span={12}>
               <Form.Item 
                required={false}
                 name="class" 
@@ -310,6 +294,17 @@ const Books = () => {
                 </Select>
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item 
+               required={false}
+                name="subject" 
+                label="Subject"
+                rules={[{ required: true, message: 'Please select subject!' }]}
+              >
+                <Select placeholder="Select subject" options={subjects} size="large" />
+              </Form.Item>
+            </Col>
+           
           </Row>
         </Form>
       </Modal>
