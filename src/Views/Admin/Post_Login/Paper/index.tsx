@@ -5,7 +5,7 @@ import { Button, Card, Checkbox, Col, Divider, Form, Input, InputNumber, Modal, 
 import { Download } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { API, GET } from "../../../../Components/common/api";
+import { API, GET, POST } from "../../../../Components/common/api";
 const { Title, Text } = Typography;
 
 type QuestionType = 'shortanswer' | 'essay' | 'fillblank' | 'mcq' | 'Image';
@@ -51,6 +51,7 @@ const Paper = () => {
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
   const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState<boolean>(false);
   const [chooseLoading, setChooseLoading] = useState<boolean>(false);
+  const [downloadLoading, setDownloadLoading] = useState<boolean>(false);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -208,6 +209,34 @@ const Paper = () => {
       }
     }
   }, [selectedClass, selectedSubject, selectedBook, form]);
+
+  // Watch for changes in required fields to clear questions when fields change
+  const selectedChapters = Form.useWatch('chapters', form);
+  useEffect(() => {
+    // Clear questions data when any required field changes
+    // This ensures that when user changes class/subject/book/chapters, 
+    // the previously fetched questions are hidden until "Choose Questions" is clicked again
+    if (questionsData.length > 0) {
+      setQuestionsData([]);
+      setTotalQuestions(0);
+      setSelectedQuestions({});
+      setShowChooser(false);
+      setLockedAfterChoose(false);
+      setLockedAfterRandom(false);
+    }
+  }, [selectedClass, selectedSubject, selectedBook, selectedChapters]);
+
+  // Also clear questions when question types change
+  useEffect(() => {
+    if (questionsData.length > 0) {
+      setQuestionsData([]);
+      setTotalQuestions(0);
+      setSelectedQuestions({});
+      setShowChooser(false);
+      setLockedAfterChoose(false);
+      setLockedAfterRandom(false);
+    }
+  }, [selectedTypes]);
 
   // Fetch questions when filter types change
   useEffect(() => {
@@ -671,7 +700,70 @@ const Paper = () => {
     message.success('All data cleared successfully');
   };
 
-  const handlePrintQuestionPaper = () => {
+  // Function to save examination data to API
+  const saveExaminationData = async () => {
+    const formValues = form.getFieldsValue();
+    
+    // Get book name from selected book ID
+    const selectedBookName = booksOptions.find(book => book.value === formValues.book)?.label || formValues.book;
+    
+    // Get chapter names from selected chapter IDs
+    const selectedChapterNames = Array.isArray(formValues.chapters) 
+      ? formValues.chapters.map(chapterId => 
+          chaptersOptions.find(chapter => chapter.value === chapterId)?.label || chapterId
+        )
+      : [formValues.chapters];
+    
+    // Format questions data for API
+    const formattedQuestions = Object.entries(selectedQuestions).map(([questionId, marks]) => {
+      const question = questionsData.find(q => q.id === questionId);
+      if (!question) return null;
+      
+      const baseQuestion = {
+        question: question.text,
+        questionType: question.type === 'Image' ? 'image' : question.type,
+        mark: marks
+      };
+      
+      // Add options for MCQ questions
+      if (question.type === 'mcq' && question.options) {
+        return {
+          ...baseQuestion,
+          options: question.options.map((option: any) => option.text || option)
+        };
+      }
+      
+      return baseQuestion;
+    }).filter(Boolean);
+    
+    const payload = {
+      schoolId: user?.id,
+      subject: formValues.subject,
+      class: formValues.class,
+      book: selectedBookName,
+      chapters: selectedChapterNames,
+      examinationType: formValues.examType,
+      totalMark: totalMarksField,
+      duration: formValues.duration,
+      schoolName: user?.displayName || user?.username || 'School',
+      questions: formattedQuestions
+    };
+    
+    try {
+      setDownloadLoading(true);
+      const response = await POST("/examinations", payload);
+      console.log('Examination saved successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('Failed to save examination:', error);
+      message.error('Failed to save examination data');
+      throw error;
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
+
+  const handlePrintQuestionPaper = async () => {
     // Check if total selected marks match the total marks field
     if (totalMarksField && currentSumMarks !== totalMarksField) {
       Modal.warning({
@@ -679,6 +771,15 @@ const Paper = () => {
         content: `Total selected marks (${currentSumMarks}) does not match the total marks field (${totalMarksField}). Please adjust your question selections to match the total marks.`,
         okText: 'OK'
       });
+      return;
+    }
+
+    try {
+      // Save examination data to API first
+      await saveExaminationData();
+      message.success('Examination data saved successfully');
+    } catch (error) {
+      // If API call fails, don't proceed to print
       return;
     }
 
@@ -883,7 +984,7 @@ const Paper = () => {
                 { label: 'Image', value: 'Image' },
               ]}
               value={selectedTypes}
-              onChange={(vals) => { setSelectedTypes(vals as QuestionType[]); if (lockedAfterRandom || lockedAfterChoose) resetLockedState(); }}
+              onChange={(vals) => { setSelectedTypes(vals as QuestionType[]); }}
             />
           </div>
 
@@ -1047,9 +1148,11 @@ const Paper = () => {
               type="primary"
               icon={<Download size={16} />}
               onClick={handlePrintQuestionPaper}
+              loading={downloadLoading}
+              disabled={downloadLoading}
               className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2"
             >
-              Download PDF
+              {downloadLoading ? 'Saving...' : 'Download PDF'}
             </Button>
           </div>
         }
