@@ -1,43 +1,32 @@
 
 // @ts-nocheck
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button, Card, Typography, Modal, Input, Dropdown, message, Select } from "antd";
-import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical } from "lucide-react";
+import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical, FileText, Calendar, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import img1 from "../../../../assets/matching.png"
 import img2 from "../../../../assets/match2.jpeg"
+import paperDummy from "../../../../assets/paperdummy.webp"
+import { API, GET } from "../../../../Components/common/api";
 const { Title, Text } = Typography;
 
-// Filter options
-const subjectOptions = [
-  { value: "all", label: "All Subjects" },
-  { value: "Mathematics", label: "Mathematics" },
-  { value: "Science", label: "Science" },
-  { value: "english", label: "English" },
-  { value: "gk", label: "General Knowledge" },
-  { value: "evs", label: "Environmental Studies" },
-  { value: "social science", label: "Social Science" },
-  { value: "malayalam", label: "Malayalam" },
-  { value: "computer", label: "Computer" }
+// Class options (same as Books module)
+const CLASS_OPTIONS = [
+  "0",
+  "LKG", 
+  "UKG",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8"
 ];
 
-const classOptions = [
-  { value: "all", label: "All Classes" },
-  { value: "0", label: "0" },
-  { value: "LKG", label: "LKG" },
-  { value: "UKG", label: "UKG" },
-  { value: "1", label: "1" },
-  { value: "2", label: "2" },
-  { value: "3", label: "3" },
-  { value: "4", label: "4" },
-  { value: "5", label: "5" },
-  { value: "6", label: "6" },
-  { value: "7", label: "7" },
-  { value: "8", label: "8" },
-  { value: "9", label: "9" },
-  { value: "10", label: "10" }
-];
+const classOptions = CLASS_OPTIONS.map(cls => ({ value: cls, label: cls }));
 
 // Dummy papers data matching Paper creation template
 const dummyPapers = [
@@ -324,15 +313,36 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
 
 const MyPapers = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("all");
-  const [selectedClass, setSelectedClass] = useState("all");
+  const [selectedSubject, setSelectedSubject] = useState(undefined);
+  const [selectedClass, setSelectedClass] = useState(undefined);
   const [viewingPaper, setViewingPaper] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
+
+  // Fetch subjects from API with loading state
+  const fetchSubjects = async () => {
+    try {
+      setSubjectsLoading(true);
+      const data = await GET(API.ALL_SUBJECTS);
+      const subjectsList = Array.isArray(data?.results)
+        ? data.results.map((s: any) => ({ value: s.subject, label: s.subject }))
+        : Array.isArray(data?.subjects)
+          ? data.subjects.map((s: any) => ({ value: s.name ?? s.subject, label: s.name ?? s.subject }))
+          : [];
+      setSubjects(subjectsList);
+    } catch (e) {
+      console.log("Failed to fetch subjects:", e);
+      // Fallback to empty options
+      setSubjects([]);
+    } finally {
+      setSubjectsLoading(false);
+    }
+  };
 
   // Show all papers (search is UI only, no filtering)
   const filteredPapers = dummyPapers;
@@ -344,6 +354,11 @@ const MyPapers = () => {
   const handleBackToList = () => {
     setViewingPaper(null);
   };
+
+  // Fetch subjects on component mount
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
 
   // Generate PDF using the same template as Paper creation
   const generatePDF = (paper: any) => {
@@ -479,25 +494,8 @@ const MyPapers = () => {
       <div className="w-full mb-5">
         <Card className="shadow-sm bg-white w-full">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-            {/* Subject Filter */}
-            <div className="flex items-center gap-2">
-              <Text className="text-gray-600 font-local2">Subject:</Text>
-              <Select
-                value={selectedSubject}
-                onChange={setSelectedSubject}
-                className="min-w-[150px]"
-                showSearch
-                placeholder="Select Subject"
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-                options={subjectOptions}
-              />
-            </div>
-
-            {/* Class Filter */}
-            <div className="flex items-center gap-2">
+             {/* Class Filter */}
+             <div className="flex items-center gap-2">
               <Text className="text-gray-600 font-local2">Class:</Text>
               <Select
                 value={selectedClass}
@@ -512,6 +510,25 @@ const MyPapers = () => {
                 options={classOptions}
               />
             </div>
+            {/* Subject Filter */}
+            <div className="flex items-center gap-2">
+              <Text className="text-gray-600 font-local2">Subject:</Text>
+              <Select
+                value={selectedSubject}
+                onChange={setSelectedSubject}
+                className="min-w-[150px]"
+                showSearch
+                placeholder="Select subject"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={subjects}
+                loading={subjectsLoading}
+              />
+            </div>
+
+           
 
             {/* Search */}
             <div className="flex-1 max-w-md">
@@ -600,79 +617,59 @@ const MyPapers = () => {
         </Button>
       </div>
 
-      {/* Papers List */}
+      {/* Papers Grid */}
       <div className="w-full">
-        <Card className="shadow-sm bg-white w-full">
-          <div className="space-y-4">
-            {filteredPapers.map((paper) => (
-              <div key={paper.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Text strong className="text-lg font-local2">{paper.id}) {paper.title}</Text>
-                    </div>
-                    
-                    <div className="space-y-2 text-gray-600">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-[#007575] to-[#339999] rounded-full flex-shrink-0"></div>
-                        <Text className="font-local2">Question Paper ID: {paper.id}</Text>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-gradient-to-r from-[#007575] to-[#339999] rounded-full flex-shrink-0"></div>
-                        <Text className="font-local2">Total Marks: {paper.totalMarks} | Duration: {paper.duration} min</Text>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-                          <User size={16} className="text-[#007575]" />
-                        </div>
-                        <Text className="font-local2">Created By: {paper.createdBy} ({paper.createdDate})</Text>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {filteredPapers.map((paper) => (
+            <div 
+              key={paper.id} 
+              className="bg-white border border-gray-200  shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
+              onClick={() => handleView(paper)}
+            >
+              {/* PDF-like Box Design */}
+              <div className="aspect-[3/4] flex flex-col">
+                {/* Main Content Area with PDF Image - Reduced Height */}
+                <div className="flex-1 relative bg-gray-50" style={{ height: '75%' }}>
+                  {/* PDF Preview Image */}
+                  <div className="w-full h-full flex items-center justify-center p-4">
+                    <img 
+                      src={paperDummy} 
+                      alt="Paper Preview" 
+                      className="w-full h-full object-contain rounded"
+                    />
+                  </div>
+                  
+                  {/* Hover Overlay with View Icon */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="bg-white rounded-full p-3 shadow-lg">
+                        <Eye size={24} className="text-[#007575]" />
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Action Button */}
-                  <Dropdown
-                    menu={{
-                      items: [
-                        {
-                          key: 'view',
-                          label: (
-                            <div className="flex items-center gap-2 px-2 py-1">
-                              <Eye size={16} />
-                              <span className="font-local2">View</span>
-                            </div>
-                          ),
-                          onClick: () => handleView(paper)
-                        },
-                        {
-                          key: 'download',
-                          label: (
-                            <div className="flex items-center gap-2 px-2 py-1">
-                              <Download size={16} />
-                              <span className="font-local2">Download</span>
-                            </div>
-                          ),
-                          onClick: () => generatePDF(paper)
-                        }
-                      ]
-                    }}
-                    trigger={['click']}
-                    placement="bottomRight"
-                  >
-                    <Button
-                      type="text"
-                      className="flex items-center justify-center bg-white text-black border border-gray-300 hover:bg-gray-50 font-local2"
-                    >
-                      <MoreVertical size={16} />
-                    </Button>
-                  </Dropdown>
+                {/* Footer - Paper Title with Red Background */}
+                <div className="p-3 bg-teal-900" style={{ height: '17%' }}>
+                  <div className="text-center flex items-center justify-center h-full">
+                    <h3 className="font-local2 font-semibold text-white text-sm">
+                      {paper.id}-{paper.subject.toLowerCase()}-{paper.examType?.toLowerCase() || 'exam'}
+                    </h3>
+                  </div>
                 </div>
               </div>
-            ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {filteredPapers.length === 0 && (
+          <div className="text-center py-12">
+            <FileText size={48} className="mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-local2 text-gray-600 mb-2">No Papers Found</h3>
+            <p className="text-gray-500 font-local2">Create your first question paper to get started.</p>
           </div>
-        </Card>
+        )}
       </div>
 
     </div>
