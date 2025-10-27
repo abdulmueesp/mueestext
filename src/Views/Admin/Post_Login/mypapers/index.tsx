@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Card, Typography, Modal, Input, Dropdown, message, Select } from "antd";
 import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical, FileText, Calendar, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import jsPDF from "jspdf";
 import img1 from "../../../../assets/matching.png"
 import img2 from "../../../../assets/match2.jpeg"
@@ -117,9 +118,64 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
       return;
     }
     
-    const paperTitle = `${paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
-    const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[])
-      .filter(type => paper.organizedQuestions[type] && paper.organizedQuestions[type].length > 0)
+    const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
+    
+    let sectionsHtml = '';
+    if (paper.questions && Array.isArray(paper.questions)) {
+      // Group questions by type for API format
+      const groupedQuestions = paper.questions.reduce((acc: any, question: any, index: number) => {
+        const type = question.questionType;
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push({ ...question, globalNumber: index + 1 });
+        return acc;
+      }, {});
+
+      const typeLabels: any = {
+        'mcq': 'Multiple Choice',
+        'shortanswer': 'Short Answer',
+        'essay': 'Essay',
+        'fillblank': 'Fill in the blank',
+        'image': 'Image Questions'
+      };
+
+      sectionsHtml = Object.entries(groupedQuestions).map(([type, questions]: [string, any]) => `
+        <div class="section">
+          <div class="section-title">Section: ${typeLabels[type] || type}</div>
+          ${questions.map((question: any) => `
+            <div class="question">
+              <div class="question-no">${question.globalNumber}.</div>
+              <div class="question-content">
+                <div class="question-text">${question.question}</div>
+                ${question.questionType === 'image' ? `
+                  <div class="question-image" style="margin-top: 10px;">
+                    ${question.imageUrl ? `
+                      <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
+                    ` : `
+                      <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
+                        Image not available
+                      </div>
+                    `}
+                  </div>
+                ` : ''}
+                ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
+                  <div class="question-options" style="margin-top: 10px;">
+                    ${question.options.map((option: string, index: number) => `
+                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                    `).join('')}
+                  </div>
+                ` : ''}
+              </div>
+              <div class="marks">[${question.mark} marks]</div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    } else {
+      // Fallback for organized questions format
+      sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[])
+        .filter(type => paper.organizedQuestions?.[type] && paper.organizedQuestions[type].length > 0)
       .map(type => `
         <div class="section">
           <div class="section-title">Section: ${type}</div>
@@ -128,9 +184,15 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
               <div class="question-no">${globalNumber}.</div>
               <div class="question-content">
                 <div class="question-text">${question.text}</div>
-                ${question.type === 'Matching' && question.imageUrl ? `
-                  <div class="question-image">
-                    <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
+                  ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') ? `
+                    <div class="question-image" style="margin-top: 10px;">
+                      ${question.imageUrl ? `
+                        <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
+                      ` : `
+                        <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
+                          Image not available
+                        </div>
+                      `}
                   </div>
                 ` : ''}
                 ${question.type === 'Multiple Choice' && question.options ? `
@@ -146,6 +208,7 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
           `).join('')}
         </div>
       `).join('');
+    }
     
     const content = `
       <!DOCTYPE html>
@@ -159,7 +222,7 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
             .subtitle { font-size: 18px; margin-top: 10px; }
             .info { display: flex; justify-content: space-between; margin: 20px 0; }
             .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; text-decoration: underline; }
+            .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
             .question-no { width: 30px; font-weight: bold; }
             .question-content { flex: 1; }
@@ -177,7 +240,6 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
         <body>
           <div class="header">
             <div class="title">${paperTitle}</div>
-            <div class="subtitle">${paper.book || ''} - ${paper.chapters?.join(', ') || ''}</div>
           </div>
           <div class="info">
             <div><strong>Time Allowed:</strong> ${paper.duration || 60} Minutes</div>
@@ -207,9 +269,10 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
   };
 
 
-  const currentSumMarks = Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
-    total + questions.reduce((sum: number, q: any) => sum + q.marks, 0), 0
-  );
+  // Calculate total marks from API data or organized questions
+  const currentSumMarks = paper.totalMark || paper.totalMarks || 
+    (paper.organizedQuestions ? Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
+      total + questions.reduce((sum: number, q: any) => sum + q.marks, 0), 0) : 0);
 
   return (
     <div className="p-6">
@@ -247,11 +310,8 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold uppercase font-local2">
-              {paper.examType || 'Examination'} - {paper.class || ''} {paper.subject || ''}
+              {paper.examinationType || paper.examType || 'Examination'} - {paper.class || ''} {paper.subject || ''}
             </h1>
-            <h2 className="text-lg mt-2 font-local2">
-              {paper.book || ''} {paper.chapters?.length ? `- ${paper.chapters.join(', ')}` : ''}
-            </h2>
           </div>
 
           {/* Time and Marks */}
@@ -262,8 +322,84 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
 
           {/* Sections and Questions */}
           <div className="space-y-8">
-            {(['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[]).map(type => {
-              const questionsOfType = paper.organizedQuestions[type];
+            {paper.questions && Array.isArray(paper.questions) ? (
+              // Group questions by type and display in sections
+              (() => {
+                const groupedQuestions = paper.questions.reduce((acc: any, question: any, index: number) => {
+                  const type = question.questionType;
+                  if (!acc[type]) {
+                    acc[type] = [];
+                  }
+                  acc[type].push({ ...question, globalNumber: index + 1 });
+                  return acc;
+                }, {});
+
+                const typeLabels: any = {
+                  'mcq': 'Multiple Choice',
+                  'shortanswer': 'Short Answer',
+                  'essay': 'Essay',
+                  'fillblank': 'Fill in the blank',
+                  'image': 'Image Questions'
+                };
+
+                return Object.entries(groupedQuestions).map(([type, questions]: [string, any]) => (
+                  <div key={type} className="section">
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-bold text-[#007575] font-local2">Section: {typeLabels[type] || type}</h3>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {questions.map((question: any) => (
+                        <div key={question.globalNumber} className="flex items-start gap-3 py-2">
+                          <div className="w-8 flex-shrink-0">
+                            <span className="font-medium font-local2">{question.globalNumber}.</span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-local2">{question.question}</div>
+                            {question.questionType === 'image' && (
+                              <div className="mt-2">
+                                {question.imageUrl ? (
+                                  <img 
+                                    src={question.imageUrl} 
+                                    alt="Question Image" 
+                                    className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling.style.display = 'block';
+                                    }}
+                                  />
+                                ) : null}
+                                <div 
+                                  className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
+                                  style={{ display: question.imageUrl ? 'none' : 'block' }}
+                                >
+                                  Image not available
+                                </div>
+                              </div>
+                            )}
+                            {question.questionType === 'mcq' && question.options && question.options.length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {question.options.map((option: string, optIndex: number) => (
+                                  <div key={optIndex} className="text-sm text-gray-700 font-local2">
+                                    {String.fromCharCode(65 + optIndex)}. {option}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-12 flex-shrink-0 text-right">
+                            <span className="font-bold text-gray-600 text-lg font-local2">[{question.mark}]</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()
+            ) : (
+              // Handle organized questions format (fallback)
+              (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[]).map(type => {
+                const questionsOfType = paper.organizedQuestions?.[type];
               if (!questionsOfType || questionsOfType.length === 0) return null;
               
               return (
@@ -280,9 +416,25 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
                         </div>
                         <div className="flex-1">
                           <div className="font-local2">{question.text}</div>
-                          {question.type === 'Matching' && question.imageUrl && (
+                            {(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && (
                             <div className="mt-2">
-                              <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
+                                {question.imageUrl ? (
+                                  <img 
+                                    src={question.imageUrl} 
+                                    alt="Question Image" 
+                                    className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling.style.display = 'block';
+                                    }}
+                                  />
+                                ) : null}
+                                <div 
+                                  className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
+                                  style={{ display: question.imageUrl ? 'none' : 'block' }}
+                                >
+                                  Image not available
+                                </div>
                             </div>
                           )}
                           {question.type === 'Multiple Choice' && question.options && (
@@ -303,7 +455,8 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
                   </div>
                 </div>
               );
-            })}
+              }).filter(Boolean)
+            )}
           </div>
         </div>
       </Card>
@@ -312,17 +465,24 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
 };
 
 const MyPapers = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubject, setSelectedSubject] = useState(undefined);
   const [selectedClass, setSelectedClass] = useState(undefined);
+  const [selectedBook, setSelectedBook] = useState(undefined);
   const [viewingPaper, setViewingPaper] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
+  const [booksOptions, setBooksOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [booksLoading, setBooksLoading] = useState<boolean>(false);
+  const [papers, setPapers] = useState<any[]>([]);
+  const [papersLoading, setPapersLoading] = useState<boolean>(false);
 
   const navigate = useNavigate();
+  
+  // Get user from Redux
+  const user = useSelector((state: any) => state.user.user);
 
   // Fetch subjects from API with loading state
   const fetchSubjects = async () => {
@@ -344,8 +504,49 @@ const MyPapers = () => {
     }
   };
 
-  // Show all papers (search is UI only, no filtering)
-  const filteredPapers = dummyPapers;
+  // Fetch books based on class and subject (same logic as Paper creation page)
+  const fetchBooks = async (classValue: string, subjectValue: string) => {
+    if (!classValue || !subjectValue || !user?.id) {
+      setBooksOptions([]);
+      return;
+    }
+
+    try {
+      setBooksLoading(true);
+      const query = {
+        class: classValue,
+        subject: subjectValue,
+        userId: user.id
+      };
+      const data = await GET("/books/filter", query);
+      const booksList = Array.isArray(data?.results)
+        ? data.results.map((book: any) => ({ 
+            value: book.id || book._id || book.name || book.title, 
+            label: book.name || book.title || book.book 
+          }))
+        : Array.isArray(data?.books)
+          ? data.books.map((book: any) => ({ 
+              value: book.id || book._id || book.name || book.title, 
+              label: book.name || book.title || book.book 
+            }))
+          : Array.isArray(data)
+            ? data.map((book: any) => ({ 
+                value: book.id || book._id || book.name || book.title, 
+                label: book.name || book.title || book.book 
+              }))
+            : [];
+      setBooksOptions(booksList);
+    } catch (e) {
+      console.error('Failed to fetch books:', e);
+      setBooksOptions([]);
+      message.error('Failed to load books');
+    } finally {
+      setBooksLoading(false);
+    }
+  };
+
+  // Use papers directly from API (filtering is done server-side)
+  const filteredPapers = papers;
 
   const handleView = (paper: any) => {
     setViewingPaper(paper);
@@ -355,10 +556,84 @@ const MyPapers = () => {
     setViewingPaper(null);
   };
 
+  // Fetch papers from API
+  const fetchPapers = async () => {
+    if (!user?.id) {
+      console.log("User ID not available");
+      return;
+    }
+
+    try {
+      setPapersLoading(true);
+      const query: any = {
+        schoolId: user.id
+      };
+      
+      // Add filter parameters if they are selected
+      if (selectedClass) {
+        query.class = selectedClass;
+      }
+      if (selectedSubject) {
+        query.subject = selectedSubject;
+      }
+      if (selectedBook) {
+        query.book = selectedBook;
+      }
+      
+      const data = await GET("/examinations", query);
+      
+      // Handle API response format - examinations array
+      const papersList = Array.isArray(data?.examinations)
+        ? data.examinations
+        : Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+      
+      setPapers(papersList);
+    } catch (e) {
+      console.error('Failed to fetch papers:', e);
+      setPapers([]);
+      message.error('Failed to load papers');
+    } finally {
+      setPapersLoading(false);
+    }
+  };
+
   // Fetch subjects on component mount
   useEffect(() => {
     fetchSubjects();
   }, []);
+
+  // Fetch papers when component mounts and user is available
+  useEffect(() => {
+    if (user?.id) {
+      fetchPapers();
+    }
+  }, [user?.id]);
+
+  // Watch for class and subject changes to fetch books
+  useEffect(() => {
+    if (selectedClass && selectedSubject && user?.id) {
+      fetchBooks(selectedClass, selectedSubject);
+    } else {
+      setBooksOptions([]);
+      // Clear book when class or subject is cleared
+      if (!selectedClass || !selectedSubject) {
+        setSelectedBook(undefined);
+      }
+    }
+  }, [selectedClass, selectedSubject, user?.id]);
+
+  // Refetch papers when filters change
+  useEffect(() => {
+    if (user?.id) {
+      fetchPapers();
+    }
+  }, [selectedClass, selectedSubject, selectedBook, user?.id]);
 
   // Generate PDF using the same template as Paper creation
   const generatePDF = (paper: any) => {
@@ -383,9 +658,15 @@ const MyPapers = () => {
                 <div class="question-no">${globalNumber}.</div>
                 <div class="question-content">
                   <div class="question-text">${question.text}</div>
-                  ${question.type === 'Matching' && question.imageUrl ? `
-                    <div class="question-image">
-                      <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
+                  ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') ? `
+                    <div class="question-image" style="margin-top: 10px;">
+                      ${question.imageUrl ? `
+                        <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
+                      ` : `
+                        <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
+                          Image not available
+                        </div>
+                      `}
                     </div>
                   ` : ''}
                   ${question.type === 'Multiple Choice' && question.options ? `
@@ -414,7 +695,7 @@ const MyPapers = () => {
               .subtitle { font-size: 18px; margin-top: 10px; }
               .info { display: flex; justify-content: space-between; margin: 20px 0; }
               .section { margin: 30px 0; }
-              .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; text-decoration: underline; }
+              .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; }
               .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
               .question-no { width: 30px; font-weight: bold; }
               .question-content { flex: 1; }
@@ -486,7 +767,7 @@ const MyPapers = () => {
       {/* Heading */}
       <div className="mb-6">
         <Title level={4} className="!mb-0 text-gray-700 font-local2">
-          My Question Papers
+          My Papers
         </Title>
       </div>
 
@@ -496,13 +777,12 @@ const MyPapers = () => {
           <div className="flex flex-col sm:flex-row gap-4 items-center">
              {/* Class Filter */}
              <div className="flex items-center gap-2">
-              <Text className="text-gray-600 font-local2">Class:</Text>
               <Select
                 value={selectedClass}
                 onChange={setSelectedClass}
-                className="min-w-[120px]"
+                className="w-[150px] font-local2"
                 showSearch
-                placeholder="Select Class"
+                placeholder="Filter by Class"
                 optionFilterProp="children"
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -512,13 +792,12 @@ const MyPapers = () => {
             </div>
             {/* Subject Filter */}
             <div className="flex items-center gap-2">
-              <Text className="text-gray-600 font-local2">Subject:</Text>
               <Select
                 value={selectedSubject}
                 onChange={setSelectedSubject}
-                className="min-w-[150px]"
+                className="w-[200px] font-local2"
                 showSearch
-                placeholder="Select subject"
+                placeholder="Filter by Subject"
                 optionFilterProp="children"
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
@@ -528,24 +807,22 @@ const MyPapers = () => {
               />
             </div>
 
-           
-
-            {/* Search */}
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Input
-                  placeholder="Search By Id"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  suffix={
-                    <Button
-                      type="primary"
-                      icon={<Search size={16} />}
-                      className="bg-gradient-to-r from-[#007575] to-[#339999]  hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999]"
-                    />
-                  }
-                />
-              </div>
+            {/* Book Filter */}
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedBook}
+                onChange={setSelectedBook}
+                className="w-[250px] font-local2"
+                showSearch
+                placeholder="Filter by Book"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={booksOptions}
+                loading={booksLoading}
+                disabled={!selectedClass || !selectedSubject}
+              />
             </div>
           </div>
         </Card>
@@ -603,29 +880,40 @@ const MyPapers = () => {
 
       </div>
 
-      {/* Create Test Paper Button */}
-      <div className="w-full mb-5">
-        <Button 
-          type="primary"
-          size="middle"
-         className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
+       {/* Create Test Paper Button */}
+       <div className="w-full mb-5">
+         <Button 
+           type="primary"
+           size="middle"
+          className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
              hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 "
-          
-           onClick={() => navigate("/paper")}
-        >
-          Create Test Paper
-        </Button>
-      </div>
+           
+            onClick={() => navigate("/paper")}
+         >
+           Create Test Paper
+         </Button>
+       </div>
 
       {/* Papers Grid */}
       <div className="w-full">
+        {papersLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#007575] mx-auto mb-4"></div>
+              <p className="text-gray-600 font-local2">Loading papers...</p>
+            </div>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {filteredPapers.map((paper) => (
             <div 
-              key={paper.id} 
+                key={paper.id || paper._id} 
               className="bg-white border border-gray-200  shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
               onClick={() => handleView(paper)}
             >
+                {/* Triangle Corner Decoration */}
+                <div className="absolute top-0 left-0 w-0 h-0 border-t-[40px] border-r-[40px] border-t-teal-600 border-r-transparent z-10"></div>
+                
               {/* PDF-like Box Design */}
               <div className="aspect-[3/4] flex flex-col">
                 {/* Main Content Area with PDF Image - Reduced Height */}
@@ -649,11 +937,11 @@ const MyPapers = () => {
                   </div>
                 </div>
 
-                {/* Footer - Paper Title with Red Background */}
-                <div className="p-3 bg-teal-900" style={{ height: '17%' }}>
+                  {/* Footer - Class-Subject-ExaminationType */}
+                <div className="p-3 bg-gradient-to-r from-[#007575] to-[#339999]" style={{ height: '17%' }}>
                   <div className="text-center flex items-center justify-center h-full">
                     <h3 className="font-local2 font-semibold text-white text-sm">
-                      {paper.id}-{paper.subject.toLowerCase()}-{paper.examType?.toLowerCase() || 'exam'}
+                        {paper.class || 'N/A'} - {paper.subject || 'subject'} - {paper.examinationType || 'exam'}
                     </h3>
                   </div>
                 </div>
@@ -661,13 +949,18 @@ const MyPapers = () => {
             </div>
           ))}
         </div>
+        )}
 
         {/* Empty State */}
-        {filteredPapers.length === 0 && (
+        {!papersLoading && filteredPapers.length === 0 && (
           <div className="text-center py-12">
             <FileText size={48} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-local2 text-gray-600 mb-2">No Papers Found</h3>
-            <p className="text-gray-500 font-local2">Create your first question paper to get started.</p>
+            <p className="text-gray-500 font-local2">
+              {papers.length === 0 
+                ? "Create your first question paper to get started." 
+                : "No papers match your current filters."}
+            </p>
           </div>
         )}
       </div>

@@ -733,6 +733,14 @@ const Paper = () => {
         };
       }
       
+      // Add imageUrl for image questions
+      if (question.type === 'Image' && question.imageUrl) {
+        return {
+          ...baseQuestion,
+          imageUrl: question.imageUrl
+        };
+      }
+      
       return baseQuestion;
     }).filter(Boolean);
     
@@ -831,7 +839,7 @@ const Paper = () => {
             .subtitle { font-size: 18px; margin-top: 10px; }
             .info { display: flex; justify-content: space-between; margin: 20px 0; }
             .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; text-decoration: underline; }
+            .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
             .question-no { width: 30px; font-weight: bold; }
             .question-content { flex: 1; }
