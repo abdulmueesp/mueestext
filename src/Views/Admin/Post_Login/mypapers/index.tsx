@@ -1,7 +1,7 @@
 
 // @ts-nocheck
 import React, { useState, useEffect } from "react";
-import { Button, Card, Typography, Modal, Input, Dropdown, message, Select } from "antd";
+import { Button, Card, Typography, Modal, Input, Dropdown, message, Select, Pagination } from "antd";
 import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical, FileText, Calendar, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -468,7 +468,13 @@ const MyPapers = () => {
   const [selectedSubject, setSelectedSubject] = useState(undefined);
   const [selectedClass, setSelectedClass] = useState(undefined);
   const [selectedBook, setSelectedBook] = useState(undefined);
+  const [selectedBookName, setSelectedBookName] = useState<string>('');
+  const [selectedExamType, setSelectedExamType] = useState(undefined);
   const [viewingPaper, setViewingPaper] = useState(null);
+  
+  // Exam type options
+  const examTypes = ['unit text', '1 midterm', '1 term', '2 midterm', '2 term', '3 midterm', '3 term'];
+  const examTypeOptions = examTypes.map(type => ({ value: type, label: type }));
   const [loading, setLoading] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -478,6 +484,9 @@ const MyPapers = () => {
   const [booksLoading, setBooksLoading] = useState<boolean>(false);
   const [papers, setPapers] = useState<any[]>([]);
   const [papersLoading, setPapersLoading] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPapers, setTotalPapers] = useState<number>(0);
 
   const navigate = useNavigate();
   
@@ -565,9 +574,13 @@ const MyPapers = () => {
 
     try {
       setPapersLoading(true);
-      const query: any = {
-        schoolId: user.id
-      };
+      
+      // Build query parameters for filters
+      const query: any = {};
+      
+      // Add pagination parameters
+      query.page = currentPage;
+      query.pageSize = pageSize;
       
       // Add filter parameters if they are selected
       if (selectedClass) {
@@ -576,11 +589,15 @@ const MyPapers = () => {
       if (selectedSubject) {
         query.subject = selectedSubject;
       }
-      if (selectedBook) {
-        query.book = selectedBook;
+      if (selectedBookName) {
+        query.book = selectedBookName;
+      }
+      if (selectedExamType) {
+        query.examinationType = selectedExamType;
       }
       
-      const data = await GET("/examinations", query);
+      // Use school ID in the URL path
+      const data = await GET(`/examinations/school/${user.id}`, query);
       
       // Handle API response format - examinations array
       const papersList = Array.isArray(data?.examinations)
@@ -594,6 +611,7 @@ const MyPapers = () => {
               : [];
       
       setPapers(papersList);
+      setTotalPapers(data?.total || 0);
     } catch (e) {
       console.error('Failed to fetch papers:', e);
       setPapers([]);
@@ -624,16 +642,22 @@ const MyPapers = () => {
       // Clear book when class or subject is cleared
       if (!selectedClass || !selectedSubject) {
         setSelectedBook(undefined);
+        setSelectedBookName('');
       }
     }
   }, [selectedClass, selectedSubject, user?.id]);
 
-  // Refetch papers when filters change
+  // Refetch papers when filters or pagination change
   useEffect(() => {
     if (user?.id) {
       fetchPapers();
     }
-  }, [selectedClass, selectedSubject, selectedBook, user?.id]);
+  }, [selectedClass, selectedSubject, selectedBookName, selectedExamType, currentPage, pageSize, user?.id]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, selectedSubject, selectedBookName, selectedExamType]);
 
   // Generate PDF using the same template as Paper creation
   const generatePDF = (paper: any) => {
@@ -779,6 +803,7 @@ const MyPapers = () => {
              <div className="flex items-center gap-2">
               <Select
                 value={selectedClass}
+                allowClear
                 onChange={setSelectedClass}
                 className="w-[150px] font-local2"
                 showSearch
@@ -794,6 +819,7 @@ const MyPapers = () => {
             <div className="flex items-center gap-2">
               <Select
                 value={selectedSubject}
+                allowClear
                 onChange={setSelectedSubject}
                 className="w-[200px] font-local2"
                 showSearch
@@ -811,7 +837,13 @@ const MyPapers = () => {
             <div className="flex items-center gap-2">
               <Select
                 value={selectedBook}
-                onChange={setSelectedBook}
+                allowClear
+                onChange={(value) => {
+                  setSelectedBook(value);
+                  // Find the book name from the options
+                  const bookOption = booksOptions.find(option => option.value === value);
+                  setSelectedBookName(bookOption ? bookOption.label : '');
+                }}
                 className="w-[250px] font-local2"
                 showSearch
                 placeholder="Filter by Book"
@@ -822,6 +854,23 @@ const MyPapers = () => {
                 options={booksOptions}
                 loading={booksLoading}
                 disabled={!selectedClass || !selectedSubject}
+              />
+            </div>
+
+            {/* Exam Type Filter */}
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedExamType}
+                allowClear
+                onChange={setSelectedExamType}
+                className="w-[200px] font-local2"
+                showSearch
+                placeholder="Filter by Exam Type"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={examTypeOptions}
               />
             </div>
           </div>
@@ -961,6 +1010,30 @@ const MyPapers = () => {
                 ? "Create your first question paper to get started." 
                 : "No papers match your current filters."}
             </p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!papersLoading && filteredPapers.length > 0 && (
+          <div className="flex justify-center mt-8">
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={totalPapers}
+              onChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+              onShowSizeChange={(current, size) => {
+                setCurrentPage(1);
+                setPageSize(size);
+              }}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} papers`}
+              pageSizeOptions={['10', '20', '50', '100']}
+              className="font-local2"
+            />
           </div>
         )}
       </div>
