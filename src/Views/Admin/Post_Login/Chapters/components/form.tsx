@@ -326,7 +326,9 @@ const Chaptersform = () => {
                     label="Class"
                     rules={[{ required: true, message: 'Please select class!' }]}
                   >
-                    <Select placeholder="Select class" size="large" onChange={onChangeClass} allowClear>
+                    <Select placeholder="Select class" size="large" onChange={onChangeClass}
+                    showSearch
+                     allowClear>
                       {CLASS_OPTIONS.map((cls) => (
                         <Option key={cls} value={cls}>{cls}</Option>
                       ))}
@@ -344,6 +346,7 @@ const Chaptersform = () => {
                       placeholder="Select subject" 
                       size="large" 
                       onChange={onChangeSubject} 
+                      showSearch
                       allowClear
                       options={subjectsOptions}
                       loading={subjectsLoading}
@@ -364,6 +367,7 @@ const Chaptersform = () => {
                       placeholder="Select book"
                       size="large"
                       allowClear
+                      showSearch
                       loading={booksLoading}
                       disabled={!selectedClass || !selectedSubject}
                       options={booksOptions}

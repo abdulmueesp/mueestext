@@ -619,6 +619,7 @@ const QuestionForm = () => {
                     rules={[{ required: true, message: 'Please select a class!' }]}
                   >
                     <Select 
+                    showSearch
                       placeholder="Select class" 
                       size="large"
                       options={classOptions}
@@ -635,6 +636,7 @@ const QuestionForm = () => {
                     rules={[{ required: true, message: 'Please select a subject!' }]}
                   >
                     <Select 
+                      showSearch
                       placeholder="Select subject" 
                       size="large"
                       options={subjectsOptions}
@@ -652,7 +654,8 @@ const QuestionForm = () => {
                     rules={[{ required: true, message: 'Please select a title!' }]}
                   >
                     <Select 
-                      placeholder="Select Book" 
+                    showSearch
+                      placeholder="Select book" 
                       size="large"
                       allowClear
                       loading={booksLoading}
@@ -673,6 +676,7 @@ const QuestionForm = () => {
                     rules={[{ required: true, message: 'Please select a chapter!' }]}
                   >
                     <Select 
+                    showSearch
                       placeholder="Select chapter" 
                       size="large"
                       allowClear

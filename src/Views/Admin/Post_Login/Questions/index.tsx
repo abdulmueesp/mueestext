@@ -325,6 +325,7 @@ const Questions: React.FC = () => {
         <Select
           placeholder="Filter by Class"
           allowClear
+          showSearch
           style={{ width: 180, marginRight: 8 }}
           onChange={(value) => {
             setFilterClass(value);
@@ -348,6 +349,7 @@ const Questions: React.FC = () => {
         <Select
           placeholder="Filter by Subject"
           allowClear
+          showSearch
           style={{ width: 180, marginRight: 8 }}
           onChange={(value) => {
             setFilterSubject(value);
@@ -371,6 +373,7 @@ const Questions: React.FC = () => {
         <Select
           placeholder="Filter by Book"
           allowClear
+          showSearch
           style={{ width: 200, marginRight: 8 }}
           onChange={(value, option: any) => {
             setFilterBook(value);
@@ -394,6 +397,7 @@ const Questions: React.FC = () => {
         <Select
           placeholder="Filter by Chapter"
           allowClear
+          showSearch
           style={{ width: 200, marginRight: 8 }}
           onChange={(value) => {
             setFilterChapter(value);

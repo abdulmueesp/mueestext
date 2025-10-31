@@ -128,6 +128,7 @@ const Subjects = () => {
       <PageHeader title="Chapters" backButton={true}>
         <Select
           placeholder="Filter by Class"
+          showSearch
           allowClear
           style={{ width: 180, marginRight: 8 }}
           onChange={(value) => {
@@ -152,6 +153,7 @@ const Subjects = () => {
         <Select
           placeholder="Filter by Subject"
           allowClear
+          showSearch
           style={{ width: 180, marginRight: 8 }}
           onChange={(value) => {
             setFilterSubject(value);

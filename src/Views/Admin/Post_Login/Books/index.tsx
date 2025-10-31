@@ -29,6 +29,7 @@ const Books = () => {
   const [viewRecord, setViewRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tableData, setTableData] = useState<any[]>([]);
@@ -37,6 +38,8 @@ const Books = () => {
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [filterClass, setFilterClass] = useState<string | undefined>(undefined);
+  const [filterSubject, setFilterSubject] = useState<string | undefined>(undefined);
   // Open Modal for Create
   const showModal = () => {
     setViewRecord(null);
@@ -67,7 +70,9 @@ const Books = () => {
   };
   const handleRefresh = () => {
     setSearchValue("");
-    // Add refresh logic here
+    setFilterClass(undefined);
+    setFilterSubject(undefined);
+    fetchBooks({ pageSize: 10, page: 1 });
   };
 
   // Save Form
@@ -123,6 +128,7 @@ const Books = () => {
 
   const fetchSubjects = async () => {
     try {
+      setSubjectsLoading(true);
       const data = await GET(API.ALL_SUBJECTS);
       const subjectsList = Array.isArray(data?.results)
         ? data.results.map((s: any) => ({ value: s.subject, label: s.subject }))
@@ -134,10 +140,12 @@ const Books = () => {
       console.log("Failed to fetch subjects:", e);
       // Fallback to empty options
       setSubjects([]);
+    } finally {
+      setSubjectsLoading(false);
     }
   };
 
-  const fetchBooks = async (opts?: { pageSize?: number, page?: number, q?: string }) => {
+  const fetchBooks = async (opts?: { pageSize?: number, page?: number, q?: string, cls?: string, subj?: string }) => {
     try {
       setLoading(true);
       const size = opts?.pageSize ?? pageSize ?? 10;
@@ -145,6 +153,8 @@ const Books = () => {
       const query: any = { pageSize: size, page: page };
       // Backend expects search key as 'quesryname'
       if (opts?.q) query.book= opts.q;
+      if (opts?.cls) query.class = opts.cls;
+      if (opts?.subj) query.subject = opts.subj;
       const data = await GET(API.ALL_BOOKS, query);
       const rows = Array.isArray(data?.results)
         ? data.results.map((r: any) => ({
@@ -180,12 +190,39 @@ const Books = () => {
 
   // Trigger search on debounce
   useEffect(() => {
-    fetchBooks({ pageSize, page: currentPage, q: debouncedSearch || undefined });
-  }, [debouncedSearch]);
+    fetchBooks({ pageSize, page: currentPage, q: debouncedSearch || undefined, cls: filterClass, subj: filterSubject });
+  }, [debouncedSearch, filterClass, filterSubject]);
 
   return (
     <>
       <PageHeader title="Books" backButton={true}>
+      <Select
+              placeholder="Filter by Class"
+              allowClear
+              showSearch
+              style={{ width: 150, marginRight: 8 }}
+              onChange={(value) => {
+                setFilterClass(value);
+                setCurrentPage(1);
+                fetchBooks({ pageSize, page: 1, q: searchValue.trim() || undefined, cls: value, subj: filterSubject });
+              }}
+              className="font-local2"
+              options={CLASS_OPTIONS.map((cls) => ({ value: cls, label: cls }))}
+            />
+      <Select
+              placeholder="Filter by Subject"
+              allowClear
+              showSearch
+              style={{ width: 180, marginRight: 8 }}
+              onChange={(value) => {
+                setFilterSubject(value);
+                setCurrentPage(1);
+                fetchBooks({ pageSize, page: 1, q: searchValue.trim() || undefined, cls: filterClass, subj: value });
+              }}
+              className="font-local2"
+              options={subjects}
+              loading={subjectsLoading}
+            />
       <Input
               placeholder="Search by Book"
               prefix={<IoIosSearch className="text-gray-400" />}
@@ -230,7 +267,7 @@ const Books = () => {
             setCurrentPage(page);
           }
           
-          fetchBooks({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined });
+          fetchBooks({ pageSize: newPageSize, page: newPage, q: debouncedSearch || undefined, cls: filterClass, subj: filterSubject });
         }}
       />
 
@@ -287,7 +324,10 @@ const Books = () => {
                 label="Class"
                 rules={[{ required: true, message: 'Please select class!' }]}
               >
-                <Select placeholder="Select class" size="large">
+                <Select placeholder="Select class"
+                 allowClear
+                 showSearch
+                size="large">
                   {CLASS_OPTIONS.map((cls) => (
                     <Select.Option key={cls} value={cls}>{cls}</Select.Option>
                   ))}
@@ -301,7 +341,10 @@ const Books = () => {
                 label="Subject"
                 rules={[{ required: true, message: 'Please select subject!' }]}
               >
-                <Select placeholder="Select subject" options={subjects} size="large" />
+                <Select placeholder="Select subject"
+                 allowClear
+                 showSearch
+                options={subjects} size="large" />
               </Form.Item>
             </Col>
            
