@@ -685,7 +685,7 @@ const Paper = () => {
     setLockedAfterRandom(false);
     setLockedAfterChoose(false);
     setPage(1);
-    setPageSize(8);
+    setPageSize(10);
     setModalFilterTypes([]);
     
     // Reset random config
@@ -1021,12 +1021,13 @@ const Paper = () => {
 
       {showChooser && (
         <div ref={chooserRef}>
-        <Card className="shadow-sm border border-gray-200 p-3 md:p-6 font-local2">
+        <Card className="shadow-sm border border-gray-200 font-local2">
           <div className="space-y-4 font-local2" ref={topRef}>
-            <div className="text-sm text-gray-600">Select questions by type and adjust marks. Matching type shows images.</div>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="text-gray-700 font-medium text-sm">Filter question types</div>
-              <div className="flex flex-wrap gap-2">
+            
+            <div className=" gap-3 sticky top-0 z-20 bg-gray-50 py-2  p-3 md:p-4 rounded-xl  border-2 border-teal-700">
+              <div className="text-[#007575] font-medium text-sm">Filter question types</div>
+              <div className="flex flex-col md:flex-row gap-3">
+              <div className="w-full md:w-[50%] flex flex-wrap gap-2">
                 {(['shortanswer','essay','fillblank','mcq','Image'] as QuestionType[]).map(t => (
                   <Button
                     key={`flt-${t}`}
@@ -1052,15 +1053,23 @@ const Paper = () => {
                         setFilterLoading(false);
                       }
                     }}
-                    className={`font-local2 ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!text-white' : ''}`}
+                      className={`font-local2 rounded-full px-3 py-1 text-sm border ${!selectedTypes.includes(t) ? 'opacity-50 cursor-not-allowed' : ''} ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white hover:!text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!opacity-90' : 'bg-white text-gray-700 border-gray-300 hover:!border-[#339999] hover:!text-[#007575]'}`}
                   >
                     {t}
                   </Button>
                 ))}
   
               </div>
+                <div className="w-full md:w-[50%] flex items-center justify-end gap-4 text-[15px] text-[#007575] ">
+                <span>Selected Questions:{Object.keys(selectedQuestions).length}</span>
+                <span>
+                  Total Selected Marks: {currentSumMarks} {totalMarksField ? `(of ${totalMarksField})` : ''}
+                </span>
+              </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 gap-4">
+           
+            <div className="grid grid-cols-1 gap-4 p-3 md:p-6">
               {(questionsLoading || filterLoading) && (
                 <div className="flex justify-center items-center py-8">
                   <Spin />
