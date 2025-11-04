@@ -7,7 +7,7 @@ import { IoIosList } from "react-icons/io";
 import { LuBook } from "react-icons/lu";
 export const menuData = {  admin: [
   { id: "dashboard", icon: BiHome, label: "Dashboard", path: "/dashboard" },
-    { id: "users", icon: LuSchool, label: "List Schools", path: "/schools" },
+    { id: "users", icon: LuSchool, label: "Schools", path: "/schools" },
     { id: "subjects", icon: LuBook, label: "Subjects", path: "/subjects" },
     {
       id: "Books",

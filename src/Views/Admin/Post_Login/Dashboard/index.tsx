@@ -5,12 +5,19 @@ import teachers from "../../../../assets/My institute.png"
 import myquestions from "../../../../assets/myquestions.png"
 import evaluate from "../../../../assets/Evaluate.png"
 import blueprint from "../../../../assets/Blueprints.png"
+import createschool from "../../../../assets/Teachers.png"
 const examBoxes = [
   {
     title: "Create School",
     color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
     image: teachers,
     path: "/schools/new",
+  },
+  {
+    title: "Schools",
+    color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
+    image: createschool,
+    path: "/schools",
   },
   {
     title: "Add Questions",

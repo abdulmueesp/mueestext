@@ -64,6 +64,11 @@ const Paper = () => {
   const selectedSubject = Form.useWatch('subject', form);
   const selectedBook = Form.useWatch('book', form);
 
+  // Ensure clean form state when landing on this page (after navigating back from My Papers, etc.)
+  useEffect(() => {
+    form.resetFields();
+  }, [form]);
+
   // Fetch subjects from API (same as Chapters module)
   const fetchSubjects = async () => {
     try {
@@ -900,7 +905,7 @@ const Paper = () => {
       <div className="space-y-6 font-local2">
         <Card className="shadow-sm border border-gray-200 p-3 md:p-6 font-local2">
           <Title level={4} className="!mb-4 text-gray-700 font-local2">Create Paper</Title>
-        <Form form={form} layout="vertical"  className="font-local2">
+        <Form form={form} layout="vertical" preserve={false} className="font-local2">
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12} lg={8}>
               <Form.Item label="Class" name="class"  required={false}  rules={[{ required: true, message: 'Please select class' }]}> 
