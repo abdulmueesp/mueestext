@@ -364,8 +364,8 @@ const Paper = () => {
     
     let globalCounter = 1;
     
-    // Process questions in the order of question types
-    (['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[]).forEach(type => {
+    // Process questions in the desired order of question types for preview/print
+    (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[]).forEach(type => {
       const questionsOfType = Object.entries(selectedQuestions)
         .map(([id, marks]) => ({ id, marks, question: questionsData.find(q => q.id === id) }))
         .filter(({ question }) => question && question.type === type)
@@ -803,7 +803,7 @@ const Paper = () => {
     }
     
     const paperTitle = `${formValues?.examType || 'Examination'} - ${formValues?.class || ''} ${formValues?.subject || ''}`.trim();
-    const sectionsHtml = (['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[])
+    const sectionsHtml = (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
       .filter(type => organizedQuestions[type].length > 0)
       .map(type => `
         <div class="section">
@@ -838,7 +838,7 @@ const Paper = () => {
         <head>
           <title>${paperTitle}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+            body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
             .header { text-align: center; margin-bottom: 30px; }
             .title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
             .subtitle { font-size: 18px; margin-top: 10px; }
@@ -853,8 +853,8 @@ const Paper = () => {
             .marks { font-weight: bold; margin-left: 10px; }
             @media print {
               body { margin: 20px; }
-              /* Allow sections to flow across pages; do not force breaks */
-              .section { page-break-inside: auto; break-inside: auto; }
+              /* Allow sections to flow across pages; do not force whole-section moves */
+              .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
               /* Keep an individual question together on the same page */
               .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
               .question-image img { max-width: 250px; max-height: 150px; }
@@ -1198,7 +1198,7 @@ const Paper = () => {
             </div>
           </div>
           
-          {(['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[]).map(type => {
+          {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[]).map(type => {
             const questionsOfType = organizedQuestions[type];
             if (questionsOfType.length === 0) return null;
             

@@ -72,41 +72,44 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         'image': 'Image Questions'
       };
 
-      sectionsHtml = Object.entries(groupedQuestions).map(([type, questions]: [string, any]) => `
-        <div class="section">
-          <div class="section-title">Section: ${typeLabels[type] || type}</div>
-          ${questions.map((question: any) => `
-            <div class="question">
-              <div class="question-no">${question.globalNumber}.</div>
-              <div class="question-content">
-                <div class="question-text">${question.question}</div>
-                ${question.questionType === 'image' ? `
-                  <div class="question-image" style="margin-top: 10px;">
-                    ${question.imageUrl ? `
-                      <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
-                    ` : `
-                      <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
-                        Image not available
-                      </div>
-                    `}
-                  </div>
-                ` : ''}
-                ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
-                  <div class="question-options" style="margin-top: 10px;">
-                    ${question.options.map((option: string, index: number) => `
-                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
-                    `).join('')}
-                  </div>
-                ` : ''}
+      const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+      sectionsHtml = desiredOrder
+        .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
+        .map((type) => `
+          <div class="section">
+            <div class="section-title">Section: ${typeLabels[type] || type}</div>
+            ${groupedQuestions[type].map((question: any) => `
+              <div class="question">
+                <div class="question-no">${question.globalNumber}.</div>
+                <div class="question-content">
+                  <div class="question-text">${question.question}</div>
+                  ${question.questionType === 'image' ? `
+                    <div class="question-image" style="margin-top: 10px;">
+                      ${question.imageUrl ? `
+                        <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
+                      ` : `
+                        <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
+                          Image not available
+                        </div>
+                      `}
+                    </div>
+                  ` : ''}
+                  ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
+                    <div class="question-options" style="margin-top: 10px;">
+                      ${question.options.map((option: string, index: number) => `
+                        <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                </div>
+                <div class="marks">[${question.mark} marks]</div>
               </div>
-              <div class="marks">[${question.mark} marks]</div>
-            </div>
-          `).join('')}
-        </div>
-      `).join('');
+            `).join('')}
+          </div>
+        `).join('');
     } else {
       // Fallback for organized questions format
-      sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[])
+      sectionsHtml = (['Multiple Choice', 'Fill in the blank', 'Short Answer', 'Matching', 'Essay'] as any[])
         .filter(type => paper.organizedQuestions?.[type] && paper.organizedQuestions[type].length > 0)
       .map(type => `
         <div class="section">
@@ -163,8 +166,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             .marks { font-weight: bold; margin-left: 10px; }
             @media print {
               body { margin: 20px; }
-              .section { page-break-inside: avoid; }
-              .question { page-break-inside: avoid; margin: 10px 0; }
+              /* Allow sections to flow across pages; do not force whole-section moves */
+              .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
+              /* Keep an individual question together on the same page */
+              .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
               .question-image img { max-width: 250px; max-height: 150px; }
             }
           </style>
@@ -290,14 +295,17 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   'image': 'Image Questions'
                 };
 
-                return Object.entries(groupedQuestions).map(([type, questions]: [string, any]) => (
+                const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+                return desiredOrder
+                  .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
+                  .map((type) => (
                   <div key={type} className="section">
                     <div className="text-center mb-4">
                       <h3 className="text-lg font-bold text-[#007575] font-local2">Section: {typeLabels[type] || type}</h3>
                     </div>
                     
                     <div className="space-y-4">
-                      {questions.map((question: any) => (
+                      {groupedQuestions[type].map((question: any) => (
                         <div key={question.globalNumber} className="flex items-start gap-3 py-2">
                           <div className="w-8 flex-shrink-0">
                             <span className="font-medium font-local2">{question.globalNumber}.</span>
@@ -346,7 +354,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               })()
             ) : (
               // Handle organized questions format (fallback)
-              (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[]).map(type => {
+              (['Multiple Choice', 'Fill in the blank', 'Short Answer', 'Matching', 'Essay'] as any[]).map(type => {
                 const questionsOfType = paper.organizedQuestions?.[type];
               if (!questionsOfType || questionsOfType.length === 0) return null;
               
@@ -697,8 +705,10 @@ const MyPapers = () => {
               .marks { font-weight: bold; margin-left: 10px; }
               @media print {
                 body { margin: 20px; }
-                .section { page-break-inside: avoid; }
-                .question { page-break-inside: avoid; margin: 10px 0; }
+                /* Allow sections to flow across pages; do not force whole-section moves */
+                .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
+                /* Keep an individual question together on the same page */
+                .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
                 .question-image img { max-width: 250px; max-height: 150px; }
               }
             </style>
