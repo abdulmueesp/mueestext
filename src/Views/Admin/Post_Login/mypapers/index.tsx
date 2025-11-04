@@ -175,7 +175,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           </div>
           <div class="info">
             <div><strong>Time Allowed:</strong> ${paper.duration || 60} Minutes</div>
-            <div><strong>Maximum Marks:</strong> ${paper.totalMarks}</div>
+            <div><strong>Maximum Marks:</strong> ${currentSumMarks}</div>
           </div>
           ${sectionsHtml}
         </body>
@@ -672,6 +672,10 @@ const MyPapers = () => {
           </div>
         `).join('');
       
+      const sumMarks = paper.totalMark || paper.totalMarks || 
+        (paper.organizedQuestions ? Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
+          total + questions.reduce((sum: number, q: any) => sum + (q.marks ?? 0), 0), 0) : 0);
+      
       const content = `
         <!DOCTYPE html>
         <html>
@@ -706,7 +710,7 @@ const MyPapers = () => {
             </div>
             <div class="info">
               <div><strong>Time Allowed:</strong> ${paper.duration || 60} Minutes</div>
-              <div><strong>Maximum Marks:</strong> ${paper.totalMarks}</div>
+              <div><strong>Maximum Marks:</strong> ${sumMarks}</div>
             </div>
             ${sectionsHtml}
           </body>
@@ -994,9 +998,9 @@ const MyPapers = () => {
                 setPageSize(size);
               }}
               showSizeChanger
-              showQuickJumper
+              
               showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} papers`}
-              pageSizeOptions={['10', '20', '50', '100']}
+              pageSizeOptions={['5','10', '20', '50', '100']}
               className="font-local2"
             />
           </div>
