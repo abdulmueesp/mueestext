@@ -10,13 +10,14 @@ const examBoxes = [
   {
     title: "Create School",
     color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
-    image: teachers,
+    image: createschool,
     path: "/schools/new",
   },
+  
   {
     title: "Schools",
-    color: "bg-gradient-to-br from-teal-600/60 to-teal-700/60",
-    image: createschool,
+    color: "bg-gradient-to-br from-slate-200/60 to-slate-300/60",
+    image: teachers,
     path: "/schools",
   },
   {
@@ -33,7 +34,7 @@ const examBoxes = [
   },
   {
     title: "My Papers",
-    color: "bg-gradient-to-br from-orange-400/60 to-orange-500/60",
+    color: "bg-gradient-to-br from-violet-300/60 to-purple-400/60",
     image: blueprint,
     path: "/mypapers",
   },
