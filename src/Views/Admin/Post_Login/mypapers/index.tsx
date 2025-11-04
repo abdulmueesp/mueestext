@@ -9,7 +9,9 @@ import jsPDF from "jspdf";
 import img1 from "../../../../assets/matching.png"
 import img2 from "../../../../assets/match2.jpeg"
 import paperDummy from "../../../../assets/paperdummy.webp"
-import { API, GET } from "../../../../Components/common/api";
+import { API, GET, DELETE } from "../../../../Components/common/api";
+import { Popconfirm } from "antd";
+import { MdDeleteOutline } from "react-icons/md";
 const { Title, Text } = Typography;
 
 // Class options (same as Books module)
@@ -30,77 +32,7 @@ const CLASS_OPTIONS = [
 const classOptions = CLASS_OPTIONS.map(cls => ({ value: cls, label: cls }));
 
 // Dummy papers data matching Paper creation template
-const dummyPapers = [
-  {
-    id: 1,
-    title: "Mathematics Class 10 - Unit Test",
-    subject: "Mathematics",
-    class: "10",
-    book: "NCERT Book A",
-    examType: "unit text",
-    chapters: ["Numbers", "Algebra"],
-    totalMarks: 50,
-    duration: 90,
-    createdBy: "John Doe",
-    createdDate: "Aug 29, 2025",
-    questions: 10,
-    organizedQuestions: {
-      'Short Answer': [
-        { question: { id: 'S1', type: 'Short Answer', text: 'Define photosynthesis.', defaultMarks: 2 }, marks: 2, globalNumber: 1 },
-        { question: { id: 'S2', type: 'Short Answer', text: 'What is a noun?', defaultMarks: 2 }, marks: 2, globalNumber: 2 }
-      ],
-      'Matching': [
-        { question: { id: 'M1', type: 'Matching', text: 'Match the animals to their habitats.', imageUrl:img1, defaultMarks: 4 }, marks: 4, globalNumber: 3 },
-        { question: { id: 'M2', type: 'Matching', text: 'Match states to their capitals.', imageUrl:img2, defaultMarks: 4 }, marks: 4, globalNumber: 4 }
-      ],
-      'Essay': [
-        { question: { id: 'E1', type: 'Essay', text: 'Explain the water cycle in detail.', defaultMarks: 10 }, marks: 10, globalNumber: 5 },
-        { question: { id: 'E2', type: 'Essay', text: 'Describe your favorite festival.', defaultMarks: 8 }, marks: 8, globalNumber: 6 }
-      ],
-      'Fill in the blank': [
-        { question: { id: 'F1', type: 'Fill in the blank', text: 'Water boils at ____ degrees Celsius.', defaultMarks: 1 }, marks: 1, globalNumber: 7 },
-        { question: { id: 'F2', type: 'Fill in the blank', text: 'The capital of France is ____.', defaultMarks: 1 }, marks: 1, globalNumber: 8 }
-      ],
-      'Multiple Choice': [
-        { question: { id: 'MCQ1', type: 'Multiple Choice', text: 'What is the capital of India?', options: ['Mumbai', 'Delhi', 'Kolkata', 'Chennai'], defaultMarks: 2 }, marks: 2, globalNumber: 9 },
-        { question: { id: 'MCQ2', type: 'Multiple Choice', text: 'Which planet is closest to the Sun?', options: ['Venus', 'Mercury', 'Earth', 'Mars'], defaultMarks: 2 }, marks: 2, globalNumber: 10 }
-      ]
-    }
-  },
-  {
-    id: 2,
-    title: "Science Class 8 - 1 Midterm",
-    subject: "Science",
-    class: "8",
-    book: "NCERT Book B",
-    examType: "1 midterm",
-    chapters: ["Plants", "Animals"],
-    totalMarks: 30,
-    duration: 60,
-    createdBy: "Jane Smith",
-    createdDate: "Aug 28, 2025",
-    questions: 7,
-    organizedQuestions: {
-      'Short Answer': [
-        { question: { id: 'S3', type: 'Short Answer', text: 'What is the process of photosynthesis?', defaultMarks: 2 }, marks: 2, globalNumber: 1 }
-      ],
-      'Matching': [
-        { question: { id: 'M3', type: 'Matching', text: 'Match the parts of a plant.', imageUrl:img1, defaultMarks: 4 }, marks: 4, globalNumber: 2 }
-      ],
-      'Essay': [
-        { question: { id: 'E3', type: 'Essay', text: 'Explain the life cycle of a butterfly.', defaultMarks: 10 }, marks: 10, globalNumber: 3 }
-      ],
-      'Fill in the blank': [
-        { question: { id: 'F3', type: 'Fill in the blank', text: 'Plants make food by a process called ____.', defaultMarks: 1 }, marks: 1, globalNumber: 4 },
-        { question: { id: 'F4', type: 'Fill in the blank', text: 'The largest planet in our solar system is ____.', defaultMarks: 1 }, marks: 1, globalNumber: 5 }
-      ],
-      'Multiple Choice': [
-        { question: { id: 'MCQ3', type: 'Multiple Choice', text: 'What is 2 + 2?', options: ['3', '4', '5', '6'], defaultMarks: 1 }, marks: 1, globalNumber: 6 },
-        { question: { id: 'MCQ4', type: 'Multiple Choice', text: 'Which is the largest mammal?', options: ['Elephant', 'Blue Whale', 'Giraffe', 'Hippopotamus'], defaultMarks: 2 }, marks: 2, globalNumber: 7 }
-      ]
-    }
-  }
-];
+
 
 
 // Check if device is mobile
@@ -108,7 +40,7 @@ const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-const ViewQuestionPaper = ({ paper, onBack }: any) => {
+const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [loading, setLoading] = useState(false);
 
   const handlePrintQuestionPaper = () => {
@@ -292,14 +224,30 @@ const ViewQuestionPaper = ({ paper, onBack }: any) => {
       {/* Print Options */}
       <div className="mb-6">
         <Card className="shadow-sm">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between">
             <Button
               onClick={handlePrintQuestionPaper}
-              className="flex items-center gap-2 bg-green-500 text-white border-blue-500 hover:bg-green-500"
+              className="flex items-center gap-2 bg-green-500 text-white hover:bg-green-500"
             >
               <Printer size={16} />
               Print Question Paper
             </Button>
+            <div>
+            <Popconfirm
+           title="Are you sure you want to delete this paper?"
+            onConfirm={() => onDelete && onDelete(paper.id || paper._id)}
+            okText="Yes, Delete"
+            cancelText="No"
+            okButtonProps={{ danger: true }}
+          >
+            <Button
+              type="link"
+              icon={<MdDeleteOutline size={23} color="red" />}
+              size="small"
+              title="Delete"
+            />
+          </Popconfirm>
+          </div>
           </div>
         </Card>
       </div>
@@ -565,6 +513,23 @@ const MyPapers = () => {
     setViewingPaper(null);
   };
 
+  const handleDelete = async (id: string) => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      await DELETE(`/examinations/${id}`);
+      message.success('Successfully deleted');
+      setViewingPaper(null);
+      await fetchPapers();
+      navigate('/mypapers');
+    } catch (e) {
+      console.error('Failed to delete paper:', e);
+      message.error('Failed to delete paper');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch papers from API
   const fetchPapers = async () => {
     if (!user?.id) {
@@ -778,7 +743,7 @@ const MyPapers = () => {
 
   // If viewing a paper, show the view component
   if (viewingPaper) {
-    return <ViewQuestionPaper paper={viewingPaper} onBack={handleBackToList} />;
+    return <ViewQuestionPaper paper={viewingPaper} onBack={handleBackToList} onDelete={handleDelete} />;
   }
   const users = [
   { id: "1", name: "Batch A" },
