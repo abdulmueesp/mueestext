@@ -16,7 +16,7 @@ const examBoxes = [
   
   {
     title: "Schools",
-    color: "bg-gradient-to-br from-slate-200/60 to-slate-300/60",
+    color: "bg-gradient-to-br from-[#e6c9a8]/60 to-[#c49a6c]/60",
     image: teachers,
     path: "/schools",
   },
