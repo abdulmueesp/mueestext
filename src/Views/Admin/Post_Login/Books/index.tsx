@@ -97,7 +97,13 @@ const Books = () => {
       setEditingRecord(null);
       form.resetFields();
       // Refresh table data after create/update
-      fetchBooks();
+      fetchBooks({
+        pageSize,
+        page: currentPage,
+        q: searchValue.trim() || undefined,
+        cls: filterClass,
+        subj: filterSubject,
+      });
     } catch (error) {
       console.log("Validation Failed:", error);
     }
