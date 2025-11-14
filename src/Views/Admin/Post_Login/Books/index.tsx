@@ -117,7 +117,13 @@ const Books = () => {
     try {
       await DELETE_REQ(`${API.BOOKS}/${id}`);
       message.success(`Book deleted successfully!`);
-      fetchBooks();
+      fetchBooks({
+        pageSize,
+        page: currentPage,
+        q: searchValue.trim() || undefined,
+        cls: filterClass,
+        subj: filterSubject,
+      });
     } catch (e: any) {
       message.error(e?.message || 'Failed to delete book');
     }
