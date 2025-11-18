@@ -81,6 +81,19 @@ const Questions: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  React.useEffect(() => {
+    fetchQuestions({
+      q: undefined,
+      cls: undefined,
+      subj: undefined,
+      book: undefined,
+      chapter: undefined,
+      page: 1,
+      pageSize,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const fetchSubjects = async () => {
     try {
       setSubjectsLoading(true);
