@@ -40,6 +40,34 @@ const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+// Convert number to Roman numeral
+const toRomanNumeral = (num: number): string => {
+  const romanNumerals: [number, string][] = [
+    [1000, 'M'],
+    [900, 'CM'],
+    [500, 'D'],
+    [400, 'CD'],
+    [100, 'C'],
+    [90, 'XC'],
+    [50, 'L'],
+    [40, 'XL'],
+    [10, 'X'],
+    [9, 'IX'],
+    [5, 'V'],
+    [4, 'IV'],
+    [1, 'I']
+  ];
+  
+  let result = '';
+  for (const [value, numeral] of romanNumerals) {
+    while (num >= value) {
+      result += numeral;
+      num -= value;
+    }
+  }
+  return result;
+};
+
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [loading, setLoading] = useState(false);
 
@@ -55,12 +83,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     let sectionsHtml = '';
     if (paper.questions && Array.isArray(paper.questions)) {
       // Group questions by type for API format
-      const groupedQuestions = paper.questions.reduce((acc: any, question: any, index: number) => {
+      const groupedQuestions = paper.questions.reduce((acc: any, question: any) => {
         const type = question.questionType;
         if (!acc[type]) {
           acc[type] = [];
         }
-        acc[type].push({ ...question, globalNumber: index + 1 });
+        acc[type].push(question);
         return acc;
       }, {});
 
@@ -69,29 +97,36 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         'shortanswer': 'Short Answer',
         'essay': 'Essay',
         'fillblank': 'Fill in the blank',
-        'image': 'Image Questions'
+        'image': 'Image'
       };
 
       const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-      sectionsHtml = desiredOrder
-        .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
-        .map((type) => `
+      const sectionsWithQuestions = desiredOrder.filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0);
+      
+      sectionsHtml = sectionsWithQuestions
+        .map((type, sectionIndex) => {
+          const romanNumeral = toRomanNumeral(sectionIndex + 1);
+          const questionsOfType = groupedQuestions[type];
+          const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
+          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+          const questionCount = questionsOfType.length;
+          const sectionMarks = allSameMarks ? allMarks[0] : null;
+          const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+          
+          return `
           <div class="section">
-            <div class="section-title">Section: ${typeLabels[type] || type}</div>
-            ${groupedQuestions[type].map((question: any) => `
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>${romanNumeral}. ${typeLabels[type] || type}</span>
+              ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+            </div>
+            ${questionsOfType.map((question: any, questionIndex: number) => `
               <div class="question">
-                <div class="question-no">${question.globalNumber}.</div>
+                <div class="question-no">${questionIndex + 1}.</div>
                 <div class="question-content">
                   <div class="question-text">${question.question}</div>
-                  ${question.questionType === 'image' ? `
-                    <div class="question-image" style="margin-top: 10px;">
-                      ${question.imageUrl ? `
-                        <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
-                      ` : `
-                        <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
-                          Image not available
-                        </div>
-                      `}
+                  ${question.questionType === 'image' && question.imageUrl ? `
+                    <div class="question-image">
+                      <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
                     </div>
                   ` : ''}
                   ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
@@ -102,47 +137,71 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     </div>
                   ` : ''}
                 </div>
-                <div class="marks">[${question.mark} marks]</div>
+                ${!allSameMarks ? `<div class="marks">[${question.mark || question.marks || 0} marks]</div>` : ''}
               </div>
             `).join('')}
           </div>
-        `).join('');
+        `;
+        }).join('');
     } else {
       // Fallback for organized questions format
-      sectionsHtml = (['Multiple Choice', 'Fill in the blank', 'Short Answer', 'Matching', 'Essay'] as any[])
-        .filter(type => paper.organizedQuestions?.[type] && paper.organizedQuestions[type].length > 0)
-      .map(type => `
-        <div class="section">
-          <div class="section-title">Section: ${type}</div>
-          ${paper.organizedQuestions[type].map(({ question, marks, globalNumber }: any) => `
-            <div class="question">
-              <div class="question-no">${globalNumber}.</div>
-              <div class="question-content">
-                <div class="question-text">${question.text}</div>
-                  ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') ? `
-                    <div class="question-image" style="margin-top: 10px;">
-                      ${question.imageUrl ? `
-                        <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
-                      ` : `
-                        <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
-                          Image not available
-                        </div>
-                      `}
-                  </div>
-                ` : ''}
-                ${question.type === 'Multiple Choice' && question.options ? `
-                  <div class="question-options" style="margin-top: 10px;">
-                    ${question.options.map((option: string, index: number) => `
-                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
-                    `).join('')}
-                  </div>
-                ` : ''}
-              </div>
-              <div class="marks">[${marks} marks]</div>
+      const typeMapping: any = {
+        'Multiple Choice': 'mcq',
+        'Fill in the blank': 'fillblank',
+        'Short Answer': 'shortanswer',
+        'Matching': 'image',
+        'Essay': 'essay'
+      };
+      
+      const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+      const sectionsWithQuestions = desiredOrder
+        .map(type => {
+          const typeName = Object.keys(typeMapping).find(key => typeMapping[key] === type) || type;
+          const questionsOfType = paper.organizedQuestions?.[typeName];
+          return questionsOfType && questionsOfType.length > 0 ? { type, typeName, questionsOfType } : null;
+        })
+        .filter(Boolean);
+      
+      sectionsHtml = sectionsWithQuestions
+        .map((section: any, sectionIndex: number) => {
+          const romanNumeral = toRomanNumeral(sectionIndex + 1);
+          const { typeName, questionsOfType } = section;
+          const allMarks = questionsOfType.map((q: any) => q.marks || 0);
+          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+          const questionCount = questionsOfType.length;
+          const sectionMarks = allSameMarks ? allMarks[0] : null;
+          const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+          
+          return `
+          <div class="section">
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>${romanNumeral}. ${typeName}</span>
+              ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
             </div>
-          `).join('')}
-        </div>
-      `).join('');
+            ${questionsOfType.map(({ question, marks }: any, questionIndex: number) => `
+              <div class="question">
+                <div class="question-no">${questionIndex + 1}.</div>
+                <div class="question-content">
+                  <div class="question-text">${question.text}</div>
+                  ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
+                    <div class="question-image">
+                      <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
+                    </div>
+                  ` : ''}
+                  ${question.type === 'Multiple Choice' && question.options ? `
+                    <div class="question-options" style="margin-top: 10px;">
+                      ${question.options.map((option: string, index: number) => `
+                        <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                </div>
+                ${!allSameMarks ? `<div class="marks">[${marks} marks]</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        `;
+        }).join('');
     }
     
     const content = `
@@ -157,7 +216,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             .subtitle { font-size: 18px; margin-top: 10px; }
             .info { display: flex; justify-content: space-between; margin: 20px 0; }
             .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; }
+            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
             .question-no { width: 30px; font-weight: bold; }
             .question-content { flex: 1; }
@@ -278,12 +337,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             {paper.questions && Array.isArray(paper.questions) ? (
               // Group questions by type and display in sections
               (() => {
-                const groupedQuestions = paper.questions.reduce((acc: any, question: any, index: number) => {
+                const groupedQuestions = paper.questions.reduce((acc: any, question: any) => {
                   const type = question.questionType;
                   if (!acc[type]) {
                     acc[type] = [];
                   }
-                  acc[type].push({ ...question, globalNumber: index + 1 });
+                  acc[type].push(question);
                   return acc;
                 }, {});
 
@@ -292,89 +351,127 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   'shortanswer': 'Short Answer',
                   'essay': 'Essay',
                   'fillblank': 'Fill in the blank',
-                  'image': 'Image Questions'
+                  'image': 'Image'
                 };
 
                 const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
                 return desiredOrder
                   .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
-                  .map((type) => (
-                  <div key={type} className="section">
-                    <div className="text-center mb-4">
-                      <h3 className="text-lg font-bold text-[#007575] font-local2">Section: {typeLabels[type] || type}</h3>
-                    </div>
+                  .map((type, sectionIndex) => {
+                    const romanNumeral = toRomanNumeral(sectionIndex + 1);
+                    const questionsOfType = groupedQuestions[type];
+                    const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
+                    const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+                    const questionCount = questionsOfType.length;
+                    const sectionMarks = allSameMarks ? allMarks[0] : null;
+                    const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
                     
-                    <div className="space-y-4">
-                      {groupedQuestions[type].map((question: any) => (
-                        <div key={question.globalNumber} className="flex items-start gap-3 py-2">
-                          <div className="w-8 flex-shrink-0">
-                            <span className="font-medium font-local2">{question.globalNumber}.</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-local2">{question.question}</div>
-                            {question.questionType === 'image' && (
-                              <div className="mt-2">
-                                {question.imageUrl ? (
-                                  <img 
-                                    src={question.imageUrl} 
-                                    alt="Question Image" 
-                                    className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.nextElementSibling.style.display = 'block';
-                                    }}
-                                  />
-                                ) : null}
-                                <div 
-                                  className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
-                                  style={{ display: question.imageUrl ? 'none' : 'block' }}
-                                >
-                                  Image not available
-                                </div>
-                              </div>
-                            )}
-                            {question.questionType === 'mcq' && question.options && question.options.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {question.options.map((option: string, optIndex: number) => (
-                                  <div key={optIndex} className="text-sm text-gray-700 font-local2">
-                                    {String.fromCharCode(65 + optIndex)}. {option}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div className="w-12 flex-shrink-0 text-right">
-                            <span className="font-bold text-gray-600 text-lg font-local2">[{question.mark}]</span>
-                          </div>
+                    return (
+                      <div key={type} className="section">
+                        <div className="text-left mb-4 border-b pb-2">
+                          <h3 className="text-lg font-semibold text-[#007575] font-local2 flex justify-between items-center">
+                            <span>{romanNumeral}. {typeLabels[type] || type}</span>
+                            {allSameMarks && <span className="text-base font-normal text-gray-600">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
+                          </h3>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ));
+                        
+                        <div className="space-y-4">
+                          {questionsOfType.map((question: any, questionIndex: number) => (
+                            <div key={questionIndex} className="flex items-start gap-3 py-2">
+                              <div className="w-8 flex-shrink-0">
+                                <span className="font-medium font-local2">{questionIndex + 1}.</span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-local2">{question.question}</div>
+                                {question.questionType === 'image' && question.imageUrl && (
+                                  <div className="mt-2">
+                                    <img 
+                                      src={question.imageUrl} 
+                                      alt="Question Image" 
+                                      className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.nextElementSibling.style.display = 'block';
+                                      }}
+                                    />
+                                    <div 
+                                      className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
+                                      style={{ display: 'none' }}
+                                    >
+                                      Image not available
+                                    </div>
+                                  </div>
+                                )}
+                                {question.questionType === 'mcq' && question.options && question.options.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    {question.options.map((option: string, optIndex: number) => (
+                                      <div key={optIndex} className="text-sm text-gray-700 font-local2">
+                                        {String.fromCharCode(65 + optIndex)}. {option}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              {!allSameMarks && (
+                                <div className="w-12 flex-shrink-0 text-right">
+                                  <span className="font-bold text-gray-600 text-lg font-local2">[{question.mark || question.marks || 0}]</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  });
               })()
             ) : (
               // Handle organized questions format (fallback)
-              (['Multiple Choice', 'Fill in the blank', 'Short Answer', 'Matching', 'Essay'] as any[]).map(type => {
-                const questionsOfType = paper.organizedQuestions?.[type];
-              if (!questionsOfType || questionsOfType.length === 0) return null;
-              
-              return (
-                <div key={type} className="section">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-bold text-[#007575] font-local2">Section: {type}</h3>
-                  </div>
+              (() => {
+                const typeMapping: any = {
+                  'Multiple Choice': 'mcq',
+                  'Fill in the blank': 'fillblank',
+                  'Short Answer': 'shortanswer',
+                  'Matching': 'image',
+                  'Essay': 'essay'
+                };
+                
+                const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+                const sectionsWithQuestions = desiredOrder
+                  .map(type => {
+                    const typeName = Object.keys(typeMapping).find(key => typeMapping[key] === type) || type;
+                    const questionsOfType = paper.organizedQuestions?.[typeName];
+                    return questionsOfType && questionsOfType.length > 0 ? { type, typeName, questionsOfType } : null;
+                  })
+                  .filter(Boolean);
+                
+                return sectionsWithQuestions.map((section: any, sectionIndex: number) => {
+                  const romanNumeral = toRomanNumeral(sectionIndex + 1);
+                  const { typeName, questionsOfType } = section;
+                  const allMarks = questionsOfType.map((q: any) => q.marks || 0);
+                  const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+                  const questionCount = questionsOfType.length;
+                  const sectionMarks = allSameMarks ? allMarks[0] : null;
+                  const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
                   
-                  <div className="space-y-4">
-                    {questionsOfType.map(({ question, marks, globalNumber }: any) => (
-                      <div key={question.id} className="flex items-start gap-3 py-2">
-                        <div className="w-8 flex-shrink-0">
-                          <span className="font-medium font-local2">{globalNumber}.</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-local2">{question.text}</div>
-                            {(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && (
-                            <div className="mt-2">
-                                {question.imageUrl ? (
+                  return (
+                    <div key={typeName} className="section">
+                      <div className="text-left mb-4 border-b pb-2">
+                        <h3 className="text-lg font-semibold text-[#007575] font-local2 flex justify-between items-center">
+                          <span>{romanNumeral}. {typeName}</span>
+                          {allSameMarks && <span className="text-base font-normal text-gray-600">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
+                        </h3>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {questionsOfType.map(({ question, marks }: any, questionIndex: number) => (
+                          <div key={questionIndex} className="flex items-start gap-3 py-2">
+                            <div className="w-8 flex-shrink-0">
+                              <span className="font-medium font-local2">{questionIndex + 1}.</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-local2">{question.text}</div>
+                              {(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                                <div className="mt-2">
                                   <img 
                                     src={question.imageUrl} 
                                     alt="Question Image" 
@@ -384,34 +481,36 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                                       e.currentTarget.nextElementSibling.style.display = 'block';
                                     }}
                                   />
-                                ) : null}
-                                <div 
-                                  className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
-                                  style={{ display: question.imageUrl ? 'none' : 'block' }}
-                                >
-                                  Image not available
+                                  <div 
+                                    className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
+                                    style={{ display: 'none' }}
+                                  >
+                                    Image not available
+                                  </div>
                                 </div>
-                            </div>
-                          )}
-                          {question.type === 'Multiple Choice' && question.options && (
-                            <div className="mt-2 space-y-1">
-                              {question.options.map((option: string, index: number) => (
-                                <div key={index} className="text-sm text-gray-700 font-local2">
-                                  {String.fromCharCode(65 + index)}. {option}
+                              )}
+                              {question.type === 'Multiple Choice' && question.options && (
+                                <div className="mt-2 space-y-1">
+                                  {question.options.map((option: string, index: number) => (
+                                    <div key={index} className="text-sm text-gray-700 font-local2">
+                                      {String.fromCharCode(65 + index)}. {option}
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
+                              )}
                             </div>
-                          )}
-                        </div>
-                        <div className="w-12 flex-shrink-0 text-right">
-                          <span className="font-bold text-gray-600 text-lg font-local2">[{marks}]</span>
-                        </div>
+                            {!allSameMarks && (
+                              <div className="w-12 flex-shrink-0 text-right">
+                                <span className="font-bold text-gray-600 text-lg font-local2">[{marks}]</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              );
-              }).filter(Boolean)
+                    </div>
+                  );
+                });
+              })()
             )}
           </div>
         </div>
@@ -644,45 +743,136 @@ const MyPapers = () => {
         return;
       }
       
-      const paperTitle = `${paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
-      const sectionsHtml = (['Short Answer', 'Matching', 'Essay', 'Fill in the blank', 'Multiple Choice'] as any[])
-        .filter(type => paper.organizedQuestions[type] && paper.organizedQuestions[type].length > 0)
-        .map(type => `
-          <div class="section">
-            <div class="section-title">Section: ${type}</div>
-            ${paper.organizedQuestions[type].map(({ question, marks, globalNumber }: any) => `
-              <div class="question">
-                <div class="question-no">${globalNumber}.</div>
-                <div class="question-content">
-                  <div class="question-text">${question.text}</div>
-                  ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') ? `
-                    <div class="question-image" style="margin-top: 10px;">
-                      ${question.imageUrl ? `
-                        <img src="${question.imageUrl}" alt="Question Image" style="max-width: 300px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px; display: block;" />
-                      ` : `
-                        <div style="width: 300px; height: 150px; border: 2px dashed #ccc; border-radius: 4px; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; color: #666; font-style: italic;">
-                          Image not available
-                        </div>
-                      `}
-                    </div>
-                  ` : ''}
-                  ${question.type === 'Multiple Choice' && question.options ? `
-                    <div class="question-options" style="margin-top: 10px;">
-                      ${question.options.map((option: string, index: number) => `
-                        <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
-                      `).join('')}
-                    </div>
-                  ` : ''}
-                </div>
-                <div class="marks">[${marks} marks]</div>
+      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
+      
+      let sectionsHtml = '';
+      if (paper.questions && Array.isArray(paper.questions)) {
+        // Group questions by type for API format
+        const groupedQuestions = paper.questions.reduce((acc: any, question: any) => {
+          const type = question.questionType;
+          if (!acc[type]) {
+            acc[type] = [];
+          }
+          acc[type].push(question);
+          return acc;
+        }, {});
+
+        const typeLabels: any = {
+          'mcq': 'Multiple Choice',
+          'shortanswer': 'Short Answer',
+          'essay': 'Essay',
+          'fillblank': 'Fill in the blank',
+          'image': 'Image'
+        };
+
+        const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+        const sectionsWithQuestions = desiredOrder.filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0);
+        
+        sectionsHtml = sectionsWithQuestions
+          .map((type, sectionIndex) => {
+            const romanNumeral = toRomanNumeral(sectionIndex + 1);
+            const questionsOfType = groupedQuestions[type];
+            const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
+            const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+            const questionCount = questionsOfType.length;
+            const sectionMarks = allSameMarks ? allMarks[0] : null;
+            const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+            
+            return `
+            <div class="section">
+              <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${romanNumeral}. ${typeLabels[type] || type}</span>
+                ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
               </div>
-            `).join('')}
-          </div>
-        `).join('');
+              ${questionsOfType.map((question: any, questionIndex: number) => `
+                <div class="question">
+                  <div class="question-no">${questionIndex + 1}.</div>
+                  <div class="question-content">
+                    <div class="question-text">${question.question}</div>
+                    ${question.questionType === 'image' && question.imageUrl ? `
+                      <div class="question-image">
+                        <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
+                      </div>
+                    ` : ''}
+                    ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
+                      <div class="question-options" style="margin-top: 10px;">
+                        ${question.options.map((option: string, index: number) => `
+                          <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                  ${!allSameMarks ? `<div class="marks">[${question.mark || question.marks || 0} marks]</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `;
+          }).join('');
+      } else if (paper.organizedQuestions) {
+        // Fallback for organized questions format
+        const typeMapping: any = {
+          'Multiple Choice': 'mcq',
+          'Fill in the blank': 'fillblank',
+          'Short Answer': 'shortanswer',
+          'Matching': 'image',
+          'Essay': 'essay'
+        };
+        
+        const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+        const sectionsWithQuestions = desiredOrder
+          .map(type => {
+            const typeName = Object.keys(typeMapping).find(key => typeMapping[key] === type) || type;
+            const questionsOfType = paper.organizedQuestions?.[typeName];
+            return questionsOfType && questionsOfType.length > 0 ? { type, typeName, questionsOfType } : null;
+          })
+          .filter(Boolean);
+        
+        sectionsHtml = sectionsWithQuestions
+          .map((section: any, sectionIndex: number) => {
+            const romanNumeral = toRomanNumeral(sectionIndex + 1);
+            const { typeName, questionsOfType } = section;
+            const allMarks = questionsOfType.map((q: any) => q.marks || 0);
+            const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+            const questionCount = questionsOfType.length;
+            const sectionMarks = allSameMarks ? allMarks[0] : null;
+            const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+            
+            return `
+            <div class="section">
+              <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${romanNumeral}. ${typeName}</span>
+                ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+              </div>
+              ${questionsOfType.map(({ question, marks }: any, questionIndex: number) => `
+                <div class="question">
+                  <div class="question-no">${questionIndex + 1}.</div>
+                  <div class="question-content">
+                    <div class="question-text">${question.text}</div>
+                    ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
+                      <div class="question-image">
+                        <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
+                      </div>
+                    ` : ''}
+                    ${question.type === 'Multiple Choice' && question.options ? `
+                      <div class="question-options" style="margin-top: 10px;">
+                        ${question.options.map((option: string, index: number) => `
+                          <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                        `).join('')}
+                      </div>
+                    ` : ''}
+                  </div>
+                  ${!allSameMarks ? `<div class="marks">[${marks} marks]</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `;
+          }).join('');
+      }
       
       const sumMarks = paper.totalMark || paper.totalMarks || 
         (paper.organizedQuestions ? Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
-          total + questions.reduce((sum: number, q: any) => sum + (q.marks ?? 0), 0), 0) : 0);
+          total + questions.reduce((sum: number, q: any) => sum + (q.marks ?? 0), 0), 0) : 
+        (paper.questions && Array.isArray(paper.questions) ? paper.questions.reduce((sum: number, q: any) => sum + (q.mark || q.marks || 0), 0) : 0));
       
       const content = `
         <!DOCTYPE html>
@@ -696,7 +886,7 @@ const MyPapers = () => {
               .subtitle { font-size: 18px; margin-top: 10px; }
               .info { display: flex; justify-content: space-between; margin: 20px 0; }
               .section { margin: 30px 0; }
-              .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; }
+              .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; }
               .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
               .question-no { width: 30px; font-weight: bold; }
               .question-content { flex: 1; }
@@ -716,7 +906,6 @@ const MyPapers = () => {
           <body>
             <div class="header">
               <div class="title">${paperTitle}</div>
-              <div class="subtitle">${paper.book || ''} - ${paper.chapters?.join(', ') || ''}</div>
             </div>
             <div class="info">
               <div><strong>Time Allowed:</strong> ${paper.duration || 60} Minutes</div>
