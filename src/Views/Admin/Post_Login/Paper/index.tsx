@@ -26,6 +26,34 @@ const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+// Convert number to Roman numeral
+const toRomanNumeral = (num: number): string => {
+  const romanNumerals: [number, string][] = [
+    [1000, 'M'],
+    [900, 'CM'],
+    [500, 'D'],
+    [400, 'CD'],
+    [100, 'C'],
+    [90, 'XC'],
+    [50, 'L'],
+    [40, 'XL'],
+    [10, 'X'],
+    [9, 'IX'],
+    [5, 'V'],
+    [4, 'IV'],
+    [1, 'I']
+  ];
+  
+  let result = '';
+  for (const [value, numeral] of romanNumerals) {
+    while (num >= value) {
+      result += numeral;
+      num -= value;
+    }
+  }
+  return result;
+};
+
 const Paper = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -34,6 +62,7 @@ const Paper = () => {
   const [randomOpen, setRandomOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<Record<string, number>>({});
+  const [selectedQuestionsData, setSelectedQuestionsData] = useState<Record<string, QuestionItem>>({});
   const [lockedAfterRandom, setLockedAfterRandom] = useState(false);
   const [lockedAfterChoose, setLockedAfterChoose] = useState(false);
   const [page, setPage] = useState(1);
@@ -225,6 +254,7 @@ const Paper = () => {
       setQuestionsData([]);
       setTotalQuestions(0);
       setSelectedQuestions({});
+      setSelectedQuestionsData({});
       setShowChooser(false);
       setLockedAfterChoose(false);
       setLockedAfterRandom(false);
@@ -237,6 +267,7 @@ const Paper = () => {
       setQuestionsData([]);
       setTotalQuestions(0);
       setSelectedQuestions({});
+      setSelectedQuestionsData({});
       setShowChooser(false);
       setLockedAfterChoose(false);
       setLockedAfterRandom(false);
@@ -367,17 +398,23 @@ const Paper = () => {
     // Process questions in the desired order of question types for preview/print
     (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[]).forEach(type => {
       const questionsOfType = Object.entries(selectedQuestions)
-        .map(([id, marks]) => ({ id, marks, question: questionsData.find(q => q.id === id) }))
+        .map(([id, marks]) => ({ 
+          id, 
+          marks, 
+          question: selectedQuestionsData[id] || questionsData.find(q => q.id === id) 
+        }))
         .filter(({ question }) => question && question.type === type)
         .sort((a, b) => a.id.localeCompare(b.id));
       
       questionsOfType.forEach(({ question, marks }) => {
-        result[type].push({ question, marks, globalNumber: globalCounter++ });
+        if (question) {
+          result[type].push({ question, marks, globalNumber: globalCounter++ });
+        }
       });
     });
     
     return result;
-  }, [selectedQuestions, questionsData]);
+  }, [selectedQuestions, selectedQuestionsData, questionsData]);
 
   const currentSumMarks = useMemo(() => Object.values(selectedQuestions).reduce((a, b) => a + (Number(b) || 0), 0), [selectedQuestions]);
 
@@ -498,6 +535,8 @@ const Paper = () => {
           return prev;
         }
         next[q.id] = proposedMarks;
+        // Store the question object
+        setSelectedQuestionsData(prevData => ({ ...prevData, [q.id]: q }));
       } else {
         if (typeof newMarks === 'number') {
           // editing marks
@@ -510,6 +549,12 @@ const Paper = () => {
         } else {
           // removing
           delete next[q.id];
+          // Remove the question object
+          setSelectedQuestionsData(prevData => {
+            const newData = { ...prevData };
+            delete newData[q.id];
+            return newData;
+          });
         }
       }
       return next;
@@ -625,46 +670,50 @@ const Paper = () => {
       
       const data = await GET("/random-gen", query);
       
-      // Process the response and update selected questions
-      if (data && data.questions && Array.isArray(data.questions)) {
-        const next: Record<string, number> = {};
-        const generatedQuestions: QuestionItem[] = [];
-        
-        data.questions.forEach((question: any) => {
-          const questionId = question.questionId || question.id || question._id;
-          const questionType = question.questionType === 'image' ? 'Image' : 
-                              question.questionType === 'shortAnswer' ? 'shortanswer' :
-                              question.questionType === 'longAnswer' ? 'essay' :
-                              question.questionType === 'fillInTheBlank' ? 'fillblank' :
-                              question.questionType;
+        // Process the response and update selected questions
+        if (data && data.questions && Array.isArray(data.questions)) {
+          const next: Record<string, number> = {};
+          const generatedQuestions: QuestionItem[] = [];
+          const questionsDataMap: Record<string, QuestionItem> = {};
           
-          // Use the marks configured in the random generate modal, not from API response
-          const configuredMarks = randomConfig[questionType as QuestionType]?.marks || 1;
-          next[questionId] = configuredMarks;
-          
-          // Store the question data for display
-          generatedQuestions.push({
-            id: questionId,
-            type: questionType as QuestionType,
-            text: question.question,
-            imageUrl: question.imageUrl,
-            defaultMarks: configuredMarks,
-            options: question.options || []
+          data.questions.forEach((question: any) => {
+            const questionId = question.questionId || question.id || question._id;
+            const questionType = question.questionType === 'image' ? 'Image' : 
+                                question.questionType === 'shortAnswer' ? 'shortanswer' :
+                                question.questionType === 'longAnswer' ? 'essay' :
+                                question.questionType === 'fillInTheBlank' ? 'fillblank' :
+                                question.questionType;
+            
+            // Use the marks configured in the random generate modal, not from API response
+            const configuredMarks = randomConfig[questionType as QuestionType]?.marks || 1;
+            next[questionId] = configuredMarks;
+            
+            // Store the question data for display
+            const questionItem: QuestionItem = {
+              id: questionId,
+              type: questionType as QuestionType,
+              text: question.question,
+              imageUrl: question.imageUrl,
+              defaultMarks: configuredMarks,
+              options: question.options || []
+            };
+            generatedQuestions.push(questionItem);
+            questionsDataMap[questionId] = questionItem;
           });
-        });
-        
-        // Update the questions data and selected questions
-        setQuestionsData(generatedQuestions);
-        setSelectedQuestions(next);
-        setLockedAfterRandom(true);
-        setRandomOpen(false);
-        setShowGeneratedQuestionsModal(true);
-        message.destroy();
-        message.success(`Generated ${data.questions.length} questions successfully!`);
-      } else {
-        message.destroy();
-        message.error('No questions returned from the API');
-      }
+          
+          // Update the questions data and selected questions
+          setQuestionsData(generatedQuestions);
+          setSelectedQuestions(next);
+          setSelectedQuestionsData(questionsDataMap);
+          setLockedAfterRandom(true);
+          setRandomOpen(false);
+          setShowGeneratedQuestionsModal(true);
+          message.destroy();
+          message.success(`Generated ${data.questions.length} questions successfully!`);
+        } else {
+          message.destroy();
+          message.error('No questions returned from the API');
+        }
     } catch (error) {
       console.error('Failed to generate random questions:', error);
       message.destroy();
@@ -687,6 +736,7 @@ const Paper = () => {
     setRandomOpen(false);
     setPreviewOpen(false);
     setSelectedQuestions({});
+    setSelectedQuestionsData({});
     setLockedAfterRandom(false);
     setLockedAfterChoose(false);
     setPage(1);
@@ -721,7 +771,7 @@ const Paper = () => {
     
     // Format questions data for API
     const formattedQuestions = Object.entries(selectedQuestions).map(([questionId, marks]) => {
-      const question = questionsData.find(q => q.id === questionId);
+      const question = selectedQuestionsData[questionId] || questionsData.find(q => q.id === questionId);
       if (!question) return null;
       
       const baseQuestion = {
@@ -803,19 +853,33 @@ const Paper = () => {
     }
     
     const paperTitle = `${formValues?.examType || 'Examination'} - ${formValues?.class || ''} ${formValues?.subject || ''}`.trim();
-    const sectionsHtml = (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
-      .filter(type => organizedQuestions[type].length > 0)
-      .map(type => `
+    const sectionsWithQuestions = (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+      .filter(type => organizedQuestions[type].length > 0);
+    
+    const sectionsHtml = sectionsWithQuestions
+      .map((type, sectionIndex) => {
+        const romanNumeral = toRomanNumeral(sectionIndex + 1);
+        const questionsOfType = organizedQuestions[type];
+        const allMarks = questionsOfType.map(q => q.marks);
+        const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
+        const questionCount = questionsOfType.length;
+        const sectionMarks = allSameMarks ? allMarks[0] : null;
+        const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+        
+        return `
         <div class="section">
-          <div class="section-title">Section: ${type}</div>
-          ${organizedQuestions[type].map(({ question, marks }, sectionIndex) => `
+          <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>${romanNumeral}. ${type}</span>
+            ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+          </div>
+          ${questionsOfType.map(({ question, marks }, questionIndex) => `
             <div class="question">
-              <div class="question-no">${sectionIndex + 1}.</div>
+              <div class="question-no">${questionIndex + 1}.</div>
               <div class="question-content">
                 <div class="question-text">${question.text}</div>
                 ${(question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
                   <div class="question-image">
-                    <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" />
+                    <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
                   </div>
                 ` : ''}
                 ${question.type === 'mcq' && question.options ? `
@@ -826,11 +890,12 @@ const Paper = () => {
                   </div>
                 ` : ''}
               </div>
-              <div class="marks">[${marks} marks]</div>
+              ${!allSameMarks ? `<div class="marks">[${marks} marks]</div>` : ''}
             </div>
           `).join('')}
         </div>
-      `).join('');
+      `;
+      }).join('');
     
     const content = `
       <!DOCTYPE html>
@@ -844,7 +909,7 @@ const Paper = () => {
             .subtitle { font-size: 18px; margin-top: 10px; }
             .info { display: flex; justify-content: space-between; margin: 20px 0; }
             .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; }
+            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
             .question-no { width: 30px; font-weight: bold; }
             .question-content { flex: 1; }
@@ -1198,47 +1263,57 @@ const Paper = () => {
             </div>
           </div>
           
-          {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[]).map(type => {
-            const questionsOfType = organizedQuestions[type];
-            if (questionsOfType.length === 0) return null;
-            
-            return (
-              <div key={type} className="border-b pb-4 last:border-b-0">
-                <h3 className="text-lg font-semibold text-center mb-3 text-[#007575]">
-                  Section: {type}
-                </h3>
-                <div className="space-y-3">
-                  {questionsOfType.map(({ question, marks }, sectionIndex) => (
-                    <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded">
-                      <div className="flex gap-3 flex-1">
-                        <span className="font-semibold min-w-[30px]">{sectionIndex + 1}.</span>
-                        <div className="flex-1">
-                          <div>{question.text}</div>
-                          {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
-                            <div className="mt-2">
-                              <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
-                            </div>
-                          )}
-                          {question.type === 'mcq' && question.options && (
-                            <div className="mt-2 space-y-1">
-                              {question.options.map((option, index) => (
-                                <div key={index} className="text-sm text-gray-700">
-                                  {String.fromCharCode(65 + index)}. {option.text || option}
-                                </div>
-                              ))}
-                            </div>
-                          )}
+          {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+            .filter(type => organizedQuestions[type].length > 0)
+            .map((type, sectionIndex) => {
+              const questionsOfType = organizedQuestions[type];
+              const romanNumeral = toRomanNumeral(sectionIndex + 1);
+              const allMarks = questionsOfType.map(q => q.marks);
+              const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
+              const questionCount = questionsOfType.length;
+              const sectionMarks = allSameMarks ? allMarks[0] : null;
+              const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+              
+              return (
+                <div key={type} className="border-b pb-4 last:border-b-0">
+                  <h3 className="text-lg font-semibold text-left mb-3 text-[#007575] flex justify-between items-center">
+                    <span>{romanNumeral}. {type}</span>
+                    {allSameMarks && <span className="text-base font-normal text-gray-600">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
+                  </h3>
+                  <div className="space-y-3">
+                    {questionsOfType.map(({ question, marks }, questionIndex) => (
+                      <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded">
+                        <div className="flex gap-3 flex-1">
+                          <span className="font-semibold min-w-[30px]">{questionIndex + 1}.</span>
+                          <div className="flex-1">
+                            <div>{question.text}</div>
+                            {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                              <div className="mt-2">
+                                <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
+                              </div>
+                            )}
+                            {question.type === 'mcq' && question.options && (
+                              <div className="mt-2 space-y-1">
+                                {question.options.map((option, index) => (
+                                  <div key={index} className="text-sm text-gray-700">
+                                    {String.fromCharCode(65 + index)}. {option.text || option}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        {!allSameMarks && (
+                          <div className="text-right">
+                            <span className="font-semibold text-gray-600 text-lg">[{marks}]</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <span className="font-semibold text-gray-600 text-lg">[{marks}]</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </Modal>
 
@@ -1369,47 +1444,63 @@ const Paper = () => {
             </div>
           </div>
           
-          {(['shortanswer', 'essay', 'fillblank', 'mcq', 'Image'] as QuestionType[]).map(type => {
-            const questionsOfType = questionsData.filter(q => q.type === type && q.id in selectedQuestions);
-            if (questionsOfType.length === 0) return null;
-            
-            return (
-              <div key={type} className="border rounded-lg p-4">
-                <h4 className="text-md font-semibold mb-3 text-[#007575] border-b pb-2">
-                  Section: {type} ({questionsOfType.length} questions)
-                </h4>
-                <div className="space-y-3">
-                  {questionsOfType.map((question, index) => (
-                    <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded bg-gray-50">
-                      <div className="flex gap-3 flex-1">
-                        <span className="font-semibold min-w-[30px]">{index + 1}.</span>
-                        <div className="flex-1">
-                          <div className="text-gray-800">{question.text}</div>
-                          {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
-                            <div className="mt-2">
-                              <img src={question.imageUrl} alt="Question" className="w-48 h-32 object-cover rounded border" />
-                            </div>
-                          )}
-                          {question.type === 'mcq' && question.options && question.options.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {question.options.map((option, optIndex) => (
-                                <div key={optIndex} className="text-sm text-gray-700">
-                                  {String.fromCharCode(65 + optIndex)}. {option.text || option}
-                                </div>
-                              ))}
-                            </div>
-                          )}
+          {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+            .map(type => {
+              const questionsOfType = Object.entries(selectedQuestions)
+                .filter(([id]) => selectedQuestionsData[id]?.type === type)
+                .map(([id]) => selectedQuestionsData[id])
+                .filter(Boolean) as QuestionItem[];
+              return { type, questionsOfType };
+            })
+            .filter(({ questionsOfType }) => questionsOfType.length > 0)
+            .map(({ type, questionsOfType }, sectionIndex) => {
+              const romanNumeral = toRomanNumeral(sectionIndex + 1);
+              const allMarks = questionsOfType.map(q => selectedQuestions[q.id]);
+              const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
+              const questionCount = questionsOfType.length;
+              const sectionMarks = allSameMarks ? allMarks[0] : null;
+              const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+              
+              return (
+                <div key={type} className="border rounded-lg p-4">
+                  <h4 className="text-md font-semibold mb-3 text-[#007575] border-b pb-2 text-left flex justify-between items-center">
+                    <span>{romanNumeral}. {type} ({questionsOfType.length} questions)</span>
+                    {allSameMarks && <span className="text-sm font-normal text-gray-600">[{questionCount} × {sectionMarks} = {sectionTotal}]</span>}
+                  </h4>
+                  <div className="space-y-3">
+                    {questionsOfType.map((question, index) => (
+                      <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded bg-gray-50">
+                        <div className="flex gap-3 flex-1">
+                          <span className="font-semibold min-w-[30px]">{index + 1}.</span>
+                          <div className="flex-1">
+                            <div className="text-gray-800">{question.text}</div>
+                            {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                              <div className="mt-2">
+                                <img src={question.imageUrl} alt="Question" className="w-48 h-32 object-cover rounded border" />
+                              </div>
+                            )}
+                            {question.type === 'mcq' && question.options && question.options.length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {question.options.map((option, optIndex) => (
+                                  <div key={optIndex} className="text-sm text-gray-700">
+                                    {String.fromCharCode(65 + optIndex)}. {option.text || option}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        {!allSameMarks && (
+                          <div className="text-right">
+                            <span className="font-semibold text-gray-600 text-lg">[{selectedQuestions[question.id]} marks]</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <span className="font-semibold text-gray-600 text-lg">[{selectedQuestions[question.id]} marks]</span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </Modal>
 
