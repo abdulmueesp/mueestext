@@ -91,8 +91,29 @@ const formatDuration = (minutes: number): string => {
   return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
 };
 
+const getStdLabel = (classValue?: string | number) => {
+  if (classValue === undefined || classValue === null || classValue === '') return '-';
+  const parsed = Number(classValue);
+  if (!Number.isNaN(parsed) && parsed > 0) {
+    return toRomanNumeral(parsed);
+  }
+  return String(classValue).toUpperCase();
+};
+
+const getSubjectDisplay = (subject?: string, book?: string) => {
+  const cleanSubject = subject?.trim();
+  const cleanBook = book?.trim();
+  if (cleanSubject && cleanBook) return `${cleanSubject} (${cleanBook})`;
+  if (cleanSubject) return cleanSubject;
+  if (cleanBook) return cleanBook;
+  return '';
+};
+
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [loading, setLoading] = useState(false);
+  const stdLabel = getStdLabel(paper.class);
+  const subjectDisplay = getSubjectDisplay(paper.subject, paper.bookName || paper.book);
+  const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
 
   const handlePrintQuestionPaper = () => {
     const printWindow = window.open('', '_blank');
@@ -101,7 +122,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       return;
     }
     
-    const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
+    const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26 `.trim();
     
     let sectionsHtml = '';
     if (paper.questions && Array.isArray(paper.questions)) {
@@ -236,7 +257,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
             .header { text-align: center; margin-bottom: 30px; }
             .title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
-            .subtitle { font-size: 18px; margin-top: 10px; }
+            .subtitle { font-size: 20px; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
             .info { display: flex; justify-content: space-between; margin: 20px 0; }
             .section { margin: 30px 0; }
             .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
@@ -259,6 +280,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         <body>
           <div class="header">
             <div class="title">${paperTitle}</div>
+            ${subjectDisplayUpper ? `<div class="subtitle">${subjectDisplayUpper}</div>` : ''}
           </div>
           <div class="info">
             <div><strong>Time Allowed:</strong> ${formatDuration(paper.duration || 60)}</div>
@@ -345,8 +367,13 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           {/* Header */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold uppercase font-local2">
-              {paper.examinationType || paper.examType || 'Examination'} - {paper.class || ''} {paper.subject || ''}
+              {paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26
             </h1>
+            {subjectDisplayUpper && (
+              <div className="text-lg text-gray-800 mt-2 font-bold uppercase tracking-wide font-local2">
+                {subjectDisplayUpper}
+              </div>
+            )}
           </div>
 
           {/* Time and Marks */}
@@ -935,9 +962,10 @@ const MyPapers = () => {
             </style>
           </head>
           <body>
-            <div class="header">
-              <div class="title">${paperTitle}</div>
-            </div>
+          <div class="header">
+            <div class="title">${paperTitle}</div>
+            ${subjectDisplayUpper ? `<div class="subtitle">${subjectDisplayUpper}</div>` : ''}
+          </div>
             <div class="info">
               <div><strong>Time Allowed:</strong> ${formatDuration(paper.duration || 60)}</div>
               <div><strong>Maximum Marks:</strong> ${sumMarks}</div>
