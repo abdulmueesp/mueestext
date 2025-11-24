@@ -68,6 +68,29 @@ const toRomanNumeral = (num: number): string => {
   return result;
 };
 
+// Convert minutes to hours and minutes format
+const formatDuration = (minutes: number): string => {
+  if (!minutes || minutes <= 0) return '0 minutes';
+  
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  if (hours === 0) {
+    return `${minutes} minutes`;
+  }
+  
+  if (mins === 0) {
+    return `${hours} ${hours === 1 ? 'hr' : 'hrs'}`;
+  }
+  
+  // Check if minutes is 30 for "1/2" format
+  if (mins === 30) {
+    return `${hours} 1/2 ${hours === 1 ? 'hr' : 'hrs'}`;
+  }
+  
+  return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
+};
+
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [loading, setLoading] = useState(false);
 
@@ -238,7 +261,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             <div class="title">${paperTitle}</div>
           </div>
           <div class="info">
-            <div><strong>Time Allowed:</strong> ${paper.duration || 60} Minutes</div>
+            <div><strong>Time Allowed:</strong> ${formatDuration(paper.duration || 60)}</div>
             <div><strong>Maximum Marks:</strong> ${currentSumMarks}</div>
           </div>
           ${sectionsHtml}
@@ -328,7 +351,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
           {/* Time and Marks */}
           <div className="flex justify-between items-center mb-6 pb-4 border-b">
-            <div className="font-local2"><strong>Time Allowed:</strong> {paper.duration || 60} minutes</div>
+            <div className="font-local2"><strong>Time Allowed:</strong> {formatDuration(paper.duration || 60)}</div>
             <div className="font-local2"><strong>Maximum Marks:</strong> {currentSumMarks}</div>
           </div>
 
@@ -528,8 +551,16 @@ const MyPapers = () => {
   const [viewingPaper, setViewingPaper] = useState(null);
   
   // Exam type options
-  const examTypes = ['unit text', '1 midterm', '1 term', '2 midterm', '2 term', '3 midterm', '3 term'];
-  const examTypeOptions = examTypes.map(type => ({ value: type, label: type }));
+  const examTypes = [
+    { label: 'UNIT TEST', value: 'UNIT TEST' },
+    { label: 'FIRST MID TERM', value: 'FIRST MID TERM' },
+    { label: 'FIRST TERM', value: 'FIRST TERM' },
+    { label: 'SECOND MID TERM', value: 'SECOND MID TERM' },
+    { label: 'SECOND TERM', value: 'SECOND TERM' },
+    { label: 'THIRD MID TERM', value: 'THIRD MID TERM' },
+    { label: 'THIRD TERM', value: 'THIRD TERM' }
+  ];
+  const examTypeOptions = examTypes;
   const [loading, setLoading] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -908,7 +939,7 @@ const MyPapers = () => {
               <div class="title">${paperTitle}</div>
             </div>
             <div class="info">
-              <div><strong>Time Allowed:</strong> ${paper.duration || 60} Minutes</div>
+              <div><strong>Time Allowed:</strong> ${formatDuration(paper.duration || 60)}</div>
               <div><strong>Maximum Marks:</strong> ${sumMarks}</div>
             </div>
             ${sectionsHtml}

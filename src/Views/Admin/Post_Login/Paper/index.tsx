@@ -20,7 +20,15 @@ interface QuestionItem {
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
-const examTypes = ['unit text', '1 midterm', '1 term', '2 midterm', '2 term', '3 midterm', '3 term'];
+const examTypes = [
+  { label: 'UNIT TEST', value: 'UNIT TEST' },
+  { label: 'FIRST MID TERM', value: 'FIRST MID TERM' },
+  { label: 'FIRST TERM', value: 'FIRST TERM' },
+  { label: 'SECOND MID TERM', value: 'SECOND MID TERM' },
+  { label: 'SECOND TERM', value: 'SECOND TERM' },
+  { label: 'THIRD MID TERM', value: 'THIRD MID TERM' },
+  { label: 'THIRD TERM', value: 'THIRD TERM' }
+];
 
 const isMobileDevice = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -52,6 +60,29 @@ const toRomanNumeral = (num: number): string => {
     }
   }
   return result;
+};
+
+// Convert minutes to hours and minutes format
+const formatDuration = (minutes: number): string => {
+  if (!minutes || minutes <= 0) return '0 minutes';
+  
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  
+  if (hours === 0) {
+    return `${minutes} minutes`;
+  }
+  
+  if (mins === 0) {
+    return `${hours} ${hours === 1 ? 'hr' : 'hrs'}`;
+  }
+  
+  // Check if minutes is 30 for "1/2" format
+  if (mins === 30) {
+    return `${hours} 1/2 ${hours === 1 ? 'hr' : 'hrs'}`;
+  }
+  
+  return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
 };
 
 const Paper = () => {
@@ -932,7 +963,7 @@ const Paper = () => {
       
           </div>
           <div class="info">
-            <div><strong>Time Allowed:</strong> ${formValues?.duration || 60} Minutes</div>
+            <div><strong>Time Allowed:</strong> ${formatDuration(formValues?.duration || 60)}</div>
             <div><strong>Maximum Marks:</strong> ${totalMarksField}</div>
           </div>
           
@@ -1032,7 +1063,7 @@ const Paper = () => {
                   size="large"
                   showSearch
                   placeholder="Select examination type"
-                  options={examTypes.map(e => ({ label: e, value: e }))}
+                  options={examTypes}
                   filterOption={(input, option) => (option?.label as string).toLowerCase().includes(input.toLowerCase())}
                 />
               </Form.Item>
@@ -1258,7 +1289,7 @@ const Paper = () => {
               {formValues?.book || ''} {formValues?.chapters?.length ? `- ${formValues.chapters.join(', ')}` : ''}
             </p> */}
             <div className="flex justify-between mt-3 text-sm">
-              <span><strong>Time:</strong> {formValues?.duration || 60} minutes</span>
+              <span><strong>Time:</strong> {formatDuration(formValues?.duration || 60)}</span>
               <span><strong>Total Marks:</strong> {currentSumMarks}</span>
             </div>
           </div>
