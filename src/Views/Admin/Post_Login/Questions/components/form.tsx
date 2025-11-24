@@ -184,6 +184,14 @@ const QuestionForm = () => {
           },
         });
         message.success("Questions created successfully!");
+        
+        // Reset only questions, keep class, subject, book, and chapter selected
+        form.setFieldsValue({
+          questions: [{}]
+        });
+        
+        // Keep the form values for class, subject, book, and chapter
+        // They are already set in the form, so no need to reset them
       } else {
         await axios.put(`${BASE_URL}${API.QUIZ_ITEMS}/${quizId}`, payload, {
           headers: {
@@ -191,10 +199,11 @@ const QuestionForm = () => {
           },
         });
         message.success("Questions updated successfully!");
+        
+        // For edit mode, navigate back to questions list
+        const q = searchParams.get('q');
+        navigate(`/questions${q ? `?q=${encodeURIComponent(q)}` : ''}`);
       }
-  
-      const q = searchParams.get('q');
-      navigate(`/questions${q ? `?q=${encodeURIComponent(q)}` : ''}`);
     } catch (error: any) {
       console.error("Failed to submit questions", error);
       const description =
