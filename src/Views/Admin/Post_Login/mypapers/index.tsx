@@ -140,11 +140,11 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           <div class="section">
             <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
               <span>${romanNumeral}. ${typeLabels[type] || type}</span>
-              ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+              ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
             </div>
             ${questionsOfType.map((question: any, questionIndex: number) => `
               <div class="question">
-                <div class="question-no">${questionIndex + 1}.</div>
+                <div class="question-no">${questionIndex + 1})</div>
                 <div class="question-content">
                   <div class="question-text">${question.question}</div>
                   ${question.questionType === 'image' && question.imageUrl ? `
@@ -155,7 +155,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
                     <div class="question-options" style="margin-top: 10px;">
                       ${question.options.map((option: string, index: number) => `
-                        <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                        <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
                       `).join('')}
                     </div>
                   ` : ''}
@@ -199,11 +199,11 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           <div class="section">
             <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
               <span>${romanNumeral}. ${typeName}</span>
-              ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+              ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
             </div>
             ${questionsOfType.map(({ question, marks }: any, questionIndex: number) => `
               <div class="question">
-                <div class="question-no">${questionIndex + 1}.</div>
+                <div class="question-no">${questionIndex + 1})</div>
                 <div class="question-content">
                   <div class="question-text">${question.text}</div>
                   ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
@@ -214,7 +214,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   ${question.type === 'Multiple Choice' && question.options ? `
                     <div class="question-options" style="margin-top: 10px;">
                       ${question.options.map((option: string, index: number) => `
-                        <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                        <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
                       `).join('')}
                     </div>
                   ` : ''}
@@ -239,13 +239,13 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             .subtitle { font-size: 18px; margin-top: 10px; }
             .info { display: flex; justify-content: space-between; margin: 20px 0; }
             .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; }
+            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-            .question-no { width: 30px; font-weight: bold; }
+            .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
             .question-content { flex: 1; }
-            .question-text { margin-bottom: 5px; }
+            .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
             .question-image { margin-top: 1px; }
-            .marks { font-weight: bold; margin-left: 10px; }
+            .marks { font-weight: normal; margin-left: 10px; color: #000; }
             @media print {
               body { margin: 20px; }
               /* Allow sections to flow across pages; do not force whole-section moves */
@@ -392,20 +392,20 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     return (
                       <div key={type} className="section">
                         <div className="text-left mb-4 border-b pb-2">
-                          <h3 className="text-lg font-semibold text-[#007575] font-local2 flex justify-between items-center">
+                          <h3 className="text-lg font-semibold text-black font-local2 flex justify-between items-center">
                             <span>{romanNumeral}. {typeLabels[type] || type}</span>
-                            {allSameMarks && <span className="text-base font-normal text-gray-600">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
+                            {allSameMarks && <span className="text-base font-bold text-black">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
                           </h3>
                         </div>
                         
                         <div className="space-y-4">
                           {questionsOfType.map((question: any, questionIndex: number) => (
-                            <div key={questionIndex} className="flex items-start gap-3 py-2">
+                            <div key={questionIndex} className="flex items-start gap-3 py-2" style={{ marginLeft: '8px' }}>
                               <div className="w-8 flex-shrink-0">
-                                <span className="font-medium font-local2">{questionIndex + 1}.</span>
+                                <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
                               </div>
                               <div className="flex-1">
-                                <div className="font-local2">{question.question}</div>
+                                <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.question}</div>
                                 {question.questionType === 'image' && question.imageUrl && (
                                   <div className="mt-2">
                                     <img 
@@ -428,7 +428,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                                 {question.questionType === 'mcq' && question.options && question.options.length > 0 && (
                                   <div className="mt-2 space-y-1">
                                     {question.options.map((option: string, optIndex: number) => (
-                                      <div key={optIndex} className="text-sm text-gray-700 font-local2">
+                                      <div key={optIndex} className="text-sm font-local2" style={{ color: '#000' }}>
                                         {String.fromCharCode(65 + optIndex)}. {option}
                                       </div>
                                     ))}
@@ -437,7 +437,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                               </div>
                               {!allSameMarks && (
                                 <div className="w-12 flex-shrink-0 text-right">
-                                  <span className="font-bold text-gray-600 text-lg font-local2">[{question.mark || question.marks || 0}]</span>
+                                  <span className="text-lg font-local2" style={{ color: '#000', fontWeight: 400 }}>[{question.mark || question.marks || 0}]</span>
                                 </div>
                               )}
                             </div>
@@ -479,20 +479,20 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   return (
                     <div key={typeName} className="section">
                       <div className="text-left mb-4 border-b pb-2">
-                        <h3 className="text-lg font-semibold text-[#007575] font-local2 flex justify-between items-center">
+                        <h3 className="text-lg font-semibold text-black font-local2 flex justify-between items-center">
                           <span>{romanNumeral}. {typeName}</span>
-                          {allSameMarks && <span className="text-base font-normal text-gray-600">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
+                          {allSameMarks && <span className="text-base font-bold text-black">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
                         </h3>
                       </div>
                       
                       <div className="space-y-4">
                         {questionsOfType.map(({ question, marks }: any, questionIndex: number) => (
-                          <div key={questionIndex} className="flex items-start gap-3 py-2">
+                          <div key={questionIndex} className="flex items-start gap-3 py-2" style={{ marginLeft: '8px' }}>
                             <div className="w-8 flex-shrink-0">
-                              <span className="font-medium font-local2">{questionIndex + 1}.</span>
+                              <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
                             </div>
                             <div className="flex-1">
-                              <div className="font-local2">{question.text}</div>
+                              <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.text}</div>
                               {(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl && (
                                 <div className="mt-2">
                                   <img 
@@ -515,7 +515,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                               {question.type === 'Multiple Choice' && question.options && (
                                 <div className="mt-2 space-y-1">
                                   {question.options.map((option: string, index: number) => (
-                                    <div key={index} className="text-sm text-gray-700 font-local2">
+                                    <div key={index} className="text-sm font-local2" style={{ color: '#000' }}>
                                       {String.fromCharCode(65 + index)}. {option}
                                     </div>
                                   ))}
@@ -524,7 +524,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                             </div>
                             {!allSameMarks && (
                               <div className="w-12 flex-shrink-0 text-right">
-                                <span className="font-bold text-gray-600 text-lg font-local2">[{marks}]</span>
+                                <span className="text-lg font-local2" style={{ color: '#000', fontWeight: 400 }}>[{marks}]</span>
                               </div>
                             )}
                           </div>
@@ -813,11 +813,11 @@ const MyPapers = () => {
             <div class="section">
               <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>${romanNumeral}. ${typeLabels[type] || type}</span>
-                ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+                ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
               </div>
               ${questionsOfType.map((question: any, questionIndex: number) => `
                 <div class="question">
-                  <div class="question-no">${questionIndex + 1}.</div>
+                  <div class="question-no">${questionIndex + 1})</div>
                   <div class="question-content">
                     <div class="question-text">${question.question}</div>
                     ${question.questionType === 'image' && question.imageUrl ? `
@@ -828,7 +828,7 @@ const MyPapers = () => {
                     ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
                       <div class="question-options" style="margin-top: 10px;">
                         ${question.options.map((option: string, index: number) => `
-                          <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                          <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
                         `).join('')}
                       </div>
                     ` : ''}
@@ -872,11 +872,11 @@ const MyPapers = () => {
             <div class="section">
               <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>${romanNumeral}. ${typeName}</span>
-                ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+                ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
               </div>
               ${questionsOfType.map(({ question, marks }: any, questionIndex: number) => `
                 <div class="question">
-                  <div class="question-no">${questionIndex + 1}.</div>
+                  <div class="question-no">${questionIndex + 1})</div>
                   <div class="question-content">
                     <div class="question-text">${question.text}</div>
                     ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
@@ -887,7 +887,7 @@ const MyPapers = () => {
                     ${question.type === 'Multiple Choice' && question.options ? `
                       <div class="question-options" style="margin-top: 10px;">
                         ${question.options.map((option: string, index: number) => `
-                          <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option}</div>
+                          <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
                         `).join('')}
                       </div>
                     ` : ''}
@@ -917,13 +917,13 @@ const MyPapers = () => {
               .subtitle { font-size: 18px; margin-top: 10px; }
               .info { display: flex; justify-content: space-between; margin: 20px 0; }
               .section { margin: 30px 0; }
-              .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; }
+              .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
               .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-              .question-no { width: 30px; font-weight: bold; }
+              .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
               .question-content { flex: 1; }
-              .question-text { margin-bottom: 5px; }
+              .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
               .question-image { margin-top: 1px; }
-              .marks { font-weight: bold; margin-left: 10px; }
+              .marks { font-weight: normal; margin-left: 10px; color: #000; }
               @media print {
                 body { margin: 20px; }
                 /* Allow sections to flow across pages; do not force whole-section moves */
