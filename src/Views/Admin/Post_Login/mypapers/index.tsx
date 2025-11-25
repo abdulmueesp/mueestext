@@ -264,7 +264,9 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             .subject-left { text-align: left; }
             .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
             .subject-right { text-align: right; }
-            .subject-secondary { font-size: 18px; font-weight: 600; }
+              .subject-secondary { font-size: 18px; font-weight: 600; }
+              .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
+            .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
             .section { margin: 30px 0; }
             .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
@@ -293,11 +295,11 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               <div class="subject-center">${subjectDisplayUpper || ''}</div>
               <div class="subject-right">Marks: ${currentSumMarks}</div>
             </div>
-            <div class="subject-row">
+            <div class="subject-row subject-row-secondary">
               <div class="subject-left subject-secondary">HM</div>
-              <div class="subject-center subject-secondary">&nbsp;</div>
               <div class="subject-right subject-secondary">Time: ${formatDuration(paper.duration || 60)}</div>
             </div>
+            <div class="subject-line-divider"></div>
           </div>
           ${sectionsHtml}
         </body>
@@ -395,16 +397,19 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 Marks: {currentSumMarks}
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-base font-local2 normal-case">
-              <div className="text-left whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">HM</div>
-              <div className="flex-1 text-center sm:px-2">&nbsp;</div>
-              <div className="text-right whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">
-                Time: {formatDuration(paper.duration || 60)}
-              </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-base font-local2 normal-case mb-2">
+            <div className="text-left whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">HM</div>
+            <div className="flex-1" />
+            <div className="text-right whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">
+              Time: {formatDuration(paper.duration || 60)}
             </div>
           </div>
+          <div className="flex items-center sm:justify-between gap-3">
+            <div className="flex-1 border-b border-gray-400" />
+          </div>
+          </div>
 
-          <div className="border-b mb-6" />
+          {/* <div className="border-b mb-6" /> */}
 
           {/* Sections and Questions */}
           <div className="space-y-8">
@@ -1001,11 +1006,11 @@ const MyPapers = () => {
                 <div class="subject-center">${subjectDisplayUpper || ''}</div>
                 <div class="subject-right">Marks: ${sumMarks}</div>
               </div>
-              <div class="subject-row">
+              <div class="subject-row subject-row-secondary">
                 <div class="subject-left subject-secondary">HM</div>
-                <div class="subject-center subject-secondary">&nbsp;</div>
                 <div class="subject-right subject-secondary">Time: ${formatDuration(paper.duration || 60)}</div>
               </div>
+              <div class="subject-line-divider"></div>
             </div>
             ${sectionsHtml}
           </body>
