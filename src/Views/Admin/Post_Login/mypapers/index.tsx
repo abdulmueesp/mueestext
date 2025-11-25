@@ -255,10 +255,16 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           <title>${paperTitle}</title>
           <style>
             body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
-            .subtitle { font-size: 20px; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-            .info { display: flex; justify-content: space-between; margin: 20px 0; }
+            .header { text-align: center; margin-bottom: 10px; }
+            .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+            .subject-line { margin: 8px 0 18px; color: #000; }
+            .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+            .subject-row + .subject-row { margin-top: 4px; }
+            .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
+            .subject-left { text-align: left; }
+            .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
+            .subject-right { text-align: right; }
+            .subject-secondary { font-size: 18px; font-weight: 600; }
             .section { margin: 30px 0; }
             .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
@@ -280,11 +286,18 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         <body>
           <div class="header">
             <div class="title">${paperTitle}</div>
-            ${subjectDisplayUpper ? `<div class="subtitle">${subjectDisplayUpper}</div>` : ''}
           </div>
-          <div class="info">
-            <div><strong>Time Allowed:</strong> ${formatDuration(paper.duration || 60)}</div>
-            <div><strong>Maximum Marks:</strong> ${currentSumMarks}</div>
+          <div class="subject-line">
+            <div class="subject-row">
+              <div class="subject-left">Std: ${stdLabel || '-'}</div>
+              <div class="subject-center">${subjectDisplayUpper || ''}</div>
+              <div class="subject-right">Marks: ${currentSumMarks}</div>
+            </div>
+            <div class="subject-row">
+              <div class="subject-left subject-secondary">HM</div>
+              <div class="subject-center subject-secondary">&nbsp;</div>
+              <div class="subject-right subject-secondary">Time: ${formatDuration(paper.duration || 60)}</div>
+            </div>
           </div>
           ${sectionsHtml}
         </body>
@@ -365,22 +378,33 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       <Card className="shadow-sm">
         <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
           {/* Header */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-3">
             <h1 className="text-2xl font-bold uppercase font-local2">
               {paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26
             </h1>
-            {subjectDisplayUpper && (
-              <div className="text-lg text-gray-800 mt-2 font-bold uppercase tracking-wide font-local2">
-                {subjectDisplayUpper}
+          </div>
+          <div className="flex flex-col gap-1 mb-5 text-base font-local2 text-black">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="font-semibold text-lg text-left whitespace-nowrap sm:flex-[0_0_140px]">
+                Std: {stdLabel || '-'}
               </div>
-            )}
+              <div className="flex-1 text-center font-semibold text-lg sm:px-2">
+                {subjectDisplayUpper || ''}
+              </div>
+              <div className="font-semibold text-lg text-right whitespace-nowrap sm:flex-[0_0_140px]">
+                Marks: {currentSumMarks}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-base font-local2 normal-case">
+              <div className="text-left whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">HM</div>
+              <div className="flex-1 text-center sm:px-2">&nbsp;</div>
+              <div className="text-right whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">
+                Time: {formatDuration(paper.duration || 60)}
+              </div>
+            </div>
           </div>
 
-          {/* Time and Marks */}
-          <div className="flex justify-between items-center mb-6 pb-4 border-b">
-            <div className="font-local2"><strong>Time Allowed:</strong> {formatDuration(paper.duration || 60)}</div>
-            <div className="font-local2"><strong>Maximum Marks:</strong> {currentSumMarks}</div>
-          </div>
+          <div className="border-b mb-6" />
 
           {/* Sections and Questions */}
           <div className="space-y-8">
@@ -939,10 +963,16 @@ const MyPapers = () => {
             <title>${paperTitle}</title>
             <style>
               body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
-              .subtitle { font-size: 18px; margin-top: 10px; }
-              .info { display: flex; justify-content: space-between; margin: 20px 0; }
+              .header { text-align: center; margin-bottom: 10px; }
+              .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+              .subject-line { margin: 8px 0 18px; color: #000; }
+              .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+              .subject-row + .subject-row { margin-top: 4px; }
+              .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
+              .subject-left { text-align: left; }
+              .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
+              .subject-right { text-align: right; }
+              .subject-secondary { font-size: 14px; font-weight: 500; }
               .section { margin: 30px 0; }
               .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
               .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
@@ -964,11 +994,18 @@ const MyPapers = () => {
           <body>
           <div class="header">
             <div class="title">${paperTitle}</div>
-            ${subjectDisplayUpper ? `<div class="subtitle">${subjectDisplayUpper}</div>` : ''}
           </div>
-            <div class="info">
-              <div><strong>Time Allowed:</strong> ${formatDuration(paper.duration || 60)}</div>
-              <div><strong>Maximum Marks:</strong> ${sumMarks}</div>
+            <div class="subject-line">
+              <div class="subject-row">
+                <div class="subject-left">Std: ${stdLabel || '-'}</div>
+                <div class="subject-center">${subjectDisplayUpper || ''}</div>
+                <div class="subject-right">Marks: ${sumMarks}</div>
+              </div>
+              <div class="subject-row">
+                <div class="subject-left subject-secondary">HM</div>
+                <div class="subject-center subject-secondary">&nbsp;</div>
+                <div class="subject-right subject-secondary">Time: ${formatDuration(paper.duration || 60)}</div>
+              </div>
             </div>
             ${sectionsHtml}
           </body>
