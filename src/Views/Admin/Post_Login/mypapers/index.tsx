@@ -6,7 +6,7 @@ import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical, FileText
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import jsPDF from "jspdf";
-import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from "docx";
+import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TabStopType, TextRun, WidthType } from "docx";
 import { saveAs } from "file-saver";
 import img1 from "../../../../assets/matching.png"
 import img2 from "../../../../assets/match2.jpeg"
@@ -120,8 +120,176 @@ const isClassFourOrBelow = (classValue?: string | number): boolean => {
   return classesFourOrBelow.includes(classStr);
 };
 
+type PaperSection = {
+  heading: string;
+  summary?: string;
+  questions: Array<{
+    number: number;
+    text: string;
+    marks?: number | null;
+    options?: string[];
+    imageUrl?: string | null;
+  }>;
+};
+
+type PrintableBodyArgs = {
+  includeNameRoll: boolean;
+  paperTitle: string;
+  stdLabel: string;
+  subjectDisplay: string;
+  totalMarks: number;
+  durationLabel: string;
+  sectionsHtml: string;
+};
+
+const renderSectionsHtml = (sections: PaperSection[]) =>
+  sections
+    .map((section) => `
+      <div class="section">
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>${section.heading}</span>
+          ${section.summary ? `<span style="font-weight: bold;">${section.summary}</span>` : ''}
+        </div>
+        ${section.questions
+          .map(
+            (question) => `
+              <div class="question">
+                <div class="question-no">${question.number})</div>
+                <div class="question-content">
+                  <div class="question-text">${question.text || ''}</div>
+                  ${
+                    question.imageUrl
+                      ? `
+                        <div class="question-image">
+                          <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
+                        </div>
+                      `
+                      : ''
+                  }
+                  ${
+                    question.options && question.options.length > 0
+                      ? `
+                        <div class="question-options" style="margin-top: 10px;">
+                          ${question.options
+                            .map(
+                              (option, index) => `
+                                <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
+                              `
+                            )
+                            .join('')}
+                        </div>
+                      `
+                      : ''
+                  }
+                </div>
+                ${
+                  question.marks === null || question.marks === undefined
+                    ? ''
+                    : `<div class="marks">[${question.marks} marks]</div>`
+                }
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+    `)
+    .join('');
+
+const PRINT_TEMPLATE_STYLES = `
+  body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #000; }
+  .header { text-align: center; margin-bottom: 10px; }
+  .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+  .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
+  .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
+  .name-roll-label { font-weight: 600; white-space: nowrap; }
+  .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
+  .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
+  .name-group { flex: 1; min-width: 0; }
+  .rollno-group { flex: 0 0 200px; max-width: 200px; }
+  .subject-line { margin: 8px 0 18px; color: #000; }
+  .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .subject-row + .subject-row { margin-top: 4px; }
+  .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
+  .subject-left { text-align: left; }
+  .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
+  .subject-right { text-align: right; }
+  .subject-secondary { font-size: 18px; font-weight: 600; }
+  .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
+  .section { margin: 30px 0; }
+  .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
+  .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
+  .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
+  .question-content { flex: 1; }
+  .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
+  .question-image { margin-top: 1px; }
+  .marks { font-weight: normal; margin-left: 10px; color: #000; white-space: nowrap; }
+  @media print {
+    body { margin: 20px; }
+    .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
+    .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
+    .question-image img { max-width: 250px; max-height: 150px; }
+  }
+`;
+
+const buildPrintableBody = ({
+  includeNameRoll,
+  paperTitle,
+  stdLabel,
+  subjectDisplay,
+  totalMarks,
+  durationLabel,
+  sectionsHtml
+}: PrintableBodyArgs) => `
+  ${includeNameRoll
+    ? `<div class="name-roll-section">
+        <div class="name-roll-row">
+          <div class="name-roll-group name-group">
+            <span class="name-roll-label">NAME:</span>
+            <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
+          </div>
+          <div class="name-roll-group rollno-group">
+            <span class="name-roll-label">ROLL NO:</span>
+            <span class="name-roll-dots">........................................................</span>
+          </div>
+        </div>
+      </div>`
+    : ''}
+  <div class="header">
+    <div class="title">${paperTitle}</div>
+  </div>
+  <div class="subject-line">
+    <div class="subject-row">
+      <div class="subject-left">Std: ${stdLabel || '-'}</div>
+      <div class="subject-center">${subjectDisplay || ''}</div>
+      <div class="subject-right">Marks: ${totalMarks}</div>
+    </div>
+    <div class="subject-row subject-row-secondary">
+      <div class="subject-left subject-secondary">HM</div>
+      <div class="subject-right subject-secondary">Time: ${durationLabel}</div>
+    </div>
+    <div class="subject-line-divider"></div>
+  </div>
+  ${sectionsHtml}
+`;
+
+const buildPrintableDocumentHtml = (paperTitle: string, bodyContent: string) => `
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <title>${paperTitle}</title>
+      <style>
+        ${PRINT_TEMPLATE_STYLES}
+      </style>
+    </head>
+    <body>
+      ${bodyContent}
+    </body>
+  </html>
+`;
+
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
-  const [loading, setLoading] = useState(false);
+  const [wordLoading, setWordLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const stdLabel = getStdLabel(paper.class);
   const subjectDisplay = getSubjectDisplay(paper.subject, paper.bookName || paper.book);
   const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
@@ -132,215 +300,19 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       message.error("Popup blocked. Please allow popups for this site.");
       return;
     }
-    
-    const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26 `.trim();
-    
-    let sectionsHtml = '';
-    if (paper.questions && Array.isArray(paper.questions)) {
-      // Group questions by type for API format
-      const groupedQuestions = paper.questions.reduce((acc: any, question: any) => {
-        const type = question.questionType;
-        if (!acc[type]) {
-          acc[type] = [];
-        }
-        acc[type].push(question);
-        return acc;
-      }, {});
 
-      const typeLabels: any = {
-        'mcq': 'Multiple Choice',
-        'shortanswer': 'Short Answer',
-        'essay': 'Essay',
-        'fillblank': 'Fill in the blank',
-        'image': 'Image'
-      };
-
-      const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-      const sectionsWithQuestions = desiredOrder.filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0);
-      
-      sectionsHtml = sectionsWithQuestions
-        .map((type, sectionIndex) => {
-          const romanNumeral = toRomanNumeral(sectionIndex + 1);
-          const questionsOfType = groupedQuestions[type];
-          const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
-          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-          const questionCount = questionsOfType.length;
-          const sectionMarks = allSameMarks ? allMarks[0] : null;
-          const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-          
-          return `
-          <div class="section">
-            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>${romanNumeral}. ${typeLabels[type] || type}</span>
-              ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
-            </div>
-            ${questionsOfType.map((question: any, questionIndex: number) => `
-              <div class="question">
-                <div class="question-no">${questionIndex + 1})</div>
-                <div class="question-content">
-                  <div class="question-text">${question.question}</div>
-                  ${question.questionType === 'image' && question.imageUrl ? `
-                    <div class="question-image">
-                      <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
-                    </div>
-                  ` : ''}
-                  ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
-                    <div class="question-options" style="margin-top: 10px;">
-                      ${question.options.map((option: string, index: number) => `
-                        <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
-                      `).join('')}
-                    </div>
-                  ` : ''}
-                </div>
-                ${!allSameMarks ? `<div class="marks">[${question.mark || question.marks || 0} marks]</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        `;
-        }).join('');
-    } else {
-      // Fallback for organized questions format
-      const typeMapping: any = {
-        'Multiple Choice': 'mcq',
-        'Fill in the blank': 'fillblank',
-        'Short Answer': 'shortanswer',
-        'Matching': 'image',
-        'Essay': 'essay'
-      };
-      
-      const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-      const sectionsWithQuestions = desiredOrder
-        .map(type => {
-          const typeName = Object.keys(typeMapping).find(key => typeMapping[key] === type) || type;
-          const questionsOfType = paper.organizedQuestions?.[typeName];
-          return questionsOfType && questionsOfType.length > 0 ? { type, typeName, questionsOfType } : null;
-        })
-        .filter(Boolean);
-      
-      sectionsHtml = sectionsWithQuestions
-        .map((section: any, sectionIndex: number) => {
-          const romanNumeral = toRomanNumeral(sectionIndex + 1);
-          const { typeName, questionsOfType } = section;
-          const allMarks = questionsOfType.map((q: any) => q.marks || 0);
-          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-          const questionCount = questionsOfType.length;
-          const sectionMarks = allSameMarks ? allMarks[0] : null;
-          const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-          
-          return `
-          <div class="section">
-            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-              <span>${romanNumeral}. ${typeName}</span>
-              ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
-            </div>
-            ${questionsOfType.map(({ question, marks }: any, questionIndex: number) => `
-              <div class="question">
-                <div class="question-no">${questionIndex + 1})</div>
-                <div class="question-content">
-                  <div class="question-text">${question.text}</div>
-                  ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
-                    <div class="question-image">
-                      <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
-                    </div>
-                  ` : ''}
-                  ${question.type === 'Multiple Choice' && question.options ? `
-                    <div class="question-options" style="margin-top: 10px;">
-                      ${question.options.map((option: string, index: number) => `
-                        <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
-                      `).join('')}
-                    </div>
-                  ` : ''}
-                </div>
-                ${!allSameMarks ? `<div class="marks">[${marks} marks]</div>` : ''}
-              </div>
-            `).join('')}
-          </div>
-        `;
-        }).join('');
-    }
-    
-    const content = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${paperTitle}</title>
-          <style>
-            body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 10px; }
-            .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-            .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
-            .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
-            .name-roll-label { font-weight: 600; white-space: nowrap; }
-            .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
-            .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
-            .name-group { flex: 1; min-width: 0; }
-            .rollno-group { flex: 0 0 200px; max-width: 200px; }
-            .subject-line { margin: 8px 0 18px; color: #000; }
-            .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-            .subject-row + .subject-row { margin-top: 4px; }
-            .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
-            .subject-left { text-align: left; }
-            .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
-            .subject-right { text-align: right; }
-              .subject-secondary { font-size: 18px; font-weight: 600; }
-              .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
-            .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
-            .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
-            .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-            .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
-            .question-content { flex: 1; }
-            .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
-            .question-image { margin-top: 1px; }
-            .marks { font-weight: normal; margin-left: 10px; color: #000; }
-            @media print {
-              body { margin: 20px; }
-              /* Allow sections to flow across pages; do not force whole-section moves */
-              .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
-              /* Keep an individual question together on the same page */
-              .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
-              .question-image img { max-width: 250px; max-height: 150px; }
-            }
-          </style>
-        </head>
-        <body>
-          ${isClassFourOrBelow(paper.class) ? `
-          <div class="name-roll-section">
-            <div class="name-roll-row">
-              <div class="name-roll-group name-group">
-                <span class="name-roll-label">NAME:</span>
-                <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
-              </div>
-              <div class="name-roll-group rollno-group">
-                <span class="name-roll-label">ROLL NO:</span>
-                <span class="name-roll-dots">........................................................</span>
-              </div>
-            </div>
-          </div>
-          <div class="header">
-            <div class="title">${paperTitle}</div>
-          </div>
-          ` : `
-          <div class="header">
-            <div class="title">${paperTitle}</div>
-          </div>
-          `}
-          <div class="subject-line">
-            <div class="subject-row">
-              <div class="subject-left">Std: ${stdLabel || '-'}</div>
-              <div class="subject-center">${subjectDisplayUpper || ''}</div>
-              <div class="subject-right">Marks: ${currentSumMarks}</div>
-            </div>
-            <div class="subject-row subject-row-secondary">
-              <div class="subject-left subject-secondary">HM</div>
-              <div class="subject-right subject-secondary">Time: ${formatDuration(paper.duration || 60)}</div>
-            </div>
-            <div class="subject-line-divider"></div>
-          </div>
-          ${sectionsHtml}
-        </body>
-      </html>
-    `;
+    const sectionsHtml = renderSectionsHtml(buildPaperSections());
+    const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26`.trim();
+    const bodyContent = buildPrintableBody({
+      includeNameRoll: isClassFourOrBelow(paper.class),
+      paperTitle,
+      stdLabel: stdLabel || '-',
+      subjectDisplay: subjectDisplayUpper || '',
+      totalMarks: currentSumMarks,
+      durationLabel: formatDuration(paper.duration || 60),
+      sectionsHtml
+    });
+    const content = buildPrintableDocumentHtml(paperTitle, bodyContent);
     
     printWindow.document.write(content);
     printWindow.document.close();
@@ -445,18 +417,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     });
   };
 
-  const buildSectionsForWord = () => {
-    const sections: Array<{
-      heading: string;
-      summary?: string;
-      questions: Array<{
-        number: number;
-        text: string;
-        marks?: number | null;
-        options?: string[];
-        imageUrl?: string | null;
-      }>;
-    }> = [];
+  const buildPaperSections = (): PaperSection[] => {
+    const sections: PaperSection[] = [];
 
     const typeLabels: Record<string, string> = {
       mcq: 'Multiple Choice',
@@ -488,7 +450,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
           sections.push({
             heading: `${toRomanNumeral(sectionIndex + 1)}. ${typeLabels[type] || type}`,
-            summary: allSameMarks ? `(${questionsOfType.length} × ${sectionMarks} = ${sectionTotal})` : undefined,
+            summary: allSameMarks ? `[${questionsOfType.length} × ${sectionMarks} = ${sectionTotal}]` : undefined,
             questions: questionsOfType.map((question: any, index: number) => ({
               number: index + 1,
               text: question.question || '',
@@ -523,7 +485,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
           sections.push({
             heading: `${toRomanNumeral(sectionIndex + 1)}. ${typeName}`,
-            summary: allSameMarks ? `(${questionsOfType.length} × ${sectionMarks} = ${sectionTotal})` : undefined,
+            summary: allSameMarks ? `[${questionsOfType.length} × ${sectionMarks} = ${sectionTotal}]` : undefined,
             questions: questionsOfType.map(({ question, marks }: any, index: number) => ({
               number: index + 1,
               text: question.text || question.question || '',
@@ -591,8 +553,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
   const handleDownloadWord = async () => {
     try {
-      setLoading(true);
-      const sections = buildSectionsForWord();
+      setWordLoading(true);
+      const sections = buildPaperSections();
       const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} Examination - 2025-26`.toUpperCase();
       const doc = new Document({
         styles: {
@@ -632,10 +594,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
       docChildren.push(
         new Paragraph({
-          text: paperTitle,
           heading: HeadingLevel.HEADING1,
           alignment: AlignmentType.CENTER,
-          spacing: { after: 200 }
+          spacing: { after: 200 },
+          children: [new TextRun({ text: paperTitle, bold: true })]
         })
       );
 
@@ -699,9 +661,9 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       for (const section of sections) {
         docChildren.push(
           new Paragraph({
-            text: section.heading,
             heading: HeadingLevel.HEADING2,
-            spacing: { before: 200, after: 50 }
+            spacing: { before: 200, after: 50 },
+            children: [new TextRun({ text: section.heading, bold: true })]
           })
         );
 
@@ -716,14 +678,35 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
         // eslint-disable-next-line no-await-in-loop
         for (const question of section.questions) {
+          const hasMarks = question.marks !== null && question.marks !== undefined;
+          const questionParagraphChildren = [
+            new TextRun({
+              text: `${question.number}) ${question.text}`
+            })
+          ];
+
+          if (hasMarks) {
+            questionParagraphChildren.push(new TextRun({ text: '\t' }));
+            questionParagraphChildren.push(
+              new TextRun({
+                text: `[${question.marks} marks]`,
+                bold: true
+              })
+            );
+          }
+
           docChildren.push(
             new Paragraph({
               spacing: { after: 50 },
-              children: [
-                new TextRun({
-                  text: `${question.number}) ${question.text}${question.marks !== null && question.marks !== undefined ? ` [${question.marks} marks]` : ''}`
-                })
-              ]
+              tabStops: hasMarks
+                ? [
+                    {
+                      type: TabStopType.RIGHT,
+                      position: 9000
+                    }
+                  ]
+                : undefined,
+              children: questionParagraphChildren
             })
           );
 
@@ -763,7 +746,58 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       console.error("Failed to download Word document:", error);
       message.error("Failed to download Word document. Please try again.");
     } finally {
-      setLoading(false);
+      setWordLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    let container: HTMLDivElement | null = null;
+    try {
+      setPdfLoading(true);
+      const sectionsHtml = renderSectionsHtml(buildPaperSections());
+      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26`.trim();
+      const bodyContent = buildPrintableBody({
+        includeNameRoll: isClassFourOrBelow(paper.class),
+        paperTitle,
+        stdLabel: stdLabel || '-',
+        subjectDisplay: subjectDisplayUpper || '',
+        totalMarks: currentSumMarks,
+        durationLabel: formatDuration(paper.duration || 60),
+        sectionsHtml
+      });
+
+      container = document.createElement("div");
+      container.style.position = "fixed";
+      container.style.left = "-9999px";
+      container.style.top = "-9999px";
+      container.style.width = "210mm";
+      container.style.background = "#fff";
+      container.innerHTML = `<style>${PRINT_TEMPLATE_STYLES}</style>${bodyContent}`;
+      document.body.appendChild(container);
+
+      const docInstance = new jsPDF("p", "pt", "a4");
+      await docInstance.html(container, {
+        margin: [40, 40, 40, 40],
+        autoPaging: "text",
+        html2canvas: {
+          scale: 0.55,
+          useCORS: true
+        },
+        callback: (docRef) => {
+          const filename = `${paper.title || subjectDisplayUpper || 'question-paper'}.pdf`;
+          docRef.save(filename);
+        }
+      });
+
+      message.success("PDF downloaded successfully.");
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      message.error('Failed to download PDF. Please try again.');
+    } finally {
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      setPdfLoading(false);
     }
   };
 
@@ -794,9 +828,17 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               Print Question Paper
             </Button>
             <Button
+              onClick={handleDownloadPdf}
+              className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-3 bg-purple-500 text-white hover:bg-purple-500"
+              loading={pdfLoading}
+            >
+              <FileText size={16} />
+              Download PDF
+            </Button>
+            <Button
               onClick={handleDownloadWord}
               className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-3 bg-blue-500 text-white hover:bg-blue-500"
-              loading={loading}
+              loading={wordLoading}
             >
               <Download size={16} />
               Download Word
@@ -1276,257 +1318,6 @@ const MyPapers = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedClass, selectedSubject, selectedBookName, selectedExamType]);
-
-  // Generate PDF using the same template as Paper creation
-  const generatePDF = (paper: any) => {
-    setLoading(true);
-    
-    try {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        message.error("Popup blocked. Please allow popups for this site.");
-        setLoading(false);
-        return;
-      }
-      
-      const stdLabel = getStdLabel(paper.class);
-      const subjectDisplay = getSubjectDisplay(paper.subject, paper.bookName || paper.book);
-      const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
-      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26 `.trim();
-      
-      let sectionsHtml = '';
-      if (paper.questions && Array.isArray(paper.questions)) {
-        // Group questions by type for API format
-        const groupedQuestions = paper.questions.reduce((acc: any, question: any) => {
-          const type = question.questionType;
-          if (!acc[type]) {
-            acc[type] = [];
-          }
-          acc[type].push(question);
-          return acc;
-        }, {});
-
-        const typeLabels: any = {
-          'mcq': 'Multiple Choice',
-          'shortanswer': 'Short Answer',
-          'essay': 'Essay',
-          'fillblank': 'Fill in the blank',
-          'image': 'Image'
-        };
-
-        const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-        const sectionsWithQuestions = desiredOrder.filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0);
-        
-        sectionsHtml = sectionsWithQuestions
-          .map((type, sectionIndex) => {
-            const romanNumeral = toRomanNumeral(sectionIndex + 1);
-            const questionsOfType = groupedQuestions[type];
-            const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
-            const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-            const questionCount = questionsOfType.length;
-            const sectionMarks = allSameMarks ? allMarks[0] : null;
-            const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-            
-            return `
-            <div class="section">
-              <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>${romanNumeral}. ${typeLabels[type] || type}</span>
-                ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
-              </div>
-              ${questionsOfType.map((question: any, questionIndex: number) => `
-                <div class="question">
-                  <div class="question-no">${questionIndex + 1})</div>
-                  <div class="question-content">
-                    <div class="question-text">${question.question}</div>
-                    ${question.questionType === 'image' && question.imageUrl ? `
-                      <div class="question-image">
-                        <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
-                      </div>
-                    ` : ''}
-                    ${question.questionType === 'mcq' && question.options && question.options.length > 0 ? `
-                      <div class="question-options" style="margin-top: 10px;">
-                        ${question.options.map((option: string, index: number) => `
-                          <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
-                        `).join('')}
-                      </div>
-                    ` : ''}
-                  </div>
-                  ${!allSameMarks ? `<div class="marks">[${question.mark || question.marks || 0} marks]</div>` : ''}
-                </div>
-              `).join('')}
-            </div>
-          `;
-          }).join('');
-      } else if (paper.organizedQuestions) {
-        // Fallback for organized questions format
-        const typeMapping: any = {
-          'Multiple Choice': 'mcq',
-          'Fill in the blank': 'fillblank',
-          'Short Answer': 'shortanswer',
-          'Matching': 'image',
-          'Essay': 'essay'
-        };
-        
-        const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-        const sectionsWithQuestions = desiredOrder
-          .map(type => {
-            const typeName = Object.keys(typeMapping).find(key => typeMapping[key] === type) || type;
-            const questionsOfType = paper.organizedQuestions?.[typeName];
-            return questionsOfType && questionsOfType.length > 0 ? { type, typeName, questionsOfType } : null;
-          })
-          .filter(Boolean);
-        
-        sectionsHtml = sectionsWithQuestions
-          .map((section: any, sectionIndex: number) => {
-            const romanNumeral = toRomanNumeral(sectionIndex + 1);
-            const { typeName, questionsOfType } = section;
-            const allMarks = questionsOfType.map((q: any) => q.marks || 0);
-            const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-            const questionCount = questionsOfType.length;
-            const sectionMarks = allSameMarks ? allMarks[0] : null;
-            const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-            
-            return `
-            <div class="section">
-              <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>${romanNumeral}. ${typeName}</span>
-                ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
-              </div>
-              ${questionsOfType.map(({ question, marks }: any, questionIndex: number) => `
-                <div class="question">
-                  <div class="question-no">${questionIndex + 1})</div>
-                  <div class="question-content">
-                    <div class="question-text">${question.text}</div>
-                    ${(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
-                      <div class="question-image">
-                        <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
-                      </div>
-                    ` : ''}
-                    ${question.type === 'Multiple Choice' && question.options ? `
-                      <div class="question-options" style="margin-top: 10px;">
-                        ${question.options.map((option: string, index: number) => `
-                          <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
-                        `).join('')}
-                      </div>
-                    ` : ''}
-                  </div>
-                  ${!allSameMarks ? `<div class="marks">[${marks} marks]</div>` : ''}
-                </div>
-              `).join('')}
-            </div>
-          `;
-          }).join('');
-      }
-      
-      const sumMarks = paper.totalMark || paper.totalMarks || 
-        (paper.organizedQuestions ? Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
-          total + questions.reduce((sum: number, q: any) => sum + (q.marks ?? 0), 0), 0) : 
-        (paper.questions && Array.isArray(paper.questions) ? paper.questions.reduce((sum: number, q: any) => sum + (q.mark || q.marks || 0), 0) : 0));
-      
-      const content = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>${paperTitle}</title>
-            <style>
-              body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
-              .header { text-align: center; margin-bottom: 10px; }
-              .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-              .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
-              .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
-              .name-roll-label { font-weight: 600; white-space: nowrap; }
-              .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
-              .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
-              .name-group { flex: 1; min-width: 0; }
-              .rollno-group { flex: 0 0 200px; max-width: 200px; }
-              .subject-line { margin: 8px 0 18px; color: #000; }
-              .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-              .subject-row + .subject-row { margin-top: 4px; }
-              .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
-              .subject-left { text-align: left; }
-              .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
-              .subject-right { text-align: right; }
-              .subject-secondary { font-size: 14px; font-weight: 500; }
-              .section { margin: 30px 0; }
-              .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
-              .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-              .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
-              .question-content { flex: 1; }
-              .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
-              .question-image { margin-top: 1px; }
-              .marks { font-weight: normal; margin-left: 10px; color: #000; }
-              @media print {
-                body { margin: 20px; }
-                /* Allow sections to flow across pages; do not force whole-section moves */
-                .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
-                /* Keep an individual question together on the same page */
-                .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
-                .question-image img { max-width: 250px; max-height: 150px; }
-              }
-            </style>
-          </head>
-          <body>
-          ${isClassFourOrBelow(paper.class) ? `
-          <div class="name-roll-section">
-            <div class="name-roll-row">
-              <div class="name-roll-group name-group">
-                <span class="name-roll-label">NAME:</span>
-                <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
-              </div>
-              <div class="name-roll-group rollno-group">
-                <span class="name-roll-label">ROLL NO:</span>
-                <span class="name-roll-dots">........................................................</span>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-          <div class="header">
-            <div class="title">${paperTitle}</div>
-          </div>
-            <div class="subject-line">
-              <div class="subject-row">
-                <div class="subject-left">Std: ${stdLabel || '-'}</div>
-                <div class="subject-center">${subjectDisplayUpper || ''}</div>
-                <div class="subject-right">Marks: ${sumMarks}</div>
-              </div>
-              <div class="subject-row subject-row-secondary">
-                <div class="subject-left subject-secondary">HM</div>
-                <div class="subject-right subject-secondary">Time: ${formatDuration(paper.duration || 60)}</div>
-              </div>
-              <div class="subject-line-divider"></div>
-            </div>
-            ${sectionsHtml}
-          </body>
-        </html>
-      `;
-      
-      printWindow.document.write(content);
-      printWindow.document.close();
-      
-      // Add a small delay for mobile devices
-      setTimeout(() => {
-        try {
-          printWindow.print();
-          // Don't close immediately on mobile
-          if (!isMobileDevice()) {
-            setTimeout(() => printWindow.close(), 500);
-          }
-        } catch (error) {
-          message.error("Failed to print. Please try again.");
-          printWindow.close();
-        }
-      }, 1000);
-      
-      message.success('PDF generated successfully');
-    } catch (error) {
-      message.error('Error generating PDF. Please try again.');
-      console.error('PDF generation error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
 
   // If viewing a paper, show the view component
   if (viewingPaper) {
