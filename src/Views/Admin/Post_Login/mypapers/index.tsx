@@ -109,6 +109,15 @@ const getSubjectDisplay = (subject?: string, book?: string) => {
   return '';
 };
 
+// Check if class is 4 or below
+const isClassFourOrBelow = (classValue?: string | number): boolean => {
+  if (classValue === undefined || classValue === null || classValue === '') return false;
+  const classStr = String(classValue);
+  // Classes 4 and below: "0", "LKG", "UKG", "1", "2", "3", "4"
+  const classesFourOrBelow = ['0', 'LKG', 'UKG', '1', '2', '3', '4'];
+  return classesFourOrBelow.includes(classStr);
+};
+
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [loading, setLoading] = useState(false);
   const stdLabel = getStdLabel(paper.class);
@@ -257,6 +266,13 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
             .header { text-align: center; margin-bottom: 10px; }
             .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+            .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
+            .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
+            .name-roll-label { font-weight: 600; white-space: nowrap; }
+            .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
+            .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
+            .name-group { flex: 1; min-width: 0; }
+            .rollno-group { flex: 0 0 200px; max-width: 200px; }
             .subject-line { margin: 8px 0 18px; color: #000; }
             .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
             .subject-row + .subject-row { margin-top: 4px; }
@@ -286,9 +302,27 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           </style>
         </head>
         <body>
+          ${isClassFourOrBelow(paper.class) ? `
+          <div class="name-roll-section">
+            <div class="name-roll-row">
+              <div class="name-roll-group name-group">
+                <span class="name-roll-label">NAME:</span>
+                <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
+              </div>
+              <div class="name-roll-group rollno-group">
+                <span class="name-roll-label">ROLL NO:</span>
+                <span class="name-roll-dots">........................................................</span>
+              </div>
+            </div>
+          </div>
           <div class="header">
             <div class="title">${paperTitle}</div>
           </div>
+          ` : `
+          <div class="header">
+            <div class="title">${paperTitle}</div>
+          </div>
+          `}
           <div class="subject-line">
             <div class="subject-row">
               <div class="subject-left">Std: ${stdLabel || '-'}</div>
@@ -380,6 +414,20 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       <Card className="shadow-sm">
         <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
           {/* Header */}
+          {isClassFourOrBelow(paper.class) && (
+            <div className="mb-4 text-lg font-local2 text-black">
+              <div className="flex items-end justify-between gap-2">
+                <div className="flex items-end flex-1 min-w-0">
+                  <span className="font-semibold whitespace-nowrap">NAME:</span>
+                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">................................................................................................................................................................................................................................................</span>
+                </div>
+                <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
+                  <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
+                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">........................................................</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="text-center mb-3">
             <h1 className="text-2xl font-bold uppercase font-local2">
               {paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26
@@ -830,7 +878,10 @@ const MyPapers = () => {
         return;
       }
       
-      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} - ${paper.class || ''} ${paper.subject || ''}`.trim();
+      const stdLabel = getStdLabel(paper.class);
+      const subjectDisplay = getSubjectDisplay(paper.subject, paper.bookName || paper.book);
+      const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
+      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26 `.trim();
       
       let sectionsHtml = '';
       if (paper.questions && Array.isArray(paper.questions)) {
@@ -970,6 +1021,13 @@ const MyPapers = () => {
               body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
               .header { text-align: center; margin-bottom: 10px; }
               .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+              .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
+              .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
+              .name-roll-label { font-weight: 600; white-space: nowrap; }
+              .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
+              .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
+              .name-group { flex: 1; min-width: 0; }
+              .rollno-group { flex: 0 0 200px; max-width: 200px; }
               .subject-line { margin: 8px 0 18px; color: #000; }
               .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
               .subject-row + .subject-row { margin-top: 4px; }
@@ -997,6 +1055,20 @@ const MyPapers = () => {
             </style>
           </head>
           <body>
+          ${isClassFourOrBelow(paper.class) ? `
+          <div class="name-roll-section">
+            <div class="name-roll-row">
+              <div class="name-roll-group name-group">
+                <span class="name-roll-label">NAME:</span>
+                <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
+              </div>
+              <div class="name-roll-group rollno-group">
+                <span class="name-roll-label">ROLL NO:</span>
+                <span class="name-roll-dots">........................................................</span>
+              </div>
+            </div>
+          </div>
+          ` : ''}
           <div class="header">
             <div class="title">${paperTitle}</div>
           </div>
