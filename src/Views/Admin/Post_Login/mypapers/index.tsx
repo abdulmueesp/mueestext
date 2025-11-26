@@ -6,6 +6,8 @@ import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical, FileText
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import jsPDF from "jspdf";
+import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from "docx";
+import { saveAs } from "file-saver";
 import img1 from "../../../../assets/matching.png"
 import img2 from "../../../../assets/match2.jpeg"
 import paperDummy from "../../../../assets/paperdummy.webp"
@@ -364,6 +366,407 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     (paper.organizedQuestions ? Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
       total + questions.reduce((sum: number, q: any) => sum + q.marks, 0), 0) : 0);
 
+  const resolveImageUrl = (url?: string) => {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return trimmed;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    if (trimmed.startsWith("//")) return `${window.location.protocol}${trimmed}`;
+    if (trimmed.startsWith("/")) return `${window.location.origin}${trimmed}`;
+    return `${window.location.origin}/${trimmed.replace(/^\/+/, "")}`;
+  };
+
+  const fetchImageArrayBuffer = async (url?: string) => {
+    if (!url) return null;
+    try {
+      if (url.startsWith("data:")) {
+        const data = url.split(",")[1];
+        if (!data) return null;
+        const binaryString = atob(data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i += 1) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+      }
+
+      const sameOrigin = url.startsWith(window.location.origin);
+      const fetchOptions: RequestInit = sameOrigin
+        ? { credentials: "include" }
+        : { mode: "cors" };
+      const response = await fetch(url, fetchOptions);
+      if (!response.ok) throw new Error("Image fetch failed");
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.warn("Unable to load image for Word export:", error);
+      return null;
+    }
+  };
+
+  const convertImageToArrayBufferViaCanvas = async (url?: string) => {
+    if (!url) return null;
+    return new Promise<ArrayBuffer | null>((resolve) => {
+      try {
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        image.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalWidth || 320;
+            canvas.height = image.naturalHeight || 180;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(null);
+              return;
+            }
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                resolve(null);
+                return;
+              }
+              blob
+                .arrayBuffer()
+                .then((buffer) => resolve(buffer))
+                .catch(() => resolve(null));
+            }, "image/png");
+          } catch (canvasError) {
+            console.warn("Canvas conversion failed:", canvasError);
+            resolve(null);
+          }
+        };
+        image.onerror = () => resolve(null);
+        image.src = url;
+      } catch (error) {
+        console.warn("Canvas setup failed:", error);
+        resolve(null);
+      }
+    });
+  };
+
+  const buildSectionsForWord = () => {
+    const sections: Array<{
+      heading: string;
+      summary?: string;
+      questions: Array<{
+        number: number;
+        text: string;
+        marks?: number | null;
+        options?: string[];
+        imageUrl?: string | null;
+      }>;
+    }> = [];
+
+    const typeLabels: Record<string, string> = {
+      mcq: 'Multiple Choice',
+      shortanswer: 'Short Answer',
+      essay: 'Essay',
+      fillblank: 'Fill in the blank',
+      image: 'Image'
+    };
+    const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
+
+    if (paper.questions && Array.isArray(paper.questions)) {
+      const groupedQuestions = paper.questions.reduce((acc: Record<string, any[]>, question: any) => {
+        const type = question.questionType;
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(question);
+        return acc;
+      }, {});
+
+      desiredOrder
+        .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
+        .forEach((type, sectionIndex) => {
+          const questionsOfType = groupedQuestions[type];
+          const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
+          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+          const sectionMarks = allSameMarks ? allMarks[0] : null;
+          const sectionTotal = allSameMarks ? sectionMarks! * questionsOfType.length : null;
+
+          sections.push({
+            heading: `${toRomanNumeral(sectionIndex + 1)}. ${typeLabels[type] || type}`,
+            summary: allSameMarks ? `(${questionsOfType.length} × ${sectionMarks} = ${sectionTotal})` : undefined,
+            questions: questionsOfType.map((question: any, index: number) => ({
+              number: index + 1,
+              text: question.question || '',
+              marks: allSameMarks ? null : (question.mark || question.marks || 0),
+              options: question.questionType === 'mcq' ? question.options : undefined,
+              imageUrl: question.questionType === 'image' && question.imageUrl ? resolveImageUrl(question.imageUrl) : null
+            }))
+          });
+        });
+    } else if (paper.organizedQuestions) {
+      const typeMapping: Record<string, string> = {
+        'Multiple Choice': 'mcq',
+        'Fill in the blank': 'fillblank',
+        'Short Answer': 'shortanswer',
+        'Matching': 'image',
+        'Essay': 'essay'
+      };
+
+      desiredOrder
+        .map((type) => {
+          const typeName = Object.keys(typeMapping).find((key) => typeMapping[key] === type) || type;
+          const questionsOfType = paper.organizedQuestions?.[typeName];
+          return questionsOfType && questionsOfType.length > 0 ? { typeName, questionsOfType } : null;
+        })
+        .filter(Boolean)
+        .forEach((section: any, sectionIndex: number) => {
+          const { typeName, questionsOfType } = section;
+          const allMarks = questionsOfType.map((q: any) => q.marks || 0);
+          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
+          const sectionMarks = allSameMarks ? allMarks[0] : null;
+          const sectionTotal = allSameMarks ? sectionMarks! * questionsOfType.length : null;
+
+          sections.push({
+            heading: `${toRomanNumeral(sectionIndex + 1)}. ${typeName}`,
+            summary: allSameMarks ? `(${questionsOfType.length} × ${sectionMarks} = ${sectionTotal})` : undefined,
+            questions: questionsOfType.map(({ question, marks }: any, index: number) => ({
+              number: index + 1,
+              text: question.text || question.question || '',
+              marks: allSameMarks ? null : marks,
+              options: question.type === 'Multiple Choice' ? question.options : undefined,
+              imageUrl: (question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? resolveImageUrl(question.imageUrl) : null
+            }))
+          });
+        });
+    }
+
+    return sections;
+  };
+
+  const createHeaderTable = (stdValue: string, subjectValue: string, marksValue: number, durationValue: string) => {
+    const cellBorders = {
+      top: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
+      bottom: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
+      left: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
+      right: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 }
+    };
+
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      margins: { left: 0, right: 0 },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              borders: cellBorders,
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ text: `Std: ${stdValue || '-'}`, bold: true })]
+            }),
+            new TableCell({
+              borders: cellBorders,
+              width: { size: 34, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ text: subjectValue || '', alignment: AlignmentType.CENTER, bold: true })]
+            }),
+            new TableCell({
+              borders: cellBorders,
+              width: { size: 33, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ text: `Marks: ${marksValue}`, alignment: AlignmentType.RIGHT, bold: true })]
+            })
+          ]
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              borders: cellBorders,
+              children: [new Paragraph({ text: 'HM', bold: true })]
+            }),
+            new TableCell({
+              borders: cellBorders,
+              children: [new Paragraph({ text: '' })]
+            }),
+            new TableCell({
+              borders: cellBorders,
+              children: [new Paragraph({ text: `Time: ${durationValue}`, alignment: AlignmentType.RIGHT, bold: true })]
+            })
+          ]
+        })
+      ]
+    });
+  };
+
+  const handleDownloadWord = async () => {
+    try {
+      setLoading(true);
+      const sections = buildSectionsForWord();
+      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} Examination - 2025-26`.toUpperCase();
+      const doc = new Document({
+        styles: {
+          default: {
+            document: {
+              run: { font: 'Times New Roman', size: 24, color: '000000' },
+              paragraph: { spacing: { after: 120 } }
+            },
+            heading1: {
+              run: { font: 'Times New Roman', size: 32, bold: true },
+              paragraph: { spacing: { after: 200 } }
+            },
+            heading2: {
+              run: { font: 'Times New Roman', size: 28, bold: true },
+              paragraph: { spacing: { before: 200, after: 120 } }
+            }
+          }
+        },
+        sections: []
+      });
+      const docChildren: any[] = [];
+
+      if (isClassFourOrBelow(paper.class)) {
+        docChildren.push(
+          new Paragraph({
+            children: [new TextRun({ text: "NAME: ________________________________________________", bold: true })],
+            spacing: { after: 100 }
+          })
+        );
+        docChildren.push(
+          new Paragraph({
+            children: [new TextRun({ text: "ROLL NO: ______________________", bold: true })],
+            spacing: { after: 200 }
+          })
+        );
+      }
+
+      docChildren.push(
+        new Paragraph({
+          text: paperTitle,
+          heading: HeadingLevel.HEADING1,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 }
+        })
+      );
+
+      docChildren.push(createHeaderTable(stdLabel || '-', subjectDisplayUpper || '-', currentSumMarks, formatDuration(paper.duration || 60)));
+      docChildren.push(
+        new Paragraph({
+          border: {
+            bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12, space: 1 }
+          },
+          spacing: { after: 200 },
+          children: [new TextRun({ text: '' })]
+        })
+      );
+
+      const appendImageParagraph = async (imageUrl?: string | null) => {
+        if (!imageUrl) return;
+        try {
+          let buffer = await fetchImageArrayBuffer(imageUrl);
+          if (!buffer) {
+            buffer = await convertImageToArrayBufferViaCanvas(imageUrl);
+          }
+          if (!buffer) {
+            docChildren.push(
+              new Paragraph({
+                text: `Image not available: ${imageUrl}`,
+                italics: true
+              })
+            );
+            return;
+          }
+          try {
+            const uintArray = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
+            const image = Media.addImage(doc, uintArray, 320, 180);
+            docChildren.push(
+              new Paragraph({
+                children: [image],
+                alignment: AlignmentType.LEFT,
+                spacing: { after: 150 }
+              })
+            );
+          } catch (imageError) {
+            console.warn('Unable to embed image in Word export:', imageError);
+            docChildren.push(
+              new Paragraph({
+                text: `Image not embedded: ${imageUrl}`,
+                italics: true
+              })
+            );
+          }
+        } catch (error) {
+          console.warn('Unable to fetch image for Word export:', error);
+          docChildren.push(
+            new Paragraph({
+              text: `Image not available: ${imageUrl}`,
+              italics: true
+            })
+          );
+        }
+      };
+
+      for (const section of sections) {
+        docChildren.push(
+          new Paragraph({
+            text: section.heading,
+            heading: HeadingLevel.HEADING2,
+            spacing: { before: 200, after: 50 }
+          })
+        );
+
+        if (section.summary) {
+          docChildren.push(
+            new Paragraph({
+              children: [new TextRun({ text: section.summary, italics: true })],
+              spacing: { after: 100 }
+            })
+          );
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        for (const question of section.questions) {
+          docChildren.push(
+            new Paragraph({
+              spacing: { after: 50 },
+              children: [
+                new TextRun({
+                  text: `${question.number}) ${question.text}${question.marks !== null && question.marks !== undefined ? ` [${question.marks} marks]` : ''}`
+                })
+              ]
+            })
+          );
+
+          if (question.options && question.options.length > 0) {
+            question.options.forEach((option, index) => {
+              docChildren.push(
+                new Paragraph({
+                  text: `${String.fromCharCode(65 + index)}. ${option}`,
+                  bullet: { level: 0 },
+                  spacing: { after: 20 }
+                })
+              );
+            });
+          }
+
+          if (question.imageUrl) {
+            // eslint-disable-next-line no-await-in-loop
+            await appendImageParagraph(question.imageUrl);
+          }
+        }
+      }
+
+      if (docChildren.length === 0) {
+        docChildren.push(new Paragraph({ text: "No questions available for this paper." }));
+      }
+
+      doc.addSection({
+        properties: {},
+        children: docChildren
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const filename = `${paper.title || subjectDisplayUpper || 'question-paper'}.docx`;
+      saveAs(blob, filename);
+      message.success("Word document downloaded successfully.");
+    } catch (error) {
+      console.error("Failed to download Word document:", error);
+      message.error("Failed to download Word document. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="p-6">
       {/* Header with Back Button */}
@@ -389,6 +792,14 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             >
               <Printer size={16} />
               Print Question Paper
+            </Button>
+            <Button
+              onClick={handleDownloadWord}
+              className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-3 bg-blue-500 text-white hover:bg-blue-500"
+              loading={loading}
+            >
+              <Download size={16} />
+              Download Word
             </Button>
             <div>
             <Popconfirm
