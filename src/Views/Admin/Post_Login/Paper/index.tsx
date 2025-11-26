@@ -85,6 +85,35 @@ const formatDuration = (minutes: number): string => {
   return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
 };
 
+// Get standard label (Roman numeral for numeric classes)
+const getStdLabel = (classValue?: string | number) => {
+  if (classValue === undefined || classValue === null || classValue === '') return '-';
+  const parsed = Number(classValue);
+  if (!Number.isNaN(parsed) && parsed > 0) {
+    return toRomanNumeral(parsed);
+  }
+  return String(classValue).toUpperCase();
+};
+
+// Get subject display with book name
+const getSubjectDisplay = (subject?: string, book?: string) => {
+  const cleanSubject = subject?.trim();
+  const cleanBook = book?.trim();
+  if (cleanSubject && cleanBook) return `${cleanSubject} (${cleanBook})`;
+  if (cleanSubject) return cleanSubject;
+  if (cleanBook) return cleanBook;
+  return '';
+};
+
+// Check if class is 4 or below
+const isClassFourOrBelow = (classValue?: string | number): boolean => {
+  if (classValue === undefined || classValue === null || classValue === '') return false;
+  const classStr = String(classValue);
+  // Classes 4 and below: "0", "LKG", "UKG", "1", "2", "3", "4"
+  const classesFourOrBelow = ['0', 'LKG', 'UKG', '1', '2', '3', '4'];
+  return classesFourOrBelow.includes(classStr);
+};
+
 const Paper = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
@@ -883,7 +912,20 @@ const Paper = () => {
       return;
     }
     
-    const paperTitle = `${formValues?.examType || 'Examination'} - ${formValues?.class || ''} ${formValues?.subject || ''}`.trim();
+    const paperTitle = `${formValues?.examType || 'Examination'} EXAMINATION - 2025-26 `.trim();
+    const stdLabel = getStdLabel(formValues?.class);
+    const selectedBookName = booksOptions.find(book => book.value === formValues?.book)?.label || formValues?.book;
+    const subjectDisplay = getSubjectDisplay(formValues?.subject, selectedBookName);
+    const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
+    
+    const typeLabels: any = {
+      'mcq': 'Multiple Choice',
+      'shortanswer': 'Short Answer',
+      'essay': 'Essay',
+      'fillblank': 'Fill in the blank',
+      'Image': 'Image'
+    };
+    
     const sectionsWithQuestions = (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
       .filter(type => organizedQuestions[type].length > 0);
     
@@ -900,12 +942,12 @@ const Paper = () => {
         return `
         <div class="section">
           <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>${romanNumeral}. ${type}</span>
-            ${allSameMarks ? `<span style="font-weight: normal;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
+            <span>${romanNumeral}. ${typeLabels[type] || type}</span>
+            ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
           </div>
           ${questionsOfType.map(({ question, marks }, questionIndex) => `
             <div class="question">
-              <div class="question-no">${questionIndex + 1}.</div>
+              <div class="question-no">${questionIndex + 1})</div>
               <div class="question-content">
                 <div class="question-text">${question.text}</div>
                 ${(question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
@@ -916,7 +958,7 @@ const Paper = () => {
                 ${question.type === 'mcq' && question.options ? `
                   <div class="question-options" style="margin-top: 10px;">
                     ${question.options.map((option, index) => `
-                      <div style="margin: 5px 0;">${String.fromCharCode(65 + index)}. ${option.text || option}</div>
+                      <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option.text || option}</div>
                     `).join('')}
                   </div>
                 ` : ''}
@@ -935,18 +977,32 @@ const Paper = () => {
           <title>${paperTitle}</title>
           <style>
             body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .title { font-size: 24px; font-weight: bold; text-transform: uppercase; }
-            .subtitle { font-size: 18px; margin-top: 10px; }
-            .info { display: flex; justify-content: space-between; margin: 20px 0; }
+            .header { text-align: center; margin-bottom: 10px; }
+            .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+            .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
+            .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
+            .name-roll-label { font-weight: 600; white-space: nowrap; }
+            .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
+            .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
+            .name-group { flex: 1; min-width: 0; }
+            .rollno-group { flex: 0 0 200px; max-width: 200px; }
+            .subject-line { margin: 8px 0 18px; color: #000; }
+            .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+            .subject-row + .subject-row { margin-top: 4px; }
+            .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
+            .subject-left { text-align: left; }
+            .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
+            .subject-right { text-align: right; }
+            .subject-secondary { font-size: 18px; font-weight: 600; }
+            .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
             .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; }
+            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
             .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-            .question-no { width: 30px; font-weight: bold; }
+            .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
             .question-content { flex: 1; }
-            .question-text { margin-bottom: 5px; }
+            .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
             .question-image { margin-top: 1px; }
-            .marks { font-weight: bold; margin-left: 10px; }
+            .marks { font-weight: normal; margin-left: 10px; color: #000; }
             @media print {
               body { margin: 20px; }
               /* Allow sections to flow across pages; do not force whole-section moves */
@@ -958,15 +1014,35 @@ const Paper = () => {
           </style>
         </head>
         <body>
+          ${isClassFourOrBelow(formValues?.class) ? `
+          <div class="name-roll-section">
+            <div class="name-roll-row">
+              <div class="name-roll-group name-group">
+                <span class="name-roll-label">NAME:</span>
+                <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
+              </div>
+              <div class="name-roll-group rollno-group">
+                <span class="name-roll-label">ROLL NO:</span>
+                <span class="name-roll-dots">........................................................</span>
+              </div>
+            </div>
+          </div>
+          ` : ''}
           <div class="header">
             <div class="title">${paperTitle}</div>
-      
           </div>
-          <div class="info">
-            <div><strong>Time Allowed:</strong> ${formatDuration(formValues?.duration || 60)}</div>
-            <div><strong>Maximum Marks:</strong> ${totalMarksField}</div>
+          <div class="subject-line">
+            <div class="subject-row">
+              <div class="subject-left">Std: ${stdLabel || '-'}</div>
+              <div class="subject-center">${subjectDisplayUpper || ''}</div>
+              <div class="subject-right">Marks: ${totalMarksField || currentSumMarks}</div>
+            </div>
+            <div class="subject-row subject-row-secondary">
+              <div class="subject-left subject-secondary">HM</div>
+              <div class="subject-right subject-secondary">Time: ${formatDuration(formValues?.duration || 60)}</div>
+            </div>
+            <div class="subject-line-divider"></div>
           </div>
-          
           ${sectionsHtml}
         </body>
       </html>
@@ -1277,74 +1353,128 @@ const Paper = () => {
         open={previewOpen}
         onCancel={() => setPreviewOpen(false)}
         footer={null}
-        width={800}
+        width={900}
         className="font-local2"
       >
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-          <div className="text-center border-b pb-4">
-            <h2 className="text-xl font-bold">
-              {formValues?.examType || 'Examination'} - {formValues?.class || ''} {formValues?.subject || ''}
-            </h2>
-            {/* <p className="text-gray-600 mt-2">
-              {formValues?.book || ''} {formValues?.chapters?.length ? `- ${formValues.chapters.join(', ')}` : ''}
-            </p> */}
-            <div className="flex justify-between mt-3 text-sm">
-              <span><strong>Time:</strong> {formatDuration(formValues?.duration || 60)}</span>
-              <span><strong>Total Marks:</strong> {currentSumMarks}</span>
-            </div>
-          </div>
-          
-          {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
-            .filter(type => organizedQuestions[type].length > 0)
-            .map((type, sectionIndex) => {
-              const questionsOfType = organizedQuestions[type];
-              const romanNumeral = toRomanNumeral(sectionIndex + 1);
-              const allMarks = questionsOfType.map(q => q.marks);
-              const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
-              const questionCount = questionsOfType.length;
-              const sectionMarks = allSameMarks ? allMarks[0] : null;
-              const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-              
-              return (
-                <div key={type} className="border-b pb-4 last:border-b-0">
-                  <h3 className="text-lg font-semibold text-left mb-3 text-[#007575] flex justify-between items-center">
-                    <span>{romanNumeral}. {type}</span>
-                    {allSameMarks && <span className="text-base font-normal text-gray-600">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
-                  </h3>
-                  <div className="space-y-3">
-                    {questionsOfType.map(({ question, marks }, questionIndex) => (
-                      <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded">
-                        <div className="flex gap-3 flex-1">
-                          <span className="font-semibold min-w-[30px]">{questionIndex + 1}.</span>
-                          <div className="flex-1">
-                            <div>{question.text}</div>
-                            {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
-                              <div className="mt-2">
-                                <img src={question.imageUrl} alt="Question" className="w-40 h-28 object-cover rounded border" />
-                              </div>
-                            )}
-                            {question.type === 'mcq' && question.options && (
-                              <div className="mt-2 space-y-1">
-                                {question.options.map((option, index) => (
-                                  <div key={index} className="text-sm text-gray-700">
-                                    {String.fromCharCode(65 + index)}. {option.text || option}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {!allSameMarks && (
-                          <div className="text-right">
-                            <span className="font-semibold text-gray-600 text-lg">[{marks}]</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+        <div className="max-h-[70vh] overflow-y-auto">
+          <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
+            {/* Header */}
+            {isClassFourOrBelow(formValues?.class) && (
+              <div className="mb-4 text-lg font-local2 text-black">
+                <div className="flex items-end justify-between gap-2">
+                  <div className="flex items-end flex-1 min-w-0">
+                    <span className="font-semibold whitespace-nowrap">NAME:</span>
+                    <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">................................................................................................................................................................................................................................................</span>
+                  </div>
+                  <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
+                    <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
+                    <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">........................................................</span>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
+            <div className="text-center mb-3">
+              <h1 className="text-2xl font-bold uppercase font-local2">
+                {formValues?.examType || 'Examination'} EXAMINATION - 2025-26
+              </h1>
+            </div>
+            <div className="flex flex-col gap-1 mb-5 text-base font-local2 text-black">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="font-semibold text-lg text-left whitespace-nowrap sm:flex-[0_0_140px]">
+                  Std: {getStdLabel(formValues?.class) || '-'}
+                </div>
+                <div className="flex-1 text-center font-semibold text-lg sm:px-2">
+                  {getSubjectDisplay(formValues?.subject, booksOptions.find(book => book.value === formValues?.book)?.label || formValues?.book)?.toUpperCase() || ''}
+                </div>
+                <div className="font-semibold text-lg text-right whitespace-nowrap sm:flex-[0_0_140px]">
+                  Marks: {totalMarksField || currentSumMarks}
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-base font-local2 normal-case mb-2">
+                <div className="text-left whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">HM</div>
+                <div className="flex-1" />
+                <div className="text-right whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">
+                  Time: {formatDuration(formValues?.duration || 60)}
+                </div>
+              </div>
+              <div className="flex items-center sm:justify-between gap-3">
+                <div className="flex-1 border-b-2 border-gray-500" />
+              </div>
+            </div>
+
+            {/* Sections and Questions */}
+            <div className="space-y-8">
+              {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+                .filter(type => organizedQuestions[type].length > 0)
+                .map((type, sectionIndex) => {
+                  const questionsOfType = organizedQuestions[type];
+                  const romanNumeral = toRomanNumeral(sectionIndex + 1);
+                  const allMarks = questionsOfType.map(q => q.marks);
+                  const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
+                  const questionCount = questionsOfType.length;
+                  const sectionMarks = allSameMarks ? allMarks[0] : null;
+                  const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
+                  
+                  const typeLabels: any = {
+                    'mcq': 'Multiple Choice',
+                    'shortanswer': 'Short Answer',
+                    'essay': 'Essay',
+                    'fillblank': 'Fill in the blank',
+                    'Image': 'Image'
+                  };
+                  
+                  return (
+                    <div key={type} className="section">
+                      <div className="text-left mb-4 border-b pb-2">
+                        <h3 className="text-lg font-semibold text-black font-local2 flex justify-between items-center">
+                          <span>{romanNumeral}. {typeLabels[type] || type}</span>
+                          {allSameMarks && <span className="text-base font-bold text-black">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
+                        </h3>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {questionsOfType.map(({ question, marks }, questionIndex) => (
+                          <div key={question.id} className="flex items-start gap-3 py-2" style={{ marginLeft: '8px' }}>
+                            <div className="w-8 flex-shrink-0">
+                              <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.text}</div>
+                              {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                                <div className="mt-2">
+                                  <img 
+                                    src={question.imageUrl} 
+                                    alt="Question Image" 
+                                    className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              {question.type === 'mcq' && question.options && question.options.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {question.options.map((option: any, optIndex: number) => (
+                                    <div key={optIndex} className="text-sm font-local2" style={{ color: '#000' }}>
+                                      {String.fromCharCode(65 + optIndex)}. {option.text || option}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {!allSameMarks && (
+                              <div className="w-12 flex-shrink-0 text-right">
+                                <span className="text-lg font-local2" style={{ color: '#000', fontWeight: 400 }}>[{marks}]</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
         </div>
       </Modal>
 
