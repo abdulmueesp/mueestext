@@ -131,15 +131,23 @@ const UsersTable = () => {
       
       await PATCH(`/schools/${userId}/status`, { status: newStatus === 'Active' });
       
-      // Update local state
+      // Optimistically update UI
       const updatedData = tableData.map(u =>
         u.id === userId
           ? { ...u, status: newStatus }
           : u
       );
       setTableData(updatedData);
-      
+
       message.success("Status updated successfully!");
+
+      // Refresh list so current filters (e.g., Active only) stay consistent
+      fetchSchools({
+        pageSize,
+        page: currentPage,
+        q: debouncedSearch || undefined,
+        status: statusFilter || undefined,
+      });
     } catch (error) {
       console.error('Failed to update status:', error);
       message.error("Failed to update status. Please try again.");

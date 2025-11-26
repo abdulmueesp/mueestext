@@ -645,6 +645,10 @@ const Paper = () => {
     'mcq': { count: 0, marks: 2 },
     'Image': { count: 0, marks: 3 },
   });
+  const [imagePreview, setImagePreview] = useState<{ open: boolean; url: string }>({
+    open: false,
+    url: '',
+  });
 
   const applyRandomGeneration = async () => {
     const formValues = form.getFieldsValue();
@@ -1279,7 +1283,12 @@ const Paper = () => {
                         )}
                         {(q.type === 'Image' || q.type === 'image') && q.imageUrl && (
                           <div className="mt-2">
-                            <img src={q.imageUrl} alt="Question Image" className="w-48 h-32 object-cover rounded border" />
+                            <img
+                              src={q.imageUrl}
+                              alt="Question Image"
+                              className="w-48 h-32 object-cover rounded border cursor-pointer"
+                              onClick={() => setImagePreview({ open: true, url: q.imageUrl || '' })}
+                            />
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-3">
@@ -1662,6 +1671,28 @@ const Paper = () => {
                 </div>
               );
             })}
+        </div>
+      </Modal>
+
+      {/* Image Preview Modal */}
+      <Modal
+        open={imagePreview.open}
+        onCancel={() => setImagePreview({ open: false, url: '' })}
+        footer={null}
+        centered
+        width={600}
+        className="font-local2"
+      >
+        <div className="flex justify-center items-center">
+          {imagePreview.url ? (
+            <img
+              src={imagePreview.url}
+              alt="Preview"
+              className="max-h-[70vh] object-contain rounded border"
+            />
+          ) : (
+            <div className="text-gray-500">No image to preview</div>
+          )}
         </div>
       </Modal>
 

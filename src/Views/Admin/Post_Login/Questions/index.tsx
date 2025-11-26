@@ -2,7 +2,7 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { Card, Button, Table, Tag, Space, Select, Input, message, Modal, Popconfirm, Tooltip } from "antd";
+import { Card, Button, Table, Tag, Space, Select, Input, message, Modal, Popconfirm, Tooltip, Image } from "antd";
 import { FaEdit } from "react-icons/fa";
 import { FaRegEye } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
@@ -576,11 +576,14 @@ const Questions: React.FC = () => {
               <div>
                 <strong>Image:</strong>
                 <div className="mt-2">
-                  <img 
-                    src={selectedQuestion.imageUrl} 
-                    alt="Question Image" 
-                    className="max-w-full h-auto rounded border"
-                    style={{ maxHeight: '300px' }}
+                  <Image
+                    src={selectedQuestion.imageUrl}
+                    alt="Question Image"
+                    className="rounded border"
+                    style={{ maxHeight: '300px', maxWidth: '100%', objectFit: 'contain' }}
+                    preview={{
+                      src: selectedQuestion.imageUrl,
+                    }}
                   />
                 </div>
               </div>
