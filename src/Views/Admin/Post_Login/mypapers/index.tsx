@@ -127,6 +127,7 @@ type PaperSection = {
     number: number;
     text: string;
     marks?: number | null;
+    showMarks?: boolean;
     options?: string[];
     imageUrl?: string | null;
   }>;
@@ -148,7 +149,7 @@ const renderSectionsHtml = (sections: PaperSection[]) =>
       <div class="section">
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>${section.heading}</span>
-          ${section.summary ? `<span style="font-weight: bold;">${section.summary}</span>` : ''}
+          ${section.summary ? `<span style="color: #000;">${section.summary}</span>` : ''}
         </div>
         ${section.questions
           .map(
@@ -182,11 +183,11 @@ const renderSectionsHtml = (sections: PaperSection[]) =>
                       : ''
                   }
                 </div>
-                ${
-                  question.marks === null || question.marks === undefined
+                  ${
+                    question.showMarks === false || question.marks === null || question.marks === undefined
                     ? ''
-                    : `<div class="marks">[${question.marks} marks]</div>`
-                }
+                    : `<div class="marks">[${question.marks}]</div>`
+                  }
               </div>
             `
           )
@@ -454,7 +455,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             questions: questionsOfType.map((question: any, index: number) => ({
               number: index + 1,
               text: question.question || '',
-              marks: allSameMarks ? null : (question.mark || question.marks || 0),
+              marks: question.mark ?? question.marks ?? null,
+              showMarks: !allSameMarks,
               options: question.questionType === 'mcq' ? question.options : undefined,
               imageUrl: question.questionType === 'image' && question.imageUrl ? resolveImageUrl(question.imageUrl) : null
             }))
@@ -489,7 +491,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             questions: questionsOfType.map(({ question, marks }: any, index: number) => ({
               number: index + 1,
               text: question.text || question.question || '',
-              marks: allSameMarks ? null : marks,
+              marks: marks ?? question?.marks ?? null,
+              showMarks: !allSameMarks,
               options: question.type === 'Multiple Choice' ? question.options : undefined,
               imageUrl: (question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? resolveImageUrl(question.imageUrl) : null
             }))
@@ -659,37 +662,49 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       };
 
       for (const section of sections) {
-        docChildren.push(
-          new Paragraph({
-            heading: HeadingLevel.HEADING2,
-            spacing: { before: 200, after: 50 },
-            children: [new TextRun({ text: section.heading, bold: true })]
-          })
-        );
-
-        if (section.summary) {
-          docChildren.push(
-            new Paragraph({
-              children: [new TextRun({ text: section.summary, italics: true })],
-              spacing: { after: 100 }
+        const headingChildren = [new TextRun({ text: section.heading, bold: true })];
+        const hasSummary = Boolean(section.summary && section.summary.trim());
+        if (hasSummary) {
+          headingChildren.push(new TextRun({ text: '\t' }));
+          headingChildren.push(
+            new TextRun({
+              text: section.summary!,
+          
+              bold: true
             })
           );
         }
 
+        docChildren.push(
+          new Paragraph({
+            heading: HeadingLevel.HEADING2,
+            spacing: { before: 200, after: 50 },
+            tabStops: hasSummary
+              ? [
+                  {
+                    type: TabStopType.RIGHT,
+                    position: 9000
+                  }
+                ]
+              : undefined,
+            children: headingChildren
+          })
+        );
+
         // eslint-disable-next-line no-await-in-loop
         for (const question of section.questions) {
-          const hasMarks = question.marks !== null && question.marks !== undefined;
+          const shouldShowMarks = question.showMarks !== false && question.marks !== null && question.marks !== undefined;
           const questionParagraphChildren = [
             new TextRun({
               text: `${question.number}) ${question.text}`
             })
           ];
 
-          if (hasMarks) {
+          if (shouldShowMarks) {
             questionParagraphChildren.push(new TextRun({ text: '\t' }));
             questionParagraphChildren.push(
               new TextRun({
-                text: `[${question.marks} marks]`,
+            text: `[${question.marks}]`,
                 bold: true
               })
             );
@@ -698,7 +713,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           docChildren.push(
             new Paragraph({
               spacing: { after: 50 },
-              tabStops: hasMarks
+              tabStops: shouldShowMarks
                 ? [
                     {
                       type: TabStopType.RIGHT,
@@ -827,14 +842,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               <Printer size={16} />
               Print Question Paper
             </Button>
-            <Button
-              onClick={handleDownloadPdf}
-              className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-3 bg-purple-500 text-white hover:bg-purple-500"
-              loading={pdfLoading}
-            >
-              <FileText size={16} />
-              Download PDF
-            </Button>
+           
             <Button
               onClick={handleDownloadWord}
               className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-3 bg-blue-500 text-white hover:bg-blue-500"
