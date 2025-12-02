@@ -21,9 +21,11 @@ type QuestionListItem = {
   question: string;
   variant: string;
   questionType: string;
+  qtitle?: string;
   imageUrl?: string;
   marks?: number;
-  options?: Array<{ text: string; isCorrect: boolean }>;
+  options?: Array<{ text: string; isCorrect?: boolean } | string>;
+  correctAnswer?: number | number[];
 };
 
 const DUMMY_ITEMS: QuestionListItem[] = [
@@ -188,10 +190,14 @@ const Questions: React.FC = () => {
         const chapter = r?.chapter || r?.chapterName || "";
         const question = r?.question || r?.questionText || "";
         const questionType = r?.questionType || "";
+        const qtitle = r?.qtitle || r?.questionTitle || "";
         const imageUrl = r?.imageUrl || null;
         const marks = r?.marks || 0;
         const options = r?.options || [];
-        return { 
+        const correctAnswer = r?.correctAnswer;
+        
+        // Preserve all question fields (question1, question2, etc.) and subQuestions for picture questions
+        const baseItem: any = { 
           id, 
           quizId,
           className, 
@@ -201,10 +207,27 @@ const Questions: React.FC = () => {
           question, 
           variant: r?.variant || "",
           questionType,
+          qtitle,
           imageUrl,
           marks,
-          options
-        } as QuestionListItem;
+          options,
+          correctAnswer
+        };
+        
+        // Add question1, question2, etc. if they exist
+        for (let i = 1; i <= 5; i++) {
+          const qKey = `question${i}`;
+          if (r[qKey] !== undefined) {
+            baseItem[qKey] = r[qKey];
+          }
+        }
+        
+        // Add subQuestions if they exist
+        if (r?.subQuestions) {
+          baseItem.subQuestions = r.subQuestions;
+        }
+        
+        return baseItem as QuestionListItem;
       });
       setRows(mapped);
       setTotal(data?.total || data?.count || mapped.length);
@@ -251,14 +274,19 @@ const Questions: React.FC = () => {
       key: "questionType", 
       width: 140,
       render: (value: string) => {
+        const normalizedValue = value?.toLowerCase();
         const typeColors: Record<string, string> = {
           'mcq': 'blue',
+          'multiple choice': 'blue',
           'fillblank': 'green',
+          'direct questions': 'green',
           'shortanswer': 'orange',
+          'answer the following questions': 'orange',
           'essay': 'purple',
-          'image': 'cyan'
+          'image': 'cyan',
+          'picture questions': 'cyan'
         };
-        return <Tag color={typeColors[value] || 'default'}>{value?.toUpperCase()}</Tag>;
+        return <Tag color={typeColors[normalizedValue] || typeColors[value] || 'default'}>{value?.toUpperCase()}</Tag>;
       }
     },
     { 
@@ -513,13 +541,54 @@ const Questions: React.FC = () => {
           </Button>,
         ]}
       >
-        {selectedQuestion && (
-          <div className="space-y-4">
-            <div>
-              <strong>Question:</strong>
-              <p className="mt-1 p-3 bg-gray-50 rounded">{selectedQuestion.question}</p>
-            </div>
-            
+        {selectedQuestion && (() => {
+          // Check if it's a picture question type
+          const isPictureQuestion = selectedQuestion.questionType?.toLowerCase() === 'picture questions' || 
+                                    selectedQuestion.questionType?.toLowerCase() === 'image';
+          
+          // Collect all questions for picture questions from question, question1, question2, etc. fields
+          let allQuestions: string[] = [];
+          if (isPictureQuestion) {
+            const questions: string[] = [];
+            // Add question field if it exists and is not null
+            if (selectedQuestion.question && selectedQuestion.question !== null && selectedQuestion.question !== 'null' && String(selectedQuestion.question).trim().length > 0) {
+              questions.push(String(selectedQuestion.question));
+            }
+            // Add question1, question2, etc. if they exist and are not null
+            // Access dynamic fields using bracket notation with any type
+            const questionData = selectedQuestion as any;
+            for (let i = 1; i <= 5; i++) {
+              const qKey = `question${i}`;
+              const qValue = questionData[qKey];
+              if (qValue !== null && qValue !== undefined && qValue !== 'null' && String(qValue).trim().length > 0) {
+                questions.push(String(qValue));
+              }
+            }
+            allQuestions = questions;
+          }
+
+          return (
+            <div className="space-y-4">
+              {/* Display questions - multiple for picture questions, single for others */}
+              {isPictureQuestion && allQuestions.length > 0 ? (
+                <div>
+                  <strong>Questions:</strong>
+                  <div className="mt-2 space-y-2">
+                    {allQuestions.map((q, index) => (
+                      <div key={index} className="p-3 bg-gray-50 rounded">
+                        <span className="font-medium mr-2">{index + 1}.</span>
+                        <span>{q}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : selectedQuestion.question && selectedQuestion.question !== 'null' && selectedQuestion.question.trim().length > 0 ? (
+                <div>
+                  <strong>Question:</strong>
+                  <p className="mt-1 p-3 bg-gray-50 rounded">{selectedQuestion.question}</p>
+                </div>
+              ) : null}
+              
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <strong>Class:</strong>
@@ -540,11 +609,15 @@ const Questions: React.FC = () => {
               <div>
                 <strong>Question Type:</strong>
                 <Tag color={
-                  selectedQuestion.questionType === 'mcq' ? 'blue' :
-                  selectedQuestion.questionType === 'fillblank' ? 'green' :
-                  selectedQuestion.questionType === 'shortanswer' ? 'orange' :
-                  selectedQuestion.questionType === 'essay' ? 'purple' :
-                  selectedQuestion.questionType === 'image' ? 'cyan' : 'default'
+                  (() => {
+                    const normalizedType = selectedQuestion.questionType?.toLowerCase();
+                    if (normalizedType === 'mcq' || normalizedType === 'multiple choice') return 'blue';
+                    if (normalizedType === 'fillblank' || normalizedType === 'direct questions') return 'green';
+                    if (normalizedType === 'shortanswer' || normalizedType === 'answer the following questions') return 'orange';
+                    if (normalizedType === 'essay') return 'purple';
+                    if (normalizedType === 'image' || normalizedType === 'picture questions') return 'cyan';
+                    return 'default';
+                  })()
                 } className="ml-2">
                   {selectedQuestion.questionType?.toUpperCase()}
                 </Tag>
@@ -553,26 +626,49 @@ const Questions: React.FC = () => {
                 <strong>Marks:</strong>
                 <span className="ml-2 font-semibold">{selectedQuestion.marks}</span>
               </div>
+              {selectedQuestion.qtitle && (
+                <div className="col-span-2">
+                  <strong>Question Title:</strong>
+                  <span className="ml-2">{selectedQuestion.qtitle}</span>
+                </div>
+              )}
             </div>
 
-            {selectedQuestion.questionType === 'mcq' && selectedQuestion.options && selectedQuestion.options.length > 0 && (
+            {((selectedQuestion.questionType?.toLowerCase() === 'mcq' || 
+               selectedQuestion.questionType?.toLowerCase() === 'multiple choice' ||
+               selectedQuestion.questionType === 'Multiple Choice' ||
+               (selectedQuestion.questionType === 'Direct Questions' && selectedQuestion.qtitle === 'Tick the odd one in the following') ||
+               (selectedQuestion.questionType?.toLowerCase() === 'direct questions' && selectedQuestion.qtitle === 'Match the following')) &&
+              selectedQuestion.options && selectedQuestion.options.length > 0) && (
               <div>
                 <strong>Options:</strong>
                 <div className="mt-2 space-y-2">
-                  {selectedQuestion.options.map((option, index) => (
-                    <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
-                      <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
-                      <span className="flex-1">{option.text}</span>
-                      {option.isCorrect && (
-                        <Tag color="green" size="small">Correct</Tag>
-                      )}
-                    </div>
-                  ))}
+                  {selectedQuestion.options.map((option: any, index: number) => {
+                    // Handle different option structures
+                    const optionText = option?.text || option?.label || option || '';
+                    const isCorrect = option?.isCorrect || 
+                                     (Array.isArray(selectedQuestion.correctAnswer) && selectedQuestion.correctAnswer.includes(index)) ||
+                                     selectedQuestion.correctAnswer === index;
+                    
+                    return (
+                      <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
+                        <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
+                        <span className="flex-1">{optionText}</span>
+                        {isCorrect && (
+                          <Tag color="green" size="small">Correct</Tag>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {selectedQuestion.questionType === 'image' && selectedQuestion.imageUrl && (
+            {((selectedQuestion.questionType === 'image' && selectedQuestion.imageUrl) ||
+              (selectedQuestion.questionType?.toLowerCase() === 'picture questions' && selectedQuestion.imageUrl) ||
+              (selectedQuestion.questionType?.toLowerCase() === 'direct questions' && 
+               selectedQuestion.qtitle === 'Match the following' && 
+               selectedQuestion.imageUrl)) && (
               <div>
                 <strong>Image:</strong>
                 <div className="mt-2">
@@ -589,7 +685,8 @@ const Questions: React.FC = () => {
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
       </Modal>
     
     </>

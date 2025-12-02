@@ -106,6 +106,98 @@ const QuestionForm = () => {
   // Force re-render state for question type changes
   const [questionTypeChangeKey, setQuestionTypeChangeKey] = React.useState(0);
 
+  // Mapping from internal question type keys to display labels
+  const QUESTION_TYPE_LABELS: Record<string, string> = {
+    mcq: 'Multiple Choice',
+    fillblank: 'Direct Questions',
+    shortanswer: 'Answer the following questions',
+    image: 'Picture questions',
+  };
+
+  // Question title options based on question type
+  const questionTitleOptions: Record<string, Array<{ value: string; label: string }>> = {
+    mcq: [
+      {
+        value: "Choose the correct answer from the brackets and fill in the blanks",
+        label: "Choose the correct answer from the brackets and fill in the blanks",
+      },
+      {
+        value: "Tick the correct answers",
+        label: "Tick the correct answers",
+      },
+      {
+        value: "Choose the correct answers",
+        label: "Choose the correct answers",
+      },
+    ],
+    fillblank: [
+      {
+        value: "Fill in the blanks with correct answers",
+        label: "Fill in the blanks with correct answers",
+      },
+      {
+        value: "Write true or false",
+        label: "Write true or false",
+      },
+      {
+        value: "Name the following",
+        label: "Name the following",
+      },
+      {
+        value: "Tick the odd one in the following",
+        label: "Tick the odd one in the following",
+      },
+      {
+        value: "Match the following",
+        label: "Match the following",
+      },
+      {
+        value: "Give one word of the following",
+        label: "Give one word of the following",
+      },
+    ],
+    shortanswer: [
+      {
+        value: "Define the following",
+        label: "Define the following",
+      },
+      {
+        value: "Short Answer Questions",
+        label: "Short Answer Questions",
+      },
+      {
+        value: "Long Answer Questions",
+        label: "Long Answer Questions",
+      },
+      {
+        value: "Paragraph Wrirting",
+        label: "Paragraph Wrirting",
+      },
+      {
+        value: "Essay Writing",
+        label: "Essay Writing",
+      },
+      {
+        value: "Letter Writing",
+        label: "Letter Writing",
+      },
+    ],
+    image: [
+      {
+        value: "Identity the pictures",
+        label: "Identity the pictures",
+      },
+      {
+        value: "Look at the pictures and answer the following",
+        label: "Look at the pictures and answer the following",
+      },
+      {
+        value: "Describe the following picture.",
+        label: "Describe the following picture.",
+      },
+    ],
+  };
+
   const handleFinish = async (values: any) => {
     try {
       setSubmitting(true);
@@ -114,10 +206,16 @@ const QuestionForm = () => {
       const questions = values?.questions || [];
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
-        if (q?.questionType === 'image') {
-          const hasImage = q?.imageFileList?.[0]?.url || 
-                          q?.imageFileList?.[0]?.thumbUrl || 
-                          q?.imageUrl;
+        const isImageLike =
+          q?.questionType === 'image' ||
+          (q?.questionType === 'fillblank' &&
+            q?.questionTitle === 'Match the following');
+
+        if (isImageLike) {
+          const hasImage =
+            q?.imageFileList?.[0]?.url ||
+            q?.imageFileList?.[0]?.thumbUrl ||
+            q?.imageUrl;
           if (!hasImage) {
             message.error(`Please upload an image for question ${i + 1}`);
             setSubmitting(false);
@@ -128,26 +226,60 @@ const QuestionForm = () => {
   
       // Normalize questions
       const normalizedQuestions = questions.map((q: any) => {
+        const internalType = q?.questionType;
         const normalized: any = {
-          questionType: q?.questionType,
-          question: q?.question,
+          // Send the user-facing label in the API
+          questionType: QUESTION_TYPE_LABELS[internalType] || internalType,
+          qtitle: q?.questionTitle,
           marks: q?.marks,
         };
+
+        // For picture questions, send separate question fields (question, question1, question2, etc.)
+        if (internalType === 'image' && Array.isArray(q?.subQuestions) && q.subQuestions.length > 0) {
+          const subTexts = q.subQuestions
+            .map((sq: any) => (sq?.text || '').trim())
+            .filter((t: string) => t.length > 0);
+          
+          // Set question for first sub-question
+          if (subTexts.length > 0) {
+            normalized.question = subTexts[0];
+          }
+          
+          // Set question1, question2, etc. for remaining sub-questions
+          for (let i = 1; i < subTexts.length; i++) {
+            normalized[`question${i}`] = subTexts[i];
+          }
+          
+          normalized.subQuestions = q.subQuestions.map((sq: any) => ({ text: sq?.text || '' }));
+        } else {
+          // For non-picture questions, set the question field normally
+          normalized.question = q?.question;
+        }
   
-        if (q?.questionType === 'mcq') {
+        if (
+          internalType === 'mcq' ||
+          (internalType === 'fillblank' &&
+            q?.questionTitle === 'Tick the odd one in the following')
+        ) {
           normalized.options = (q?.options || []).map((opt: any) => ({ text: opt?.text || '' }));
           normalized.correctAnswer = q?.correctAnswer;
         }
   
         if (
-          q?.questionType === 'fillblank' ||
-          q?.questionType === 'shortanswer' ||
-          q?.questionType === 'essay'
+          (internalType === 'fillblank' &&
+            q?.questionTitle !== 'Tick the odd one in the following') ||
+          internalType === 'shortanswer' ||
+          internalType === 'essay'
         ) {
           normalized.correctAnswer = q?.correctAnswer;
         }
   
-        if (q?.questionType === 'image') {
+        const isImageLike =
+          internalType === 'image' ||
+          (internalType === 'fillblank' &&
+            q?.questionTitle === 'Match the following');
+
+        if (isImageLike) {
           const fileUrl =
             q?.imageFileList?.[0]?.url ||
             q?.imageFileList?.[0]?.thumbUrl ||
@@ -430,15 +562,53 @@ const QuestionForm = () => {
   const handleQuestionTypeChange = (questionIndex: number, questionType: string) => {
     // Clear existing answer data when question type changes
     const questions = form.getFieldValue('questions') || [];
+    const isMcq = questionType === 'mcq';
+    const isImage = questionType === 'image';
+
     questions[questionIndex] = {
       ...questions[questionIndex],
       questionType,
-      options: questionType === 'mcq' ? [{ text: '' }, { text: '' }] : undefined,
+      questionTitle: undefined,
+      options: isMcq ? [{ text: '' }, { text: '' }] : undefined,
+      subQuestions: isImage ? [{ text: '' }] : undefined,
       correctAnswer: undefined
     };
     form.setFieldValue('questions', questions);
     
     // Force re-render
+    setQuestionTypeChangeKey(prev => prev + 1);
+  };
+
+  // Handle question title change (for special behaviours like odd-one-out)
+  const handleQuestionTitleChange = (questionIndex: number, title: string) => {
+    const questions = form.getFieldValue('questions') || [];
+    const current = questions[questionIndex] || {};
+    const questionType = current.questionType;
+
+    const isOddOneOutFillBlank =
+      questionType === 'fillblank' &&
+      title === 'Tick the odd one in the following';
+
+    // Ensure options exist for MCQ and for Direct Questions with odd-one-out title
+    let nextOptions = current.options;
+    if (questionType === 'mcq' || isOddOneOutFillBlank) {
+      nextOptions =
+        Array.isArray(current.options) && current.options.length > 0
+          ? current.options
+          : [{ text: '' }, { text: '' }];
+    }
+
+    questions[questionIndex] = {
+      ...current,
+      questionTitle: title,
+      options: nextOptions,
+      // Clear correctAnswer on any title change
+      correctAnswer: undefined,
+    };
+
+    form.setFieldValue('questions', questions);
+
+    // Force re-render so MCQ-like UI appears/disappears correctly
     setQuestionTypeChangeKey(prev => prev + 1);
   };
 
@@ -457,25 +627,48 @@ const QuestionForm = () => {
               chapter: questionData.chapter,
               status: questionData.status ?? true,
               questions: (questionData.questions || []).map((q: any) => {
+                // Map backend questionType (which may be a label) back to internal key
+                const backendType: string = q.questionType;
+                const internalType =
+                  Object.entries(QUESTION_TYPE_LABELS).find(
+                    ([, label]) => label === backendType,
+                  )?.[0] || backendType;
+
+                // Map qtitle (API field) back to questionTitle (form field)
+                const questionTitle = q.qtitle || q.questionTitle;
+
                 const mappedQuestion: any = {
-                  questionType: q.questionType,
+                  questionType: internalType,
+                  questionTitle: questionTitle,
                   question: q.question,
                   marks: q.marks,
                 };
 
-                // Handle MCQ options
-                if (q.questionType === 'mcq' && q.options) {
+                const isOddOneOutFillBlank =
+                  internalType === 'fillblank' &&
+                  questionTitle === 'Tick the odd one in the following';
+
+                const isImageLike =
+                  internalType === 'image' ||
+                  (internalType === 'fillblank' &&
+                    questionTitle === 'Match the following');
+
+                // Handle MCQ-like options (including odd-one-out direct questions)
+                if ((internalType === 'mcq' || isOddOneOutFillBlank) && q.options) {
                   mappedQuestion.options = q.options;
                   mappedQuestion.correctAnswer = q.correctAnswer;
                 }
 
-                // Handle text-based answers
-                if (['fillblank', 'shortanswer', 'essay'].includes(q.questionType)) {
+                // Handle text-based answers (exclude odd-one-out which is MCQ-like)
+                if (
+                  ['fillblank', 'shortanswer', 'essay'].includes(internalType) &&
+                  !(internalType === 'fillblank' && questionTitle === 'Tick the odd one in the following')
+                ) {
                   mappedQuestion.correctAnswer = q.correctAnswer;
                 }
 
-                // Handle image questions
-                if (q.questionType === 'image' && q.imageUrl) {
+                // Handle image questions (including Direct Questions with "Match the following")
+                if (isImageLike && q.imageUrl) {
                   mappedQuestion.imageUrl = q.imageUrl;
                   mappedQuestion.imageFileList = [{
                     uid: '-1',
@@ -483,6 +676,23 @@ const QuestionForm = () => {
                     status: 'done',
                     url: q.imageUrl,
                   }];
+                }
+
+                // For picture questions, rehydrate subQuestions if present,
+                // or split the main question text by lines as a fallback.
+                if (internalType === 'image') {
+                  if (Array.isArray(q.subQuestions) && q.subQuestions.length > 0) {
+                    mappedQuestion.subQuestions = q.subQuestions.map((sq: any) => ({
+                      text: sq?.text || ''
+                    }));
+                  } else if (typeof q.question === 'string' && q.question.trim().length > 0) {
+                    const parts = q.question.split('\n').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
+                    if (parts.length > 0) {
+                      mappedQuestion.subQuestions = parts.map((t: string) => ({ 
+                        text: t
+                      }));
+                    }
+                  }
                 }
 
                 return mappedQuestion;
@@ -520,7 +730,14 @@ const QuestionForm = () => {
   const renderQuestionTypeFields = (questionType: string, questionIndex: number) => {
     if (!questionType) return null;
 
-    switch (questionType) {
+    const questionTitle = form.getFieldValue(['questions', questionIndex, 'questionTitle']);
+    const isOddOneOutFillBlank =
+      questionType === 'fillblank' &&
+      questionTitle === 'Tick the odd one in the following';
+
+    const effectiveType = isOddOneOutFillBlank ? 'mcq' : questionType;
+
+    switch (effectiveType) {
       case 'mcq':
         return (
           <div key={`mcq-${questionIndex}-${questionTypeChangeKey}`}>
@@ -593,6 +810,8 @@ const QuestionForm = () => {
         return null;
 
       case 'image':
+        // Extra per-picture-question fields are handled inline in the card
+        // (sub-questions list rendered instead of single question textarea)
         return null;
 
       default:
@@ -743,11 +962,37 @@ const QuestionForm = () => {
                             onChange={(value) => handleQuestionTypeChange(name, value)}
                           >
                             <Option value="mcq">Multiple Choice (MCQ)</Option>
-                            <Option value="fillblank">Fill in the Blank</Option>
-                            <Option value="shortanswer">Short Answer</Option>
-                            <Option value="essay">Essay</Option>
-                            <Option value="image">Image</Option>
+                            <Option value="fillblank">Direct Questions</Option>
+                            <Option value="shortanswer">Answer the following questions</Option>
+                            <Option value="image">Picture questions</Option>
                           </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                        <Form.Item
+                          required={true}
+                          {...restField}
+                          name={[name, 'questionTitle']}
+                          label="Question Title"
+                          rules={[{ required: true, message: 'Please select question title!' }]}
+                        >
+                          <Select
+                            size="large"
+                            placeholder="Select question title"
+                            onChange={(value) => handleQuestionTitleChange(name, value)}
+                            disabled={
+                              !form.getFieldValue(['questions', name, 'questionType']) ||
+                              !questionTitleOptions[
+                                form.getFieldValue(['questions', name, 'questionType'])
+                              ]
+                            }
+                            options={
+                              questionTitleOptions[
+                                form.getFieldValue(['questions', name, 'questionType'])
+                              ] || []
+                            }
+                            allowClear
+                          />
                         </Form.Item>
                       </Col>
                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
@@ -770,26 +1015,80 @@ const QuestionForm = () => {
                     </Row>
 
                     {form.getFieldValue(['questions', name, 'questionType']) && (
-                      <Row gutter={16}>
-                        <Col span={24}>
-                          <Form.Item
-                          required={false}
-                            {...restField}
-                            name={[name, 'question']}
-                            label="Question"
-                            rules={[{ required: true, message: 'Please enter question!' }]}
-                          >
-                            <TextArea 
-                              rows={3}
-                              placeholder="Enter your question" 
-                            />
-                          </Form.Item>
-                        </Col>
-                      </Row>
+                      <>
+                        {/* For Picture questions, allow multiple sub-questions under the same image */}
+                        {form.getFieldValue(['questions', name, 'questionType']) === 'image' ? (
+                          <Form.List name={[name, 'subQuestions']}>
+                            {(subFields, { add, remove }) => (
+                              <>
+                                {subFields.map(({ key: subKey, name: subName, ...subRestField }) => (
+                                  <Row key={subKey} gutter={16} align="middle" style={{ marginBottom: 16 }}>
+                                    <Col span={22}>
+                                      <Form.Item
+                                        required={false}
+                                        {...subRestField}
+                                        name={[subName, 'text']}
+                                        label={subName === 0 ? 'Questions' : undefined}
+                                        rules={[{ required: true, message: 'Please enter question!' }]}
+                                      >
+                                        <TextArea
+                                          rows={2}
+                                          placeholder="Enter your question"
+                                        />
+                                      </Form.Item>
+                                    </Col>
+                                    <Col span={2}>
+                                      {subFields.length > 1 && (
+                                        <Button
+                                          type="text"
+                                          icon={<MinusCircleOutlined />}
+                                          onClick={() => remove(subName)}
+                                          danger
+                                        />
+                                      )}
+                                    </Col>
+                                  </Row>
+                                ))}
+                                {subFields.length < 4 && (
+                                  <Form.Item>
+                                    <Button
+                                      type="dashed"
+                                      onClick={() => add({ text: '' })}
+                                      icon={<PlusOutlined />}
+                                      className="w-full"
+                                    >
+                                      Add Question
+                                    </Button>
+                                  </Form.Item>
+                                )}
+                              </>
+                            )}
+                          </Form.List>
+                        ) : (
+                          <Row gutter={16}>
+                            <Col span={24}>
+                              <Form.Item
+                              required={false}
+                                {...restField}
+                                name={[name, 'question']}
+                                label="Question"
+                                rules={[{ required: true, message: 'Please enter question!' }]}
+                              >
+                                <TextArea 
+                                  rows={3}
+                                  placeholder="Enter your question" 
+                                />
+                              </Form.Item>
+                            </Col>
+                          </Row>
+                        )}
+                      </>
                     )}
 
-                    {/* Image upload is shown when type is Image */}
-                    {form.getFieldValue(['questions', name, 'questionType']) === 'image' && (
+                    {/* Image upload is shown for Image type and Direct Questions with "Match the following" title */}
+                    {(form.getFieldValue(['questions', name, 'questionType']) === 'image' ||
+                      (form.getFieldValue(['questions', name, 'questionType']) === 'fillblank' &&
+                        form.getFieldValue(['questions', name, 'questionTitle']) === 'Match the following')) && (
                       <Row gutter={16}>
                         <Col span={24}>
                           <Form.Item 
