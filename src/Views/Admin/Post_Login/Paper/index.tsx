@@ -8,7 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { API, GET, POST } from "../../../../Components/common/api";
 const { Title, Text } = Typography;
 
-type QuestionType = 'shortanswer' | 'essay' | 'fillblank' | 'mcq' | 'Image';
+type QuestionType = 'multiplechoice' | 'direct' | 'answerthefollowing' | 'picture';
+type MCQSubtype = 'choose_from_brackets' | 'tick_correct' | 'choose_correct';
+type DirectSubtype = 'fill_in_blanks' | 'true_or_false' | 'name_following' | 'tick_odd_one' | 'match_following' | 'give_one_word';
+type AnswerFollowingSubtype = 'define_following' | 'short_answer' | 'long_answer' | 'paragraph_writing' | 'essay_writing' | 'letter_writing';
+type PictureSubtype = 'identify_pictures' | 'look_and_answer' | 'describe_picture';
 
 interface QuestionItem {
   id: string;
@@ -17,6 +21,10 @@ interface QuestionItem {
   imageUrl?: string;
   defaultMarks: number;
   options?: string[];
+  mcqSubtype?: MCQSubtype;
+  directSubtype?: DirectSubtype;
+  answerFollowingSubtype?: AnswerFollowingSubtype;
+  pictureSubtype?: PictureSubtype;
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -28,6 +36,36 @@ const examTypes = [
   { label: 'SECOND TERM', value: 'SECOND TERM' },
   { label: 'THIRD MID TERM', value: 'THIRD MID TERM' },
   { label: 'THIRD TERM', value: 'THIRD TERM' }
+];
+
+const mcqSubtypeOptions = [
+  { label: 'Choose the correct answer from the brackets and fill in the blanks', value: 'choose_from_brackets' },
+  { label: 'Tick the correct answers', value: 'tick_correct' },
+  { label: 'Choose the correct answers', value: 'choose_correct' }
+];
+
+const directSubtypeOptions = [
+  { label: 'Fill in the blanks with correct answers', value: 'fill_in_blanks' },
+  { label: 'Write true or false', value: 'true_or_false' },
+  { label: 'Name the following', value: 'name_following' },
+  { label: 'Tick the odd one in the following', value: 'tick_odd_one' },
+  { label: 'Match the following', value: 'match_following' },
+  { label: 'Give one word of the following', value: 'give_one_word' }
+];
+
+const answerFollowingSubtypeOptions = [
+  { label: 'Define the following', value: 'define_following' },
+  { label: 'Short Answer Questions', value: 'short_answer' },
+  { label: 'Long Answer Questions', value: 'long_answer' },
+  { label: 'Paragraph Writing', value: 'paragraph_writing' },
+  { label: 'Essay Writing', value: 'essay_writing' },
+  { label: 'Letter Writing', value: 'letter_writing' }
+];
+
+const pictureSubtypeOptions = [
+  { label: 'Identity the pictures', value: 'identify_pictures' },
+  { label: 'Look at the pictures and answer the following', value: 'look_and_answer' },
+  { label: 'Describe the following picture', value: 'describe_picture' }
 ];
 
 const isMobileDevice = () => {
@@ -141,6 +179,10 @@ const Paper = () => {
   const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState<boolean>(false);
   const [chooseLoading, setChooseLoading] = useState<boolean>(false);
   const [downloadLoading, setDownloadLoading] = useState<boolean>(false);
+  const [mcqSubtype, setMcqSubtype] = useState<MCQSubtype | undefined>(undefined);
+  const [directSubtype, setDirectSubtype] = useState<DirectSubtype | undefined>(undefined);
+  const [answerFollowingSubtype, setAnswerFollowingSubtype] = useState<AnswerFollowingSubtype | undefined>(undefined);
+  const [pictureSubtype, setPictureSubtype] = useState<PictureSubtype | undefined>(undefined);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -367,6 +409,17 @@ const Paper = () => {
         ? overrideFilterTypes
         : (modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes);
       
+      // Map new question types to API format
+      const mapTypeToAPI = (type: QuestionType): string => {
+        const typeMap: Record<QuestionType, string> = {
+          'multiplechoice': 'mcq',
+          'direct': 'shortanswer',
+          'answerthefollowing': 'essay',
+          'picture': 'image'
+        };
+        return typeMap[type] || type;
+      };
+
       const query = {
         limit: customPageSize || pageSize,
         page: customPage || page,
@@ -374,44 +427,70 @@ const Paper = () => {
         subject: formValues.subject,
         book: selectedBookName,
         chapters: selectedChapterNames,
-        questionTypes: filterTypes.map(type => type === 'Image' ? 'image' : type).join(',')
+        questionTypes: filterTypes.map(type => mapTypeToAPI(type)).join(',')
       };
       const data = await GET("/qustion", query);
+      
+      // Map API response types back to new question types
+      const mapAPIToType = (apiType: string): QuestionType => {
+        if (apiType === 'image' || apiType === 'Image') return 'picture';
+        if (apiType === 'mcq') return 'multiplechoice';
+        if (apiType === 'shortanswer' || apiType === 'shortAnswer') return 'direct';
+        if (apiType === 'essay' || apiType === 'longAnswer') return 'answerthefollowing';
+        return apiType as QuestionType;
+      };
+      
       const questionsList = Array.isArray(data?.data)
         ? data.data.map((q: any) => ({
             id: q.questionId || q.id || q._id,
-            type: q.questionType === 'image' ? 'Image' : (q.questionType || q.type),
+            type: mapAPIToType(q.questionType || q.type || 'direct'),
             text: q.question || q.text || q.title,
             imageUrl: q.imageUrl || q.image,
             defaultMarks: q.marks || q.defaultMarks || 1,
-            options: q.options || q.choices
+            options: q.options || q.choices,
+            mcqSubtype: q.mcqSubtype,
+            directSubtype: q.directSubtype,
+            answerFollowingSubtype: q.answerFollowingSubtype,
+            pictureSubtype: q.pictureSubtype
           }))
         : Array.isArray(data?.results)
           ? data.results.map((q: any) => ({
               id: q.id || q._id,
-              type: q.questionType || q.type,
+              type: mapAPIToType(q.questionType || q.type || 'direct'),
               text: q.question || q.text || q.title,
               imageUrl: q.imageUrl || q.image,
               defaultMarks: q.marks || q.defaultMarks || 1,
-              options: q.options || q.choices
+              options: q.options || q.choices,
+              mcqSubtype: q.mcqSubtype,
+              directSubtype: q.directSubtype,
+              answerFollowingSubtype: q.answerFollowingSubtype,
+              pictureSubtype: q.pictureSubtype
             }))
           : Array.isArray(data?.questions)
             ? data.questions.map((q: any) => ({
                 id: q.id || q._id,
-                type: q.questionType || q.type,
+                type: mapAPIToType(q.questionType || q.type || 'direct'),
                 text: q.question || q.text || q.title,
                 imageUrl: q.imageUrl || q.image,
                 defaultMarks: q.marks || q.defaultMarks || 1,
-                options: q.options || q.choices
+                options: q.options || q.choices,
+                mcqSubtype: q.mcqSubtype,
+                directSubtype: q.directSubtype,
+                answerFollowingSubtype: q.answerFollowingSubtype,
+                pictureSubtype: q.pictureSubtype
               }))
             : Array.isArray(data)
               ? data.map((q: any) => ({
                   id: q.id || q._id,
-                  type: q.questionType || q.type,
+                  type: mapAPIToType(q.questionType || q.type || 'direct'),
                   text: q.question || q.text || q.title,
                   imageUrl: q.imageUrl || q.image,
                   defaultMarks: q.marks || q.defaultMarks || 1,
-                  options: q.options || q.choices
+                  options: q.options || q.choices,
+                  mcqSubtype: q.mcqSubtype,
+                  directSubtype: q.directSubtype,
+                  answerFollowingSubtype: q.answerFollowingSubtype,
+                  pictureSubtype: q.pictureSubtype
                 }))
               : [];
       setQuestionsData(questionsList);
@@ -446,17 +525,16 @@ const Paper = () => {
   // Organize selected questions by type for preview
   const organizedQuestions = useMemo(() => {
     const result: Record<QuestionType, Array<{ question: QuestionItem; marks: number; globalNumber: number }>> = {
-      'shortanswer': [],
-      'essay': [],
-      'fillblank': [],
-      'mcq': [],
-      'Image': []
+      'multiplechoice': [],
+      'direct': [],
+      'answerthefollowing': [],
+      'picture': []
     };
     
     let globalCounter = 1;
     
     // Process questions in the desired order of question types for preview/print
-    (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[]).forEach(type => {
+    (['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[]).forEach(type => {
       const questionsOfType = Object.entries(selectedQuestions)
         .map(([id, marks]) => ({ 
           id, 
@@ -513,6 +591,22 @@ const Paper = () => {
       message.error('Please select at least one Question Type');
       return;
     }
+    if (selectedTypes.includes('multiplechoice') && !mcqSubtype) {
+      message.error('Please select a Multiple Choice Questions type');
+      return;
+    }
+    if (selectedTypes.includes('direct') && !directSubtype) {
+      message.error('Please select a Direct Questions type');
+      return;
+    }
+    if (selectedTypes.includes('answerthefollowing') && !answerFollowingSubtype) {
+      message.error('Please select an Answer the following questions type');
+      return;
+    }
+    if (selectedTypes.includes('picture') && !pictureSubtype) {
+      message.error('Please select a Picture questions type');
+      return;
+    }
     if (lockedAfterRandom) {
       message.warning('Questions are locked after random generation');
       return;
@@ -564,6 +658,22 @@ const Paper = () => {
     }
     if (selectedTypes.length === 0) {
       message.error('Please select at least one Question Type');
+      return;
+    }
+    if (selectedTypes.includes('multiplechoice') && !mcqSubtype) {
+      message.error('Please select a Multiple Choice Questions type');
+      return;
+    }
+    if (selectedTypes.includes('direct') && !directSubtype) {
+      message.error('Please select a Direct Questions type');
+      return;
+    }
+    if (selectedTypes.includes('answerthefollowing') && !answerFollowingSubtype) {
+      message.error('Please select an Answer the following questions type');
+      return;
+    }
+    if (selectedTypes.includes('picture') && !pictureSubtype) {
+      message.error('Please select a Picture questions type');
       return;
     }
     if (lockedAfterChoose) {
@@ -639,11 +749,10 @@ const Paper = () => {
   };
 
   const [randomConfig, setRandomConfig] = useState<Record<QuestionType, { count: number; marks: number }>>({
-    'shortanswer': { count: 0, marks: 2 },
-    'essay': { count: 0, marks: 8 },
-    'fillblank': { count: 0, marks: 1 },
-    'mcq': { count: 0, marks: 2 },
-    'Image': { count: 0, marks: 3 },
+    'multiplechoice': { count: 0, marks: 2 },
+    'direct': { count: 0, marks: 2 },
+    'answerthefollowing': { count: 0, marks: 3 },
+    'picture': { count: 0, marks: 3 },
   });
   const [imagePreview, setImagePreview] = useState<{ open: boolean; url: string }>({
     open: false,
@@ -680,6 +789,22 @@ const Paper = () => {
     }
     if (!formValues.duration) {
       message.error('Please fill the Duration');
+      return;
+    }
+    if (selectedTypes.includes('multiplechoice') && !mcqSubtype) {
+      message.error('Please select a Multiple Choice Questions type');
+      return;
+    }
+    if (selectedTypes.includes('direct') && !directSubtype) {
+      message.error('Please select a Direct Questions type');
+      return;
+    }
+    if (selectedTypes.includes('answerthefollowing') && !answerFollowingSubtype) {
+      message.error('Please select an Answer the following questions type');
+      return;
+    }
+    if (selectedTypes.includes('picture') && !pictureSubtype) {
+      message.error('Please select a Picture questions type');
       return;
     }
 
@@ -722,11 +847,11 @@ const Paper = () => {
       className: formValues.class,
       book: selectedBookName,
       chapters: selectedChapterNames.join(','),
-      mcqCount: randomConfig['mcq'].count || 0,
-      shortAnswerCount: randomConfig['shortanswer'].count || 0,
-      essayCount: randomConfig['essay'].count || 0,
-      fillInTheBlankCount: randomConfig['fillblank'].count || 0,
-      imageCount: randomConfig['Image'].count || 0
+      mcqCount: randomConfig['multiplechoice'].count || 0,
+      shortAnswerCount: randomConfig['direct'].count || 0,
+      essayCount: randomConfig['answerthefollowing'].count || 0,
+      fillInTheBlankCount: 0,
+      imageCount: randomConfig['picture'].count || 0
     };
 
     try {
@@ -742,24 +867,34 @@ const Paper = () => {
           
           data.questions.forEach((question: any) => {
             const questionId = question.questionId || question.id || question._id;
-            const questionType = question.questionType === 'image' ? 'Image' : 
-                                question.questionType === 'shortAnswer' ? 'shortanswer' :
-                                question.questionType === 'longAnswer' ? 'essay' :
-                                question.questionType === 'fillInTheBlank' ? 'fillblank' :
-                                question.questionType;
+            // Map API response types to new question types
+            let questionType: QuestionType = 'direct';
+            if (question.questionType === 'image' || question.questionType === 'Image') {
+              questionType = 'picture';
+            } else if (question.questionType === 'mcq') {
+              questionType = 'multiplechoice';
+            } else if (question.questionType === 'shortAnswer' || question.questionType === 'shortanswer') {
+              questionType = 'direct';
+            } else if (question.questionType === 'longAnswer' || question.questionType === 'essay') {
+              questionType = 'answerthefollowing';
+            }
             
             // Use the marks configured in the random generate modal, not from API response
-            const configuredMarks = randomConfig[questionType as QuestionType]?.marks || 1;
+            const configuredMarks = randomConfig[questionType]?.marks || 1;
             next[questionId] = configuredMarks;
             
             // Store the question data for display
             const questionItem: QuestionItem = {
               id: questionId,
-              type: questionType as QuestionType,
+              type: questionType,
               text: question.question,
               imageUrl: question.imageUrl,
               defaultMarks: configuredMarks,
-              options: question.options || []
+              options: question.options || [],
+              mcqSubtype: question.mcqSubtype,
+              directSubtype: question.directSubtype,
+              answerFollowingSubtype: question.answerFollowingSubtype,
+              pictureSubtype: question.pictureSubtype
             };
             generatedQuestions.push(questionItem);
             questionsDataMap[questionId] = questionItem;
@@ -809,12 +944,17 @@ const Paper = () => {
     
     // Reset random config
     setRandomConfig({
-      'shortanswer': { count: 0, marks: 2 },
-      'essay': { count: 0, marks: 8 },
-      'fillblank': { count: 0, marks: 1 },
-      'mcq': { count: 0, marks: 2 },
-      'Image': { count: 0, marks: 3 },
+      'multiplechoice': { count: 0, marks: 2 },
+      'direct': { count: 0, marks: 2 },
+      'answerthefollowing': { count: 0, marks: 3 },
+      'picture': { count: 0, marks: 3 },
     });
+    
+    // Reset MCQ subtype, Direct subtype, Answer Following subtype, and Picture subtype
+    setMcqSubtype(undefined);
+    setDirectSubtype(undefined);
+    setAnswerFollowingSubtype(undefined);
+    setPictureSubtype(undefined);
     
     message.success('All data cleared successfully');
   };
@@ -838,25 +978,54 @@ const Paper = () => {
       const question = selectedQuestionsData[questionId] || questionsData.find(q => q.id === questionId);
       if (!question) return null;
       
+      // Map new question types to API format
+      const mapTypeToAPI = (type: QuestionType): string => {
+        const typeMap: Record<QuestionType, string> = {
+          'multiplechoice': 'mcq',
+          'direct': 'shortanswer',
+          'answerthefollowing': 'essay',
+          'picture': 'image'
+        };
+        return typeMap[type] || 'shortanswer';
+      };
+
       const baseQuestion = {
         question: question.text,
-        questionType: question.type === 'Image' ? 'image' : question.type,
+        questionType: mapTypeToAPI(question.type),
         mark: marks
       };
       
-      // Add options for MCQ questions
-      if (question.type === 'mcq' && question.options) {
+      // Add options for Multiple Choice questions
+      if (question.type === 'multiplechoice' && question.options) {
         return {
           ...baseQuestion,
-          options: question.options.map((option: any) => option.text || option)
+          options: question.options.map((option: any) => option.text || option),
+          mcqSubtype: question.mcqSubtype || mcqSubtype
         };
       }
       
-      // Add imageUrl for image questions
-      if (question.type === 'Image' && question.imageUrl) {
+      // Add directSubtype for Direct questions
+      if (question.type === 'direct') {
         return {
           ...baseQuestion,
-          imageUrl: question.imageUrl
+          directSubtype: question.directSubtype || directSubtype
+        };
+      }
+      
+      // Add answerFollowingSubtype for Answer the following questions
+      if (question.type === 'answerthefollowing') {
+        return {
+          ...baseQuestion,
+          answerFollowingSubtype: question.answerFollowingSubtype || answerFollowingSubtype
+        };
+      }
+      
+      // Add imageUrl and pictureSubtype for picture questions
+      if (question.type === 'picture') {
+        return {
+          ...baseQuestion,
+          imageUrl: question.imageUrl,
+          pictureSubtype: question.pictureSubtype || pictureSubtype
         };
       }
       
@@ -922,15 +1091,14 @@ const Paper = () => {
     const subjectDisplay = getSubjectDisplay(formValues?.subject, selectedBookName);
     const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
     
-    const typeLabels: any = {
-      'mcq': 'Multiple Choice',
-      'shortanswer': 'Short Answer',
-      'essay': 'Essay',
-      'fillblank': 'Fill in the blank',
-      'Image': 'Image'
+    const typeLabels: Record<QuestionType, string> = {
+      'multiplechoice': 'Multiple Choice Questions',
+      'direct': 'Direct Questions',
+      'answerthefollowing': 'Answer the following questions',
+      'picture': 'Picture questions'
     };
     
-    const sectionsWithQuestions = (['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+    const sectionsWithQuestions = (['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[])
       .filter(type => organizedQuestions[type].length > 0);
     
     const sectionsHtml = sectionsWithQuestions
@@ -954,12 +1122,12 @@ const Paper = () => {
               <div class="question-no">${questionIndex + 1})</div>
               <div class="question-content">
                 <div class="question-text">${question.text}</div>
-                ${(question.type === 'Image' || question.type === 'image') && question.imageUrl ? `
+                ${question.type === 'picture' && question.imageUrl ? `
                   <div class="question-image">
                     <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
                   </div>
                 ` : ''}
-                ${question.type === 'mcq' && question.options ? `
+                ${question.type === 'multiplechoice' && question.options ? `
                   <div class="question-options" style="margin-top: 10px;">
                     ${question.options.map((option, index) => `
                       <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option.text || option}</div>
@@ -1166,15 +1334,88 @@ const Paper = () => {
             <div className="mb-2 text-gray-700 font-medium">Question Types</div>
             <Checkbox.Group
               options={[
-                { label: 'Short Answer', value: 'shortanswer' },
-                { label: 'Essay', value: 'essay' },
-                { label: 'Fill in the blank', value: 'fillblank' },
-                { label: 'Multiple Choice', value: 'mcq' },
-                { label: 'Image', value: 'Image' },
+                { label: 'Multiple Choice Questions', value: 'multiplechoice' },
+                { label: 'Direct Questions', value: 'direct' },
+                { label: 'Answer the following questions', value: 'answerthefollowing' },
+                { label: 'Picture questions', value: 'picture' },
               ]}
               value={selectedTypes}
-              onChange={(vals) => { setSelectedTypes(vals as QuestionType[]); }}
+              onChange={(vals) => { 
+                setSelectedTypes(vals as QuestionType[]);
+                // Clear MCQ subtype if Multiple Choice Questions is deselected
+                if (!vals.includes('multiplechoice')) {
+                  setMcqSubtype(undefined);
+                }
+                // Clear Direct subtype if Direct Questions is deselected
+                if (!vals.includes('direct')) {
+                  setDirectSubtype(undefined);
+                }
+                // Clear Answer Following subtype if Answer the following questions is deselected
+                if (!vals.includes('answerthefollowing')) {
+                  setAnswerFollowingSubtype(undefined);
+                }
+                // Clear Picture subtype if Picture questions is deselected
+                if (!vals.includes('picture')) {
+                  setPictureSubtype(undefined);
+                }
+              }}
             />
+            {selectedTypes.includes('multiplechoice') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Multiple Choice Questions title</div>
+                <Select
+                  size="large"
+                  placeholder="Select MCQ type"
+                  value={mcqSubtype}
+                  onChange={(value) => setMcqSubtype(value)}
+                  options={mcqSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
+            )}
+            {selectedTypes.includes('direct') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Direct Questions title</div>
+                <Select
+                  size="large"
+                  placeholder="Select Direct Questions type"
+                  value={directSubtype}
+                  onChange={(value) => setDirectSubtype(value)}
+                  options={directSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
+            )}
+            {selectedTypes.includes('answerthefollowing') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Answer the following questions title</div>
+                <Select
+                  size="large"
+                  placeholder="Select Answer the following questions type"
+                  value={answerFollowingSubtype}
+                  onChange={(value) => setAnswerFollowingSubtype(value)}
+                  options={answerFollowingSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
+            )}
+            {selectedTypes.includes('picture') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Picture questions title</div>
+                <Select
+                  size="large"
+                  placeholder="Select Picture questions type"
+                  value={pictureSubtype}
+                  onChange={(value) => setPictureSubtype(value)}
+                  options={pictureSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-5">
@@ -1209,36 +1450,44 @@ const Paper = () => {
               <div className="text-[#007575] font-medium text-sm">Filter question types</div>
               <div className="flex flex-col md:flex-row gap-3">
               <div className="w-full md:w-[50%] flex flex-wrap gap-2">
-                {(['shortanswer','essay','fillblank','mcq','Image'] as QuestionType[]).map(t => (
-                  <Button
-                    key={`flt-${t}`}
-                    size="small"
-                    disabled={!selectedTypes.includes(t)}
-                    onClick={async () => {
-                      setPage(1);
-                      const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
-                      setModalFilterTypes(newFilterTypes);
-                      
-                      try {
-                        setFilterLoading(true);
-                        // If no filters selected, show all selectedTypes
-                        if (newFilterTypes.length === 0) {
-                          setModalFilterTypes([]);
-                          await fetchQuestions(1, pageSize, selectedTypes);
-                          return;
-                        }
+                {(['multiplechoice','direct','answerthefollowing','picture'] as QuestionType[]).map(t => {
+                  const typeLabels: Record<QuestionType, string> = {
+                    'multiplechoice': 'Multiple Choice',
+                    'direct': 'Direct',
+                    'answerthefollowing': 'Answer Following',
+                    'picture': 'Picture'
+                  };
+                  return (
+                    <Button
+                      key={`flt-${t}`}
+                      size="small"
+                      disabled={!selectedTypes.includes(t)}
+                      onClick={async () => {
+                        setPage(1);
+                        const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
+                        setModalFilterTypes(newFilterTypes);
+                        
+                        try {
+                          setFilterLoading(true);
+                          // If no filters selected, show all selectedTypes
+                          if (newFilterTypes.length === 0) {
+                            setModalFilterTypes([]);
+                            await fetchQuestions(1, pageSize, selectedTypes);
+                            return;
+                          }
 
-                        // Trigger API call with new filter types explicitly
-                        await fetchQuestions(1, pageSize, newFilterTypes);
-                      } finally {
-                        setFilterLoading(false);
-                      }
-                    }}
-                      className={`font-local2 rounded-full px-3 py-1 text-sm border ${!selectedTypes.includes(t) ? 'opacity-50 cursor-not-allowed' : ''} ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white hover:!text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!opacity-90' : 'bg-white text-gray-700 border-gray-300 hover:!border-[#339999] hover:!text-[#007575]'}`}
-                  >
-                    {t}
-                  </Button>
-                ))}
+                          // Trigger API call with new filter types explicitly
+                          await fetchQuestions(1, pageSize, newFilterTypes);
+                        } finally {
+                          setFilterLoading(false);
+                        }
+                      }}
+                        className={`font-local2 rounded-full px-3 py-1 text-sm border ${!selectedTypes.includes(t) ? 'opacity-50 cursor-not-allowed' : ''} ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white hover:!text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!opacity-90' : 'bg-white text-gray-700 border-gray-300 hover:!border-[#339999] hover:!text-[#007575]'}`}
+                    >
+                      {typeLabels[t]}
+                    </Button>
+                  );
+                })}
   
               </div>
                 <div className="w-full md:w-[50%] flex items-center justify-end gap-4 text-[15px] text-[#007575] ">
@@ -1270,9 +1519,14 @@ const Paper = () => {
                         {questionNumber}.
                       </div>
                       <div className="flex-1">
-                        <div className="text-xs uppercase text-gray-500">{q.type}</div>
+                        <div className="text-xs uppercase text-gray-500">
+                          {q.type === 'multiplechoice' ? 'Multiple Choice' : 
+                           q.type === 'direct' ? 'Direct' :
+                           q.type === 'answerthefollowing' ? 'Answer Following' :
+                           q.type === 'picture' ? 'Picture' : q.type}
+                        </div>
                         <div className="text-gray-800">{q.text}</div>
-                        {q.type === 'mcq' && q.options && (
+                        {q.type === 'multiplechoice' && q.options && (
                           <div className="text-xs text-gray-600 mt-2">
                             {q.options.map((option: any, index: number) => (
                               <div key={index}>
@@ -1281,7 +1535,7 @@ const Paper = () => {
                             ))}
                           </div>
                         )}
-                        {(q.type === 'Image' || q.type === 'image') && q.imageUrl && (
+                        {q.type === 'picture' && q.imageUrl && (
                           <div className="mt-2">
                             <img
                               src={q.imageUrl}
@@ -1413,7 +1667,7 @@ const Paper = () => {
 
             {/* Sections and Questions */}
             <div className="space-y-8">
-              {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+              {(['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[])
                 .filter(type => organizedQuestions[type].length > 0)
                 .map((type, sectionIndex) => {
                   const questionsOfType = organizedQuestions[type];
@@ -1424,12 +1678,11 @@ const Paper = () => {
                   const sectionMarks = allSameMarks ? allMarks[0] : null;
                   const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
                   
-                  const typeLabels: any = {
-                    'mcq': 'Multiple Choice',
-                    'shortanswer': 'Short Answer',
-                    'essay': 'Essay',
-                    'fillblank': 'Fill in the blank',
-                    'Image': 'Image'
+                  const typeLabels: Record<QuestionType, string> = {
+                    'multiplechoice': 'Multiple Choice Questions',
+                    'direct': 'Direct Questions',
+                    'answerthefollowing': 'Answer the following questions',
+                    'picture': 'Picture questions'
                   };
                   
                   return (
@@ -1449,7 +1702,7 @@ const Paper = () => {
                             </div>
                             <div className="flex-1">
                               <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.text}</div>
-                              {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                              {question.type === 'picture' && question.imageUrl && (
                                 <div className="mt-2">
                                   <img 
                                     src={question.imageUrl} 
@@ -1461,7 +1714,7 @@ const Paper = () => {
                                   />
                                 </div>
                               )}
-                              {question.type === 'mcq' && question.options && question.options.length > 0 && (
+                              {question.type === 'multiplechoice' && question.options && question.options.length > 0 && (
                                 <div className="mt-2 space-y-1">
                                   {question.options.map((option: any, optIndex: number) => (
                                     <div key={optIndex} className="text-sm font-local2" style={{ color: '#000' }}>
@@ -1614,7 +1867,7 @@ const Paper = () => {
             </div>
           </div>
           
-          {(['mcq', 'fillblank', 'shortanswer', 'Image', 'essay'] as QuestionType[])
+          {(['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[])
             .map(type => {
               const questionsOfType = Object.entries(selectedQuestions)
                 .filter(([id]) => selectedQuestionsData[id]?.type === type)
@@ -1631,10 +1884,17 @@ const Paper = () => {
               const sectionMarks = allSameMarks ? allMarks[0] : null;
               const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
               
+              const typeLabels: Record<QuestionType, string> = {
+                'multiplechoice': 'Multiple Choice Questions',
+                'direct': 'Direct Questions',
+                'answerthefollowing': 'Answer the following questions',
+                'picture': 'Picture questions'
+              };
+              
               return (
                 <div key={type} className="border rounded-lg p-4">
                   <h4 className="text-md font-semibold mb-3 text-[#007575] border-b pb-2 text-left flex justify-between items-center">
-                    <span>{romanNumeral}. {type} ({questionsOfType.length} questions)</span>
+                    <span>{romanNumeral}. {typeLabels[type]} ({questionsOfType.length} questions)</span>
                     {allSameMarks && <span className="text-sm font-normal text-gray-600">[{questionCount} × {sectionMarks} = {sectionTotal}]</span>}
                   </h4>
                   <div className="space-y-3">
@@ -1644,12 +1904,12 @@ const Paper = () => {
                           <span className="font-semibold min-w-[30px]">{index + 1}.</span>
                           <div className="flex-1">
                             <div className="text-gray-800">{question.text}</div>
-                            {(question.type === 'Image' || question.type === 'image') && question.imageUrl && (
+                            {question.type === 'picture' && question.imageUrl && (
                               <div className="mt-2">
                                 <img src={question.imageUrl} alt="Question" className="w-48 h-32 object-cover rounded border" />
                               </div>
                             )}
-                            {question.type === 'mcq' && question.options && question.options.length > 0 && (
+                            {question.type === 'multiplechoice' && question.options && question.options.length > 0 && (
                               <div className="mt-2 space-y-1">
                                 {question.options.map((option, optIndex) => (
                                   <div key={optIndex} className="text-sm text-gray-700">
