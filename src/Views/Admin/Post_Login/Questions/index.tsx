@@ -545,10 +545,15 @@ const Questions: React.FC = () => {
           // Check if it's a picture question type
           const isPictureQuestion = selectedQuestion.questionType?.toLowerCase() === 'picture questions' || 
                                     selectedQuestion.questionType?.toLowerCase() === 'image';
+          // Check if it's the multi-question MCQ title ("Choose the correct answers")
+          const isMultiQuestionMcq = (
+            (selectedQuestion.questionType?.toLowerCase() === 'mcq' || selectedQuestion.questionType?.toLowerCase() === 'multiple choice')
+            && selectedQuestion.qtitle === 'Choose the correct answers'
+          );
           
-          // Collect all questions for picture questions from question, question1, question2, etc. fields
+          // Collect all questions for picture questions and multi-question MCQ from question, question1, question2, etc. fields
           let allQuestions: string[] = [];
-          if (isPictureQuestion) {
+          if (isPictureQuestion || isMultiQuestionMcq) {
             const questions: string[] = [];
             // Add question field if it exists and is not null
             if (selectedQuestion.question && selectedQuestion.question !== null && selectedQuestion.question !== 'null' && String(selectedQuestion.question).trim().length > 0) {
@@ -567,10 +572,15 @@ const Questions: React.FC = () => {
             allQuestions = questions;
           }
 
+          const hideSingleQuestion =
+            (selectedQuestion.questionType?.toLowerCase() === 'direct questions' ||
+             selectedQuestion.questionType?.toLowerCase() === 'fillblank') &&
+            selectedQuestion.qtitle === 'Tick the odd one in the following';
+
           return (
             <div className="space-y-4">
               {/* Display questions - multiple for picture questions, single for others */}
-              {isPictureQuestion && allQuestions.length > 0 ? (
+              {(isPictureQuestion || isMultiQuestionMcq) && allQuestions.length > 0 ? (
                 <div>
                   <strong>Questions:</strong>
                   <div className="mt-2 space-y-2">
@@ -582,7 +592,7 @@ const Questions: React.FC = () => {
                     ))}
                   </div>
                 </div>
-              ) : selectedQuestion.question && selectedQuestion.question !== 'null' && selectedQuestion.question.trim().length > 0 ? (
+              ) : (!hideSingleQuestion && selectedQuestion.question && selectedQuestion.question !== 'null' && selectedQuestion.question.trim().length > 0) ? (
                 <div>
                   <strong>Question:</strong>
                   <p className="mt-1 p-3 bg-gray-50 rounded">{selectedQuestion.question}</p>

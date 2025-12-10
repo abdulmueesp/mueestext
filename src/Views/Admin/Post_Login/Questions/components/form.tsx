@@ -234,8 +234,12 @@ const QuestionForm = () => {
           marks: q?.marks,
         };
 
-        // For picture questions, send separate question fields (question, question1, question2, etc.)
-        if (internalType === 'image' && Array.isArray(q?.subQuestions) && q.subQuestions.length > 0) {
+        const isMultiQuestionMcq =
+          internalType === 'mcq' &&
+          q?.questionTitle === 'Choose the correct answers';
+
+        // For picture questions (and multi-question MCQ), send separate question fields (question, question1, question2, etc.)
+        if ((internalType === 'image' || isMultiQuestionMcq) && Array.isArray(q?.subQuestions) && q.subQuestions.length > 0) {
           const subTexts = q.subQuestions
             .map((sq: any) => (sq?.text || '').trim())
             .filter((t: string) => t.length > 0);
@@ -251,8 +255,14 @@ const QuestionForm = () => {
           }
           
           normalized.subQuestions = q.subQuestions.map((sq: any) => ({ text: sq?.text || '' }));
+        } else if (
+          internalType === 'fillblank' &&
+          q?.questionTitle === 'Tick the odd one in the following'
+        ) {
+          // Backend requires question field; set a placeholder when not provided
+          normalized.question = 'Tick the odd one in the following';
         } else {
-          // For non-picture questions, set the question field normally
+          // For other questions, set the question field normally
           normalized.question = q?.question;
         }
   
@@ -589,6 +599,10 @@ const QuestionForm = () => {
       questionType === 'fillblank' &&
       title === 'Tick the odd one in the following';
 
+    const isMcqMultiQuestion =
+      questionType === 'mcq' &&
+      title === 'Choose the correct answers';
+
     // Ensure options exist for MCQ and for Direct Questions with odd-one-out title
     let nextOptions = current.options;
     if (questionType === 'mcq' || isOddOneOutFillBlank) {
@@ -598,10 +612,22 @@ const QuestionForm = () => {
           : [{ text: '' }, { text: '' }];
     }
 
+    const nextSubQuestions =
+      isMcqMultiQuestion
+        ? (Array.isArray(current.subQuestions) && current.subQuestions.length > 0
+            ? current.subQuestions
+            : [{ text: '' }])
+        : (questionType === 'image'
+            ? (Array.isArray(current.subQuestions) && current.subQuestions.length > 0
+                ? current.subQuestions
+                : [{ text: '' }])
+            : undefined);
+
     questions[questionIndex] = {
       ...current,
       questionTitle: title,
       options: nextOptions,
+      subQuestions: nextSubQuestions,
       // Clear correctAnswer on any title change
       correctAnswer: undefined,
     };
@@ -693,6 +719,22 @@ const QuestionForm = () => {
                       }));
                     }
                   }
+                } else if (
+                  internalType === 'mcq' &&
+                  questionTitle === 'Choose the correct answers'
+                ) {
+                  if (Array.isArray(q.subQuestions) && q.subQuestions.length > 0) {
+                    mappedQuestion.subQuestions = q.subQuestions.map((sq: any) => ({
+                      text: sq?.text || ''
+                    }));
+                  } else if (typeof q.question === 'string' && q.question.trim().length > 0) {
+                    const parts = q.question.split('\n').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
+                    if (parts.length > 0) {
+                      mappedQuestion.subQuestions = parts.map((t: string) => ({
+                        text: t
+                      }));
+                    }
+                  }
                 }
 
                 return mappedQuestion;
@@ -739,8 +781,56 @@ const QuestionForm = () => {
 
     switch (effectiveType) {
       case 'mcq':
+        const isMultiQuestionMcq = questionTitle === 'Choose the correct answers';
         return (
           <div key={`mcq-${questionIndex}-${questionTypeChangeKey}`}>
+            {isMultiQuestionMcq && (
+              <Form.List name={[questionIndex, 'subQuestions']}>
+                {(subFields, { add, remove }) => (
+                  <>
+                    {subFields.map(({ key: subKey, name: subName, ...subRestField }) => (
+                      <Row key={subKey} gutter={16} align="middle" style={{ marginBottom: 16 }}>
+                        <Col span={22}>
+                          <Form.Item
+                            {...subRestField}
+                            name={[subName, 'text']}
+                            label={subName === 0 ? 'Questions' : undefined}
+                            rules={[{ required: true, message: 'Please enter question!' }]}
+                          >
+                            <TextArea
+                              rows={2}
+                              placeholder="Enter your question"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={2}>
+                          {subFields.length > 1 && (
+                            <Button
+                              type="text"
+                              icon={<MinusCircleOutlined />}
+                              onClick={() => remove(subName)}
+                              danger
+                            />
+                          )}
+                        </Col>
+                      </Row>
+                    ))}
+                    {subFields.length < 4 && (
+                      <Form.Item>
+                        <Button
+                          type="dashed"
+                          onClick={() => add({ text: '' })}
+                          icon={<PlusOutlined />}
+                          className="w-full"
+                        >
+                          Add Question
+                        </Button>
+                      </Form.Item>
+                    )}
+                  </>
+                )}
+              </Form.List>
+            )}
             <Form.List name={[questionIndex, 'options']}>
               {(fields, { add, remove }) => (
                 <>
@@ -1064,7 +1154,10 @@ const QuestionForm = () => {
                               </>
                             )}
                           </Form.List>
-                        ) : (
+                        ) : form.getFieldValue(['questions', name, 'questionType']) === 'mcq' &&
+                          form.getFieldValue(['questions', name, 'questionTitle']) === 'Choose the correct answers' ? null :
+                          (form.getFieldValue(['questions', name, 'questionType']) === 'fillblank' &&
+                            form.getFieldValue(['questions', name, 'questionTitle']) === 'Tick the odd one in the following') ? null : (
                           <Row gutter={16}>
                             <Col span={24}>
                               <Form.Item

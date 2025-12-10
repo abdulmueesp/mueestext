@@ -419,7 +419,7 @@ const Paper = () => {
         };
         return typeMap[type] || type;
       };
-
+      
       const query = {
         limit: customPageSize || pageSize,
         page: customPage || page,
@@ -988,7 +988,7 @@ const Paper = () => {
         };
         return typeMap[type] || 'shortanswer';
       };
-
+      
       const baseQuestion = {
         question: question.text,
         questionType: mapTypeToAPI(question.type),
@@ -1458,34 +1458,34 @@ const Paper = () => {
                     'picture': 'Picture'
                   };
                   return (
-                    <Button
-                      key={`flt-${t}`}
-                      size="small"
-                      disabled={!selectedTypes.includes(t)}
-                      onClick={async () => {
-                        setPage(1);
-                        const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
-                        setModalFilterTypes(newFilterTypes);
-                        
-                        try {
-                          setFilterLoading(true);
-                          // If no filters selected, show all selectedTypes
-                          if (newFilterTypes.length === 0) {
-                            setModalFilterTypes([]);
-                            await fetchQuestions(1, pageSize, selectedTypes);
-                            return;
-                          }
-
-                          // Trigger API call with new filter types explicitly
-                          await fetchQuestions(1, pageSize, newFilterTypes);
-                        } finally {
-                          setFilterLoading(false);
+                  <Button
+                    key={`flt-${t}`}
+                    size="small"
+                    disabled={!selectedTypes.includes(t)}
+                    onClick={async () => {
+                      setPage(1);
+                      const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
+                      setModalFilterTypes(newFilterTypes);
+                      
+                      try {
+                        setFilterLoading(true);
+                        // If no filters selected, show all selectedTypes
+                        if (newFilterTypes.length === 0) {
+                          setModalFilterTypes([]);
+                          await fetchQuestions(1, pageSize, selectedTypes);
+                          return;
                         }
-                      }}
-                        className={`font-local2 rounded-full px-3 py-1 text-sm border ${!selectedTypes.includes(t) ? 'opacity-50 cursor-not-allowed' : ''} ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white hover:!text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!opacity-90' : 'bg-white text-gray-700 border-gray-300 hover:!border-[#339999] hover:!text-[#007575]'}`}
-                    >
+
+                        // Trigger API call with new filter types explicitly
+                        await fetchQuestions(1, pageSize, newFilterTypes);
+                      } finally {
+                        setFilterLoading(false);
+                      }
+                    }}
+                      className={`font-local2 rounded-full px-3 py-1 text-sm border ${!selectedTypes.includes(t) ? 'opacity-50 cursor-not-allowed' : ''} ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white hover:!text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!opacity-90' : 'bg-white text-gray-700 border-gray-300 hover:!border-[#339999] hover:!text-[#007575]'}`}
+                  >
                       {typeLabels[t]}
-                    </Button>
+                  </Button>
                   );
                 })}
   
