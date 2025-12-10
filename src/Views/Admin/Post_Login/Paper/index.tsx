@@ -409,16 +409,32 @@ const Paper = () => {
         ? overrideFilterTypes
         : (modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes);
       
-      // Map new question types to API format
-      const mapTypeToAPI = (type: QuestionType): string => {
-        const typeMap: Record<QuestionType, string> = {
-          'multiplechoice': 'mcq',
-          'direct': 'shortanswer',
-          'answerthefollowing': 'essay',
-          'picture': 'image'
-        };
-        return typeMap[type] || type;
+      // Human-readable labels for question types (as requested by API)
+      const questionTypeLabels: Record<QuestionType, string> = {
+        multiplechoice: 'Multiple Choice Questions',
+        direct: 'Direct Questions',
+        answerthefollowing: 'Answer the following questions',
+        picture: 'Picture questions',
       };
+
+      // Collect question titles from selected subtypes (one per type if available)
+      const questionTitleLabels: string[] = [];
+      if (selectedTypes.includes('multiplechoice') && mcqSubtype) {
+        const label = mcqSubtypeOptions.find(o => o.value === mcqSubtype)?.label;
+        if (label) questionTitleLabels.push(label);
+      }
+      if (selectedTypes.includes('direct') && directSubtype) {
+        const label = directSubtypeOptions.find(o => o.value === directSubtype)?.label;
+        if (label) questionTitleLabels.push(label);
+      }
+      if (selectedTypes.includes('answerthefollowing') && answerFollowingSubtype) {
+        const label = answerFollowingSubtypeOptions.find(o => o.value === answerFollowingSubtype)?.label;
+        if (label) questionTitleLabels.push(label);
+      }
+      if (selectedTypes.includes('picture') && pictureSubtype) {
+        const label = pictureSubtypeOptions.find(o => o.value === pictureSubtype)?.label;
+        if (label) questionTitleLabels.push(label);
+      }
       
       const query = {
         limit: customPageSize || pageSize,
@@ -427,7 +443,8 @@ const Paper = () => {
         subject: formValues.subject,
         book: selectedBookName,
         chapters: selectedChapterNames,
-        questionTypes: filterTypes.map(type => mapTypeToAPI(type)).join(',')
+        questionTypes: filterTypes.map(type => questionTypeLabels[type] || type).join(','),
+        ...(questionTitleLabels.length > 0 ? { questiontitle: questionTitleLabels.join(',') } : {})
       };
       const data = await GET("/qustion", query);
       
