@@ -21,10 +21,10 @@ interface QuestionItem {
   imageUrl?: string;
   defaultMarks: number;
   options?: string[];
-  mcqSubtype?: MCQSubtype;
-  directSubtype?: DirectSubtype;
-  answerFollowingSubtype?: AnswerFollowingSubtype;
-  pictureSubtype?: PictureSubtype;
+  mcqSubtype?: MCQSubtype | MCQSubtype[];
+  directSubtype?: DirectSubtype | DirectSubtype[];
+  answerFollowingSubtype?: AnswerFollowingSubtype | AnswerFollowingSubtype[];
+  pictureSubtype?: PictureSubtype | PictureSubtype[];
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -157,12 +157,9 @@ const Paper = () => {
   const [form] = Form.useForm();
   const [selectedTypes, setSelectedTypes] = useState<QuestionType[]>([]);
   const [showChooser, setShowChooser] = useState(false);
-  const [randomOpen, setRandomOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedQuestions, setSelectedQuestions] = useState<Record<string, number>>({});
   const [selectedQuestionsData, setSelectedQuestionsData] = useState<Record<string, QuestionItem>>({});
-  const [lockedAfterRandom, setLockedAfterRandom] = useState(false);
-  const [lockedAfterChoose, setLockedAfterChoose] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [modalFilterTypes, setModalFilterTypes] = useState<QuestionType[]>([]);
@@ -176,13 +173,12 @@ const Paper = () => {
   const [questionsLoading, setQuestionsLoading] = useState<boolean>(false);
   const [filterLoading, setFilterLoading] = useState<boolean>(false);
   const [totalQuestions, setTotalQuestions] = useState<number>(0);
-  const [showGeneratedQuestionsModal, setShowGeneratedQuestionsModal] = useState<boolean>(false);
   const [chooseLoading, setChooseLoading] = useState<boolean>(false);
   const [downloadLoading, setDownloadLoading] = useState<boolean>(false);
-  const [mcqSubtype, setMcqSubtype] = useState<MCQSubtype | undefined>(undefined);
-  const [directSubtype, setDirectSubtype] = useState<DirectSubtype | undefined>(undefined);
-  const [answerFollowingSubtype, setAnswerFollowingSubtype] = useState<AnswerFollowingSubtype | undefined>(undefined);
-  const [pictureSubtype, setPictureSubtype] = useState<PictureSubtype | undefined>(undefined);
+  const [mcqSubtype, setMcqSubtype] = useState<MCQSubtype | MCQSubtype[] | undefined>(undefined);
+  const [directSubtype, setDirectSubtype] = useState<DirectSubtype | DirectSubtype[] | undefined>(undefined);
+  const [answerFollowingSubtype, setAnswerFollowingSubtype] = useState<AnswerFollowingSubtype | AnswerFollowingSubtype[] | undefined>(undefined);
+  const [pictureSubtype, setPictureSubtype] = useState<PictureSubtype | PictureSubtype[] | undefined>(undefined);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -358,8 +354,6 @@ const Paper = () => {
       setSelectedQuestions({});
       setSelectedQuestionsData({});
       setShowChooser(false);
-      setLockedAfterChoose(false);
-      setLockedAfterRandom(false);
     }
   }, [selectedClass, selectedSubject, selectedBook, selectedChapters]);
 
@@ -371,8 +365,6 @@ const Paper = () => {
       setSelectedQuestions({});
       setSelectedQuestionsData({});
       setShowChooser(false);
-      setLockedAfterChoose(false);
-      setLockedAfterRandom(false);
     }
   }, [selectedTypes]);
 
@@ -411,7 +403,7 @@ const Paper = () => {
       
       // Human-readable labels for question types (as requested by API)
       const questionTypeLabels: Record<QuestionType, string> = {
-        multiplechoice: 'Multiple Choice Questions',
+        multiplechoice: 'Multiple Choice',
         direct: 'Direct Questions',
         answerthefollowing: 'Answer the following questions',
         picture: 'Picture questions',
@@ -419,22 +411,19 @@ const Paper = () => {
 
       // Collect question titles from selected subtypes (one per type if available)
       const questionTitleLabels: string[] = [];
-      if (selectedTypes.includes('multiplechoice') && mcqSubtype) {
-        const label = mcqSubtypeOptions.find(o => o.value === mcqSubtype)?.label;
-        if (label) questionTitleLabels.push(label);
-      }
-      if (selectedTypes.includes('direct') && directSubtype) {
-        const label = directSubtypeOptions.find(o => o.value === directSubtype)?.label;
-        if (label) questionTitleLabels.push(label);
-      }
-      if (selectedTypes.includes('answerthefollowing') && answerFollowingSubtype) {
-        const label = answerFollowingSubtypeOptions.find(o => o.value === answerFollowingSubtype)?.label;
-        if (label) questionTitleLabels.push(label);
-      }
-      if (selectedTypes.includes('picture') && pictureSubtype) {
-        const label = pictureSubtypeOptions.find(o => o.value === pictureSubtype)?.label;
-        if (label) questionTitleLabels.push(label);
-      }
+      const collectLabels = <T extends { label: string; value: string }>(opts: T[], values: string | string[] | undefined) => {
+        if (!values) return;
+        const arr = Array.isArray(values) ? values : [values];
+        arr.forEach(v => {
+          const label = opts.find(o => o.value === v)?.label;
+          if (label) questionTitleLabels.push(label);
+        });
+      };
+
+      if (selectedTypes.includes('multiplechoice')) collectLabels(mcqSubtypeOptions, mcqSubtype);
+      if (selectedTypes.includes('direct')) collectLabels(directSubtypeOptions, directSubtype);
+      if (selectedTypes.includes('answerthefollowing')) collectLabels(answerFollowingSubtypeOptions, answerFollowingSubtype);
+      if (selectedTypes.includes('picture')) collectLabels(pictureSubtypeOptions, pictureSubtype);
       
       const query = {
         limit: customPageSize || pageSize,
@@ -444,7 +433,7 @@ const Paper = () => {
         book: selectedBookName,
         chapters: selectedChapterNames,
         questionTypes: filterTypes.map(type => questionTypeLabels[type] || type).join(','),
-        ...(questionTitleLabels.length > 0 ? { questiontitle: questionTitleLabels.join(',') } : {})
+        ...(questionTitleLabels.length > 0 ? {title: questionTitleLabels.join(',') } : {})
       };
       const data = await GET("/qustion", query);
       
@@ -608,31 +597,27 @@ const Paper = () => {
       message.error('Please select at least one Question Type');
       return;
     }
-    if (selectedTypes.includes('multiplechoice') && !mcqSubtype) {
+    const hasValue = (v: any) => (Array.isArray(v) ? v.length > 0 : !!v);
+    if (selectedTypes.includes('multiplechoice') && !hasValue(mcqSubtype)) {
       message.error('Please select a Multiple Choice Questions type');
       return;
     }
-    if (selectedTypes.includes('direct') && !directSubtype) {
+    if (selectedTypes.includes('direct') && !hasValue(directSubtype)) {
       message.error('Please select a Direct Questions type');
       return;
     }
-    if (selectedTypes.includes('answerthefollowing') && !answerFollowingSubtype) {
+    if (selectedTypes.includes('answerthefollowing') && !hasValue(answerFollowingSubtype)) {
       message.error('Please select an Answer the following questions type');
       return;
     }
-    if (selectedTypes.includes('picture') && !pictureSubtype) {
+    if (selectedTypes.includes('picture') && !hasValue(pictureSubtype)) {
       message.error('Please select a Picture questions type');
-      return;
-    }
-    if (lockedAfterRandom) {
-      message.warning('Questions are locked after random generation');
       return;
     }
     try {
       setChooseLoading(true);
       // Fetch questions from API
       await fetchQuestions();
-      setLockedAfterChoose(true);
       setShowChooser(true);
       requestAnimationFrame(() => {
         chooserRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -640,64 +625,6 @@ const Paper = () => {
     } finally {
       setChooseLoading(false);
     }
-  };
-
-  const handleRandomGenerate = () => {
-    // Check if required fields are filled
-    const formValues = form.getFieldsValue();
-    if (!formValues.class) {
-      message.error('Please fill the Class');
-      return;
-    }
-    if (!formValues.subject) {
-      message.error('Please fill the Subject ');
-      return;
-    }
-    if (!formValues.book) {
-      message.error('Please fill the Book');
-      return;
-    }
-    if (!formValues.chapters || formValues.chapters.length === 0) {
-      message.error('Please select at least one Chapter');
-      return;
-    }
-    if (!formValues.examType) {
-      message.error('Please fill the Examination Type');
-      return;
-    }
-    if (!formValues.totalMarks) {
-      message.error('Please fill the Total Marks');
-      return;
-    }
-    if (!formValues.duration) {
-      message.error('Please fill the Duration');
-      return;
-    }
-    if (selectedTypes.length === 0) {
-      message.error('Please select at least one Question Type');
-      return;
-    }
-    if (selectedTypes.includes('multiplechoice') && !mcqSubtype) {
-      message.error('Please select a Multiple Choice Questions type');
-      return;
-    }
-    if (selectedTypes.includes('direct') && !directSubtype) {
-      message.error('Please select a Direct Questions type');
-      return;
-    }
-    if (selectedTypes.includes('answerthefollowing') && !answerFollowingSubtype) {
-      message.error('Please select an Answer the following questions type');
-      return;
-    }
-    if (selectedTypes.includes('picture') && !pictureSubtype) {
-      message.error('Please select a Picture questions type');
-      return;
-    }
-    if (lockedAfterChoose) {
-      message.warning('Random generation is locked after choosing questions manually');
-      return;
-    }
-    setRandomOpen(true);
   };
 
   const handlePreview = () => {
@@ -765,183 +692,10 @@ const Paper = () => {
     setShowChooser(false);
   };
 
-  const [randomConfig, setRandomConfig] = useState<Record<QuestionType, { count: number; marks: number }>>({
-    'multiplechoice': { count: 0, marks: 2 },
-    'direct': { count: 0, marks: 2 },
-    'answerthefollowing': { count: 0, marks: 3 },
-    'picture': { count: 0, marks: 3 },
-  });
   const [imagePreview, setImagePreview] = useState<{ open: boolean; url: string }>({
     open: false,
     url: '',
   });
-
-  const applyRandomGeneration = async () => {
-    const formValues = form.getFieldsValue();
-    
-    // Validate required fields
-    if (!formValues.class) {
-      message.error('Please fill the Class');
-      return;
-    }
-    if (!formValues.subject) {
-      message.error('Please fill the Subject');
-      return;
-    }
-    if (!formValues.book) {
-      message.error('Please fill the Book');
-      return;
-    }
-    if (!formValues.chapters || formValues.chapters.length === 0) {
-      message.error('Please select at least one Chapter');
-      return;
-    }
-    if (!formValues.examType) {
-      message.error('Please fill the Examination Type');
-      return;
-    }
-    if (!formValues.totalMarks) {
-      message.error('Please fill the Total Marks');
-      return;
-    }
-    if (!formValues.duration) {
-      message.error('Please fill the Duration');
-      return;
-    }
-    if (selectedTypes.includes('multiplechoice') && !mcqSubtype) {
-      message.error('Please select a Multiple Choice Questions type');
-      return;
-    }
-    if (selectedTypes.includes('direct') && !directSubtype) {
-      message.error('Please select a Direct Questions type');
-      return;
-    }
-    if (selectedTypes.includes('answerthefollowing') && !answerFollowingSubtype) {
-      message.error('Please select an Answer the following questions type');
-      return;
-    }
-    if (selectedTypes.includes('picture') && !pictureSubtype) {
-      message.error('Please select a Picture questions type');
-      return;
-    }
-
-    // Calculate total marks from random config
-    const calculatedTotalMarks = selectedTypes.reduce((total, type) => {
-      const config = randomConfig[type];
-      return total + (config.count * config.marks);
-    }, 0);
-
-    // Validate total marks if totalMarksField is set
-    if (totalMarksField && calculatedTotalMarks !== totalMarksField) {
-      Modal.warning({
-        title: 'Total marks mismatch',
-        content: `Calculated marks (${calculatedTotalMarks}) does not match the configured total marks (${totalMarksField}). Please adjust the count or marks per question to match exactly.`,
-        okText: 'OK'
-      });
-      return;
-    }
-
-    // Check if at least one question type has count > 0
-    const hasQuestions = selectedTypes.some(type => randomConfig[type].count > 0);
-    if (!hasQuestions) {
-      message.error('Please set at least one question count greater than 0');
-      return;
-    }
-
-    // Get book name from selected book ID
-    const selectedBookName = booksOptions.find(book => book.value === formValues.book)?.label || formValues.book;
-    
-    // Get chapter names from selected chapter IDs and format as chapter1,chapter2
-    const selectedChapterNames = Array.isArray(formValues.chapters) 
-      ? formValues.chapters.map(chapterId => 
-          chaptersOptions.find(chapter => chapter.value === chapterId)?.label || chapterId
-        )
-      : [formValues.chapters];
-    
-    // Prepare query parameters
-    const query = {
-      subject: formValues.subject,
-      className: formValues.class,
-      book: selectedBookName,
-      chapters: selectedChapterNames.join(','),
-      mcqCount: randomConfig['multiplechoice'].count || 0,
-      shortAnswerCount: randomConfig['direct'].count || 0,
-      essayCount: randomConfig['answerthefollowing'].count || 0,
-      fillInTheBlankCount: 0,
-      imageCount: randomConfig['picture'].count || 0
-    };
-
-    try {
-      message.loading('Generating random questions...', 0);
-      
-      const data = await GET("/random-gen", query);
-      
-        // Process the response and update selected questions
-        if (data && data.questions && Array.isArray(data.questions)) {
-          const next: Record<string, number> = {};
-          const generatedQuestions: QuestionItem[] = [];
-          const questionsDataMap: Record<string, QuestionItem> = {};
-          
-          data.questions.forEach((question: any) => {
-            const questionId = question.questionId || question.id || question._id;
-            // Map API response types to new question types
-            let questionType: QuestionType = 'direct';
-            if (question.questionType === 'image' || question.questionType === 'Image') {
-              questionType = 'picture';
-            } else if (question.questionType === 'mcq') {
-              questionType = 'multiplechoice';
-            } else if (question.questionType === 'shortAnswer' || question.questionType === 'shortanswer') {
-              questionType = 'direct';
-            } else if (question.questionType === 'longAnswer' || question.questionType === 'essay') {
-              questionType = 'answerthefollowing';
-            }
-            
-            // Use the marks configured in the random generate modal, not from API response
-            const configuredMarks = randomConfig[questionType]?.marks || 1;
-            next[questionId] = configuredMarks;
-            
-            // Store the question data for display
-            const questionItem: QuestionItem = {
-              id: questionId,
-              type: questionType,
-              text: question.question,
-              imageUrl: question.imageUrl,
-              defaultMarks: configuredMarks,
-              options: question.options || [],
-              mcqSubtype: question.mcqSubtype,
-              directSubtype: question.directSubtype,
-              answerFollowingSubtype: question.answerFollowingSubtype,
-              pictureSubtype: question.pictureSubtype
-            };
-            generatedQuestions.push(questionItem);
-            questionsDataMap[questionId] = questionItem;
-          });
-          
-          // Update the questions data and selected questions
-          setQuestionsData(generatedQuestions);
-          setSelectedQuestions(next);
-          setSelectedQuestionsData(questionsDataMap);
-          setLockedAfterRandom(true);
-          setRandomOpen(false);
-          setShowGeneratedQuestionsModal(true);
-          message.destroy();
-          message.success(`Generated ${data.questions.length} questions successfully!`);
-        } else {
-          message.destroy();
-          message.error('No questions returned from the API');
-        }
-    } catch (error) {
-      console.error('Failed to generate random questions:', error);
-      message.destroy();
-      message.error('Failed to generate random questions. Please try again.');
-    }
-  };
-
-  const resetLockedState = () => {
-    setLockedAfterRandom(false);
-    setLockedAfterChoose(false);
-  };
-
   const handleClearAll = () => {
     // Reset form
     form.resetFields();
@@ -949,23 +703,12 @@ const Paper = () => {
     // Reset all states
     setSelectedTypes([]);
     setShowChooser(false);
-    setRandomOpen(false);
     setPreviewOpen(false);
     setSelectedQuestions({});
     setSelectedQuestionsData({});
-    setLockedAfterRandom(false);
-    setLockedAfterChoose(false);
     setPage(1);
     setPageSize(10);
     setModalFilterTypes([]);
-    
-    // Reset random config
-    setRandomConfig({
-      'multiplechoice': { count: 0, marks: 2 },
-      'direct': { count: 0, marks: 2 },
-      'answerthefollowing': { count: 0, marks: 3 },
-      'picture': { count: 0, marks: 3 },
-    });
     
     // Reset MCQ subtype, Direct subtype, Answer Following subtype, and Picture subtype
     setMcqSubtype(undefined);
@@ -1011,13 +754,14 @@ const Paper = () => {
         questionType: mapTypeToAPI(question.type),
         mark: marks
       };
+    const pickFirst = (v: any) => Array.isArray(v) ? v[0] : v;
       
       // Add options for Multiple Choice questions
       if (question.type === 'multiplechoice' && question.options) {
         return {
           ...baseQuestion,
           options: question.options.map((option: any) => option.text || option),
-          mcqSubtype: question.mcqSubtype || mcqSubtype
+        mcqSubtype: pickFirst(question.mcqSubtype) || pickFirst(mcqSubtype)
         };
       }
       
@@ -1025,7 +769,7 @@ const Paper = () => {
       if (question.type === 'direct') {
         return {
           ...baseQuestion,
-          directSubtype: question.directSubtype || directSubtype
+        directSubtype: pickFirst(question.directSubtype) || pickFirst(directSubtype)
         };
       }
       
@@ -1033,7 +777,7 @@ const Paper = () => {
       if (question.type === 'answerthefollowing') {
         return {
           ...baseQuestion,
-          answerFollowingSubtype: question.answerFollowingSubtype || answerFollowingSubtype
+        answerFollowingSubtype: pickFirst(question.answerFollowingSubtype) || pickFirst(answerFollowingSubtype)
         };
       }
       
@@ -1042,7 +786,7 @@ const Paper = () => {
         return {
           ...baseQuestion,
           imageUrl: question.imageUrl,
-          pictureSubtype: question.pictureSubtype || pictureSubtype
+        pictureSubtype: pickFirst(question.pictureSubtype) || pickFirst(pictureSubtype)
         };
       }
       
@@ -1354,7 +1098,7 @@ const Paper = () => {
                 { label: 'Multiple Choice Questions', value: 'multiplechoice' },
                 { label: 'Direct Questions', value: 'direct' },
                 { label: 'Answer the following questions', value: 'answerthefollowing' },
-                { label: 'Picture questions', value: 'picture' },
+                { label: 'Picture Questions', value: 'picture' },
               ]}
               value={selectedTypes}
               onChange={(vals) => { 
@@ -1381,6 +1125,7 @@ const Paper = () => {
               <div className="mt-4">
                 <div className="mb-2 text-gray-700 font-medium">Multiple Choice Questions title</div>
                 <Select
+                  mode="multiple"
                   size="large"
                   placeholder="Select MCQ type"
                   value={mcqSubtype}
@@ -1395,6 +1140,7 @@ const Paper = () => {
               <div className="mt-4">
                 <div className="mb-2 text-gray-700 font-medium">Direct Questions title</div>
                 <Select
+                  mode="multiple"
                   size="large"
                   placeholder="Select Direct Questions type"
                   value={directSubtype}
@@ -1409,6 +1155,7 @@ const Paper = () => {
               <div className="mt-4">
                 <div className="mb-2 text-gray-700 font-medium">Answer the following questions title</div>
                 <Select
+                  mode="multiple"
                   size="large"
                   placeholder="Select Answer the following questions type"
                   value={answerFollowingSubtype}
@@ -1423,6 +1170,7 @@ const Paper = () => {
               <div className="mt-4">
                 <div className="mb-2 text-gray-700 font-medium">Picture questions title</div>
                 <Select
+                  mode="multiple"
                   size="large"
                   placeholder="Select Picture questions type"
                   value={pictureSubtype}
@@ -1436,11 +1184,8 @@ const Paper = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-5">
-            <Button type="primary" onClick={handleChooseQuestions} disabled={lockedAfterRandom || chooseLoading} loading={chooseLoading} className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2">
+            <Button type="primary" onClick={handleChooseQuestions} disabled={chooseLoading} loading={chooseLoading} className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2">
               Choose Questions
-            </Button>
-            <Button type="primary" onClick={handleRandomGenerate} disabled={lockedAfterChoose} className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2">
-              Random Generate
             </Button>
             <Button onClick={handleClearAll} className="bg-red-500 hover:!bg-red-500 border-none text-white hover:!text-white font-local2">
               Clear All
@@ -1470,9 +1215,9 @@ const Paper = () => {
                 {(['multiplechoice','direct','answerthefollowing','picture'] as QuestionType[]).map(t => {
                   const typeLabels: Record<QuestionType, string> = {
                     'multiplechoice': 'Multiple Choice',
-                    'direct': 'Direct',
+                    'direct': 'Direct Questions',
                     'answerthefollowing': 'Answer Following',
-                    'picture': 'Picture'
+                    'picture': 'Picture Questions'
                   };
                   return (
                   <Button
@@ -1699,7 +1444,7 @@ const Paper = () => {
                     'multiplechoice': 'Multiple Choice Questions',
                     'direct': 'Direct Questions',
                     'answerthefollowing': 'Answer the following questions',
-                    'picture': 'Picture questions'
+                    'picture': 'Picture Questions'
                   };
                   
                   return (
@@ -1754,200 +1499,6 @@ const Paper = () => {
                 })}
             </div>
           </div>
-        </div>
-      </Modal>
-
-      {/* Random Generate Modal */}
-      <Modal
-        title="Random Generate"
-        open={randomOpen}
-        onCancel={() => setRandomOpen(false)}
-        onOk={applyRandomGeneration}
-        okText="Generate"
-        okButtonProps={{ className: 'bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2' }}
-        cancelButtonProps={{ className: 'bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2' }}
-        destroyOnClose
-      >
-        <div className="space-y-4 font-local2">
-          <div className="text-sm text-gray-600">Set how many questions of each selected type to add and the marks per question. After generation, editing will be locked.</div>
-          {selectedTypes.map(t => {
-            return (
-              <Card key={t} className="border border-gray-200">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-gray-800 font-medium">{t}</div>
-                    <div className="text-xs text-gray-500">
-                      Configure count and marks
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Text type="secondary" className="text-xs whitespace-nowrap">Count:</Text>
-                      <Input 
-                        type="number"
-                        min={0} 
-                        value={randomConfig[t].count} 
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const numValue = value === '' ? 0 : parseInt(value, 10);
-                          if (!isNaN(numValue) && numValue >= 0) {
-                            setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], count: numValue } }));
-                          }
-                        }}
-                        size="small"
-                        style={{ width: 80 }}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Text type="secondary" className="text-xs whitespace-nowrap">Marks:</Text>
-                      <Input 
-                        type="number"
-                        min={1} 
-                        max={100} 
-                        value={randomConfig[t].marks} 
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          const numValue = value === '' ? 1 : parseInt(value, 10);
-                          if (!isNaN(numValue) && numValue >= 1) {
-                            setRandomConfig(prev => ({ ...prev, [t]: { ...prev[t], marks: numValue } }));
-                          }
-                        }}
-                        size="small"
-                        style={{ width: 80 }}
-                        placeholder="1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-          <Divider className="my-2" />
-          <div className="space-y-2">
-            <div className="text-gray-700 text-sm">Total Mark limit: {totalMarksField || '-'}</div>
-            <div className="text-gray-700 text-sm">
-              Current calculated marks: {
-                selectedTypes.reduce((total, type) => {
-                  const config = randomConfig[type];
-                  return total + (config.count * config.marks);
-                }, 0)
-              }
-            </div>
-            {totalMarksField && (
-              <div className={`text-sm font-medium ${
-                selectedTypes.reduce((total, type) => {
-                  const config = randomConfig[type];
-                  return total + (config.count * config.marks);
-                }, 0) === totalMarksField ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {selectedTypes.reduce((total, type) => {
-                  const config = randomConfig[type];
-                  return total + (config.count * config.marks);
-                }, 0) === totalMarksField ? '✓ Marks match perfectly!' : '⚠ Marks do not match - adjust count or marks per question'}
-              </div>
-            )}
-          </div>
-        </div>
-      </Modal>
-
-      {/* Generated Questions Display Modal */}
-      <Modal
-        title="Generated Questions"
-        open={showGeneratedQuestionsModal}
-        onCancel={() => setShowGeneratedQuestionsModal(false)}
-        footer={[
-          <Button key="close" onClick={() => setShowGeneratedQuestionsModal(false)} className="font-local2">
-            Close
-          </Button>,
-          <Button 
-            key="preview" 
-            type="primary" 
-            onClick={() => {
-              setShowGeneratedQuestionsModal(false);
-              setPreviewOpen(true);
-            }}
-            className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2"
-          >
-            Preview Paper
-          </Button>
-        ]}
-        width={900}
-        className="font-local2"
-      >
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-          <div className="text-center border-b pb-4">
-            <h3 className="text-lg font-bold text-[#007575]">Generated Questions</h3>
-            <div className="flex justify-center gap-6 mt-3 text-sm">
-              <span><strong>Total Questions:</strong> {Object.keys(selectedQuestions).length}</span>
-              <span><strong>Total Marks:</strong> {currentSumMarks}</span>
-            </div>
-          </div>
-          
-          {(['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[])
-            .map(type => {
-              const questionsOfType = Object.entries(selectedQuestions)
-                .filter(([id]) => selectedQuestionsData[id]?.type === type)
-                .map(([id]) => selectedQuestionsData[id])
-                .filter(Boolean) as QuestionItem[];
-              return { type, questionsOfType };
-            })
-            .filter(({ questionsOfType }) => questionsOfType.length > 0)
-            .map(({ type, questionsOfType }, sectionIndex) => {
-              const romanNumeral = toRomanNumeral(sectionIndex + 1);
-              const allMarks = questionsOfType.map(q => selectedQuestions[q.id]);
-              const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
-              const questionCount = questionsOfType.length;
-              const sectionMarks = allSameMarks ? allMarks[0] : null;
-              const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-              
-              const typeLabels: Record<QuestionType, string> = {
-                'multiplechoice': 'Multiple Choice Questions',
-                'direct': 'Direct Questions',
-                'answerthefollowing': 'Answer the following questions',
-                'picture': 'Picture questions'
-              };
-              
-              return (
-                <div key={type} className="border rounded-lg p-4">
-                  <h4 className="text-md font-semibold mb-3 text-[#007575] border-b pb-2 text-left flex justify-between items-center">
-                    <span>{romanNumeral}. {typeLabels[type]} ({questionsOfType.length} questions)</span>
-                    {allSameMarks && <span className="text-sm font-normal text-gray-600">[{questionCount} × {sectionMarks} = {sectionTotal}]</span>}
-                  </h4>
-                  <div className="space-y-3">
-                    {questionsOfType.map((question, index) => (
-                      <div key={question.id} className="flex justify-between items-start gap-3 p-3 border rounded bg-gray-50">
-                        <div className="flex gap-3 flex-1">
-                          <span className="font-semibold min-w-[30px]">{index + 1}.</span>
-                          <div className="flex-1">
-                            <div className="text-gray-800">{question.text}</div>
-                            {question.type === 'picture' && question.imageUrl && (
-                              <div className="mt-2">
-                                <img src={question.imageUrl} alt="Question" className="w-48 h-32 object-cover rounded border" />
-                              </div>
-                            )}
-                            {question.type === 'multiplechoice' && question.options && question.options.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {question.options.map((option, optIndex) => (
-                                  <div key={optIndex} className="text-sm text-gray-700">
-                                    {String.fromCharCode(65 + optIndex)}. {option.text || option}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {!allSameMarks && (
-                          <div className="text-right">
-                            <span className="font-semibold text-gray-600 text-lg">[{selectedQuestions[question.id]} marks]</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
         </div>
       </Modal>
 
