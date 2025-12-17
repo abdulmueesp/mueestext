@@ -362,6 +362,10 @@ const Paper = () => {
       setSelectedQuestionsData({});
       setShowChooser(false);
     }
+    // Clear sections when subject changes from English to non-English
+    if (!isEnglishSubjectValue(selectedSubject) && selectedSections.length > 0) {
+      setSelectedSections([]);
+    }
   }, [selectedClass, selectedSubject, selectedBook, selectedChapters]);
 
   // Also clear questions when question types change
@@ -386,8 +390,12 @@ const Paper = () => {
   const fetchQuestions = async (customPage?: number, customPageSize?: number, overrideFilterTypes?: QuestionType[]) => {
     const formValues = form.getFieldsValue();
     const english = isEnglishSubjectValue(formValues.subject);
-    if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || (!english && selectedTypes.length === 0) || (english && selectedSections.length === 0)) {
-      message.error(english ? 'Please fill all required fields and select at least one Section' : 'Please fill all required fields and select question types');
+    if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || selectedTypes.length === 0) {
+      message.error('Please fill all required fields and select question types');
+      return;
+    }
+    if (english && selectedSections.length === 0) {
+      message.error('Please select at least one Section');
       return;
     }
 
@@ -404,7 +412,7 @@ const Paper = () => {
           ).join(',')
         : formValues.chapters;
       
-      // Priority (non-English only): explicit override -> current modalFilterTypes -> selectedTypes
+      // Priority: explicit override -> current modalFilterTypes -> selectedTypes
       const filterTypes = (Array.isArray(overrideFilterTypes) && overrideFilterTypes.length > 0)
         ? overrideFilterTypes
         : (modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes);
@@ -421,8 +429,8 @@ const Paper = () => {
       const questionTitleLabels: string[] = [];
 
       if (english) {
-        // For English, use selected sections directly as qtitle values
-        questionTitleLabels.push(...selectedSections);
+        // For English, sections are passed as separate section parameter
+        // Don't add to questionTitleLabels for English
       } else {
         const collectLabels = <T extends { label: string; value: string }>(opts: T[], values: string | string[] | undefined) => {
           if (!values) return;
@@ -446,13 +454,11 @@ const Paper = () => {
         subject: formValues.subject,
         book: selectedBookName,
         chapters: selectedChapterNames,
-        ...(questionTitleLabels.length > 0 ? { qtitle: questionTitleLabels.join(',') } : {})
+        ...(questionTitleLabels.length > 0 ? { qtitle: questionTitleLabels.join(',') } : {}),
+        ...(english && selectedSections.length > 0 ? { section: selectedSections.join('&') } : {})
       };
-      // For English, hard-code questionType to "Answer the following questions"
-      // For other subjects, derive from selected question types
-      query.questionType = english
-        ? 'Answer the following questions'
-        : filterTypes.map(type => questionTypeLabels[type] || type).join(',');
+      // Derive from selected question types
+      query.questionType = filterTypes.map(type => questionTypeLabels[type] || type).join(',');
       const data = await GET(API.TITLEAPI, query);
       
       // Map API response types back to new question types
@@ -612,33 +618,30 @@ const Paper = () => {
       message.error('Please fill the Duration');
       return;
     }
-    if (english) {
-      if (!selectedSections.length) {
-        message.error('Please select at least one Section');
-        return;
-      }
-    } else {
-      if (selectedTypes.length === 0) {
-        message.error('Please select at least one Question Type');
-        return;
-      }
-      const hasValue = (v: any) => (Array.isArray(v) ? v.length > 0 : !!v);
-      if (selectedTypes.includes('multiplechoice') && !hasValue(mcqSubtype)) {
-        message.error('Please select a Multiple Choice Questions type');
-        return;
-      }
-      if (selectedTypes.includes('direct') && !hasValue(directSubtype)) {
-        message.error('Please select a Direct Questions type');
-        return;
-      }
-      if (selectedTypes.includes('answerthefollowing') && !hasValue(answerFollowingSubtype)) {
-        message.error('Please select an Answer the following questions type');
-        return;
-      }
-      if (selectedTypes.includes('picture') && !hasValue(pictureSubtype)) {
-        message.error('Please select a Picture questions type');
-        return;
-      }
+    if (english && selectedSections.length === 0) {
+      message.error('Please select at least one Section');
+      return;
+    }
+    if (selectedTypes.length === 0) {
+      message.error('Please select at least one Question Type');
+      return;
+    }
+    const hasValue = (v: any) => (Array.isArray(v) ? v.length > 0 : !!v);
+    if (selectedTypes.includes('multiplechoice') && !hasValue(mcqSubtype)) {
+      message.error('Please select a Multiple Choice Questions type');
+      return;
+    }
+    if (selectedTypes.includes('direct') && !hasValue(directSubtype)) {
+      message.error('Please select a Direct Questions type');
+      return;
+    }
+    if (selectedTypes.includes('answerthefollowing') && !hasValue(answerFollowingSubtype)) {
+      message.error('Please select an Answer the following questions type');
+      return;
+    }
+    if (selectedTypes.includes('picture') && !hasValue(pictureSubtype)) {
+      message.error('Please select a Picture questions type');
+      return;
     }
     try {
       setChooseLoading(true);
@@ -1119,8 +1122,8 @@ const Paper = () => {
           <Divider className="mt-0" />
 
           <div>
-            {isEnglishSubjectValue(selectedSubject) ? (
-              <>
+            {isEnglishSubjectValue(selectedSubject) && (
+              <div className="mb-4">
                 <div className="mb-2 text-gray-700 font-medium">Sections</div>
                 <Select
                   mode="multiple"
@@ -1137,99 +1140,96 @@ const Paper = () => {
                   className="w-full"
                   allowClear
                 />
-              </>
-            ) : (
-              <>
-                <div className="mb-2 text-gray-700 font-medium">Question Types</div>
-                <Checkbox.Group
-                  options={[
-                    { label: 'Multiple Choice Questions', value: 'multiplechoice' },
-                    { label: 'Direct Questions', value: 'direct' },
-                    { label: 'Answer the following questions', value: 'answerthefollowing' },
-                    { label: 'Picture Questions', value: 'picture' },
-                  ]}
-                  value={selectedTypes}
-                  onChange={(vals) => { 
-                    setSelectedTypes(vals as QuestionType[]);
-                    // Clear MCQ subtype if Multiple Choice Questions is deselected
-                    if (!vals.includes('multiplechoice')) {
-                      setMcqSubtype(undefined);
-                    }
-                    // Clear Direct subtype if Direct Questions is deselected
-                    if (!vals.includes('direct')) {
-                      setDirectSubtype(undefined);
-                    }
-                    // Clear Answer Following subtype if Answer the following questions is deselected
-                    if (!vals.includes('answerthefollowing')) {
-                      setAnswerFollowingSubtype(undefined);
-                    }
-                    // Clear Picture subtype if Picture questions is deselected
-                    if (!vals.includes('picture')) {
-                      setPictureSubtype(undefined);
-                    }
-                  }}
+              </div>
+            )}
+            <div className="mb-2 text-gray-700 font-medium">Question Types</div>
+            <Checkbox.Group
+              options={[
+                { label: 'Multiple Choice Questions', value: 'multiplechoice' },
+                { label: 'Direct Questions', value: 'direct' },
+                { label: 'Answer the following questions', value: 'answerthefollowing' },
+                { label: 'Picture Questions', value: 'picture' },
+              ]}
+              value={selectedTypes}
+              onChange={(vals) => { 
+                setSelectedTypes(vals as QuestionType[]);
+                // Clear MCQ subtype if Multiple Choice Questions is deselected
+                if (!vals.includes('multiplechoice')) {
+                  setMcqSubtype(undefined);
+                }
+                // Clear Direct subtype if Direct Questions is deselected
+                if (!vals.includes('direct')) {
+                  setDirectSubtype(undefined);
+                }
+                // Clear Answer Following subtype if Answer the following questions is deselected
+                if (!vals.includes('answerthefollowing')) {
+                  setAnswerFollowingSubtype(undefined);
+                }
+                // Clear Picture subtype if Picture questions is deselected
+                if (!vals.includes('picture')) {
+                  setPictureSubtype(undefined);
+                }
+              }}
+            />
+            {selectedTypes.includes('multiplechoice') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Multiple Choice Questions title</div>
+                <Select
+                  mode="multiple"
+                  size="large"
+                  placeholder="Select MCQ type"
+                  value={mcqSubtype}
+                  onChange={(value) => setMcqSubtype(value)}
+                  options={mcqSubtypeOptions}
+                  className="w-full"
+                  allowClear
                 />
-                {selectedTypes.includes('multiplechoice') && (
-                  <div className="mt-4">
-                    <div className="mb-2 text-gray-700 font-medium">Multiple Choice Questions title</div>
-                    <Select
-                      mode="multiple"
-                      size="large"
-                      placeholder="Select MCQ type"
-                      value={mcqSubtype}
-                      onChange={(value) => setMcqSubtype(value)}
-                      options={mcqSubtypeOptions}
-                      className="w-full"
-                      allowClear
-                    />
-                  </div>
-                )}
-                {selectedTypes.includes('direct') && (
-                  <div className="mt-4">
-                    <div className="mb-2 text-gray-700 font-medium">Direct Questions title</div>
-                    <Select
-                      mode="multiple"
-                      size="large"
-                      placeholder="Select Direct Questions type"
-                      value={directSubtype}
-                      onChange={(value) => setDirectSubtype(value)}
-                      options={directSubtypeOptions}
-                      className="w-full"
-                      allowClear
-                    />
-                  </div>
-                )}
-                {selectedTypes.includes('answerthefollowing') && (
-                  <div className="mt-4">
-                    <div className="mb-2 text-gray-700 font-medium">Answer the following questions title</div>
-                    <Select
-                      mode="multiple"
-                      size="large"
-                      placeholder="Select Answer the following questions type"
-                      value={answerFollowingSubtype}
-                      onChange={(value) => setAnswerFollowingSubtype(value)}
-                      options={answerFollowingSubtypeOptions}
-                      className="w-full"
-                      allowClear
-                    />
-                  </div>
-                )}
-                {selectedTypes.includes('picture') && (
-                  <div className="mt-4">
-                    <div className="mb-2 text-gray-700 font-medium">Picture questions title</div>
-                    <Select
-                      mode="multiple"
-                      size="large"
-                      placeholder="Select Picture questions type"
-                      value={pictureSubtype}
-                      onChange={(value) => setPictureSubtype(value)}
-                      options={pictureSubtypeOptions}
-                      className="w-full"
-                      allowClear
-                    />
-                  </div>
-                )}
-              </>
+              </div>
+            )}
+            {selectedTypes.includes('direct') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Direct Questions title</div>
+                <Select
+                  mode="multiple"
+                  size="large"
+                  placeholder="Select Direct Questions type"
+                  value={directSubtype}
+                  onChange={(value) => setDirectSubtype(value)}
+                  options={directSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
+            )}
+            {selectedTypes.includes('answerthefollowing') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Answer the following questions title</div>
+                <Select
+                  mode="multiple"
+                  size="large"
+                  placeholder="Select Answer the following questions type"
+                  value={answerFollowingSubtype}
+                  onChange={(value) => setAnswerFollowingSubtype(value)}
+                  options={answerFollowingSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
+            )}
+            {selectedTypes.includes('picture') && (
+              <div className="mt-4">
+                <div className="mb-2 text-gray-700 font-medium">Picture questions title</div>
+                <Select
+                  mode="multiple"
+                  size="large"
+                  placeholder="Select Picture questions type"
+                  value={pictureSubtype}
+                  onChange={(value) => setPictureSubtype(value)}
+                  options={pictureSubtypeOptions}
+                  className="w-full"
+                  allowClear
+                />
+              </div>
             )}
           </div>
 

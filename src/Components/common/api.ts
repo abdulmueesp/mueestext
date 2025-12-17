@@ -24,7 +24,14 @@ const buildUrl = (endpoint: string, query?: Record<string, any>) => {
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        url.searchParams.append(key, String(value));
+        // Handle arrays by appending each value separately
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            url.searchParams.append(key, String(item));
+          });
+        } else {
+          url.searchParams.append(key, String(value));
+        }
       }
     });
   }

@@ -208,9 +208,6 @@ const QuestionForm = () => {
     try {
       setSubmitting(true);
   
-      // Determine current subject (for English-specific behaviour)
-      const currentSubject = isEdit ? selectedSubject : values?.subject;
-
       // Validate image questions have images
       const questions = values?.questions || [];
       for (let i = 0; i < questions.length; i++) {
@@ -235,14 +232,18 @@ const QuestionForm = () => {
   
       // Normalize questions
       const normalizedQuestions = questions.map((q: any) => {
-        const english = isEnglishSubjectValue(currentSubject);
-        const internalType = english ? (q?.questionType || 'shortanswer') : q?.questionType;
+        const internalType = q?.questionType;
         const normalized: any = {
           // Send the user-facing label in the API
           questionType: QUESTION_TYPE_LABELS[internalType] || internalType,
-          qtitle: english ? q?.section : q?.questionTitle,
+          qtitle: q?.questionTitle,
           marks: q?.marks,
         };
+
+        // Include section field if present (for English subjects)
+        if (q?.section) {
+          normalized.section = q.section;
+        }
 
         const isMultiQuestionMcq =
           internalType === 'mcq' &&
@@ -680,6 +681,11 @@ const QuestionForm = () => {
                   marks: q.marks,
                 };
 
+                // Include section field if present (for English subjects)
+                if (q?.section) {
+                  mappedQuestion.section = q.section;
+                }
+
                 const isOddOneOutFillBlank =
                   internalType === 'fillblank' &&
                   questionTitle === 'Tick the odd one in the following';
@@ -1048,8 +1054,8 @@ const QuestionForm = () => {
                     
                   >
                     <Row gutter={16}>
-                      {/* For English subject, show Section selector instead of Question Type/Title */}
-                      {isEnglishSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
+                      {/* Show Section selector first when subject is English */}
+                      {isEnglishSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) && (
                         <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                           <Form.Item
                             required={true}
@@ -1071,57 +1077,54 @@ const QuestionForm = () => {
                             />
                           </Form.Item>
                         </Col>
-                      ) : (
-                        <>
-                          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                            <Form.Item
-                              required={false}
-                              {...restField}
-                              name={[name, 'questionType']}
-                              label="Question Type"
-                              rules={[{ required: true, message: 'Please select question type!' }]}
-                            >
-                              <Select 
-                                size="large"
-                                placeholder="Select type"
-                                onChange={(value) => handleQuestionTypeChange(name, value)}
-                              >
-                                <Option value="mcq">Multiple Choice (MCQ)</Option>
-                                <Option value="fillblank">Direct Questions</Option>
-                                <Option value="shortanswer">Answer the following questions</Option>
-                                <Option value="image">Picture questions</Option>
-                              </Select>
-                            </Form.Item>
-                          </Col>
-                          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                            <Form.Item
-                              required={true}
-                              {...restField}
-                              name={[name, 'questionTitle']}
-                              label="Question Title"
-                              rules={[{ required: true, message: 'Please select question title!' }]}
-                            >
-                              <Select
-                                size="large"
-                                placeholder="Select question title"
-                                onChange={(value) => handleQuestionTitleChange(name, value)}
-                                disabled={
-                                  !form.getFieldValue(['questions', name, 'questionType']) ||
-                                  !questionTitleOptions[
-                                    form.getFieldValue(['questions', name, 'questionType'])
-                                  ]
-                                }
-                                options={
-                                  questionTitleOptions[
-                                    form.getFieldValue(['questions', name, 'questionType'])
-                                  ] || []
-                                }
-                                allowClear
-                              />
-                            </Form.Item>
-                          </Col>
-                        </>
                       )}
+                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                        <Form.Item
+                          required={false}
+                          {...restField}
+                          name={[name, 'questionType']}
+                          label="Question Type"
+                          rules={[{ required: true, message: 'Please select question type!' }]}
+                        >
+                          <Select 
+                            size="large"
+                            placeholder="Select type"
+                            onChange={(value) => handleQuestionTypeChange(name, value)}
+                          >
+                            <Option value="mcq">Multiple Choice (MCQ)</Option>
+                            <Option value="fillblank">Direct Questions</Option>
+                            <Option value="shortanswer">Answer the following questions</Option>
+                            <Option value="image">Picture questions</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                        <Form.Item
+                          required={true}
+                          {...restField}
+                          name={[name, 'questionTitle']}
+                          label="Question Title"
+                          rules={[{ required: true, message: 'Please select question title!' }]}
+                        >
+                          <Select
+                            size="large"
+                            placeholder="Select question title"
+                            onChange={(value) => handleQuestionTitleChange(name, value)}
+                            disabled={
+                              !form.getFieldValue(['questions', name, 'questionType']) ||
+                              !questionTitleOptions[
+                                form.getFieldValue(['questions', name, 'questionType'])
+                              ]
+                            }
+                            options={
+                              questionTitleOptions[
+                                form.getFieldValue(['questions', name, 'questionType'])
+                              ] || []
+                            }
+                            allowClear
+                          />
+                        </Form.Item>
+                      </Col>
                       <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                         <Form.Item
                         required={false}
