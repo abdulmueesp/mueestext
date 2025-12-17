@@ -100,6 +100,12 @@ const toRomanNumeral = (num: number): string => {
   return result;
 };
 
+// Helper to detect English subject (case/space insensitive)
+const isEnglishSubjectValue = (subject?: string) => {
+  if (!subject) return false;
+  return String(subject).trim().toLowerCase() === 'english';
+};
+
 // Convert minutes to hours and minutes format
 const formatDuration = (minutes: number): string => {
   if (!minutes || minutes <= 0) return '0 minutes';
@@ -179,6 +185,7 @@ const Paper = () => {
   const [directSubtype, setDirectSubtype] = useState<DirectSubtype | DirectSubtype[] | undefined>(undefined);
   const [answerFollowingSubtype, setAnswerFollowingSubtype] = useState<AnswerFollowingSubtype | AnswerFollowingSubtype[] | undefined>(undefined);
   const [pictureSubtype, setPictureSubtype] = useState<PictureSubtype | PictureSubtype[] | undefined>(undefined);
+  const [selectedSections, setSelectedSections] = useState<string[]>([]);
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -378,8 +385,9 @@ const Paper = () => {
   // Fetch questions from API
   const fetchQuestions = async (customPage?: number, customPageSize?: number, overrideFilterTypes?: QuestionType[]) => {
     const formValues = form.getFieldsValue();
-    if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || selectedTypes.length === 0) {
-      message.error('Please fill all required fields and select question types');
+    const english = isEnglishSubjectValue(formValues.subject);
+    if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || (!english && selectedTypes.length === 0) || (english && selectedSections.length === 0)) {
+      message.error(english ? 'Please fill all required fields and select at least one Section' : 'Please fill all required fields and select question types');
       return;
     }
 
@@ -396,7 +404,7 @@ const Paper = () => {
           ).join(',')
         : formValues.chapters;
       
-      // Priority: explicit override -> current modalFilterTypes -> selectedTypes
+      // Priority (non-English only): explicit override -> current modalFilterTypes -> selectedTypes
       const filterTypes = (Array.isArray(overrideFilterTypes) && overrideFilterTypes.length > 0)
         ? overrideFilterTypes
         : (modalFilterTypes.length > 0 ? modalFilterTypes : selectedTypes);
@@ -411,31 +419,41 @@ const Paper = () => {
 
       // Collect question titles from selected subtypes (one per type if available)
       const questionTitleLabels: string[] = [];
-      const collectLabels = <T extends { label: string; value: string }>(opts: T[], values: string | string[] | undefined) => {
-        if (!values) return;
-        const arr = Array.isArray(values) ? values : [values];
-        arr.forEach(v => {
-          const label = opts.find(o => o.value === v)?.label;
-          if (label) questionTitleLabels.push(label);
-        });
-      };
 
-      if (selectedTypes.includes('multiplechoice')) collectLabels(mcqSubtypeOptions, mcqSubtype);
-      if (selectedTypes.includes('direct')) collectLabels(directSubtypeOptions, directSubtype);
-      if (selectedTypes.includes('answerthefollowing')) collectLabels(answerFollowingSubtypeOptions, answerFollowingSubtype);
-      if (selectedTypes.includes('picture')) collectLabels(pictureSubtypeOptions, pictureSubtype);
+      if (english) {
+        // For English, use selected sections directly as qtitle values
+        questionTitleLabels.push(...selectedSections);
+      } else {
+        const collectLabels = <T extends { label: string; value: string }>(opts: T[], values: string | string[] | undefined) => {
+          if (!values) return;
+          const arr = Array.isArray(values) ? values : [values];
+          arr.forEach(v => {
+            const label = opts.find(o => o.value === v)?.label;
+            if (label) questionTitleLabels.push(label);
+          });
+        };
+
+        if (selectedTypes.includes('multiplechoice')) collectLabels(mcqSubtypeOptions, mcqSubtype);
+        if (selectedTypes.includes('direct')) collectLabels(directSubtypeOptions, directSubtype);
+        if (selectedTypes.includes('answerthefollowing')) collectLabels(answerFollowingSubtypeOptions, answerFollowingSubtype);
+        if (selectedTypes.includes('picture')) collectLabels(pictureSubtypeOptions, pictureSubtype);
+      }
       
-      const query = {
+      const query: any = {
         limit: customPageSize || pageSize,
         page: customPage || page,
         className: formValues.class,
         subject: formValues.subject,
         book: selectedBookName,
         chapters: selectedChapterNames,
-        questionTypes: filterTypes.map(type => questionTypeLabels[type] || type).join(','),
-        ...(questionTitleLabels.length > 0 ? {title: questionTitleLabels.join(',') } : {})
+        ...(questionTitleLabels.length > 0 ? { qtitle: questionTitleLabels.join(',') } : {})
       };
-      const data = await GET("/qustion", query);
+      // For English, hard-code questionType to "Answer the following questions"
+      // For other subjects, derive from selected question types
+      query.questionType = english
+        ? 'Answer the following questions'
+        : filterTypes.map(type => questionTypeLabels[type] || type).join(',');
+      const data = await GET(API.TITLEAPI, query);
       
       // Map API response types back to new question types
       const mapAPIToType = (apiType: string): QuestionType => {
@@ -565,6 +583,7 @@ const Paper = () => {
   const handleChooseQuestions = async () => {
     // Check if required fields are filled
     const formValues = form.getFieldsValue();
+    const english = isEnglishSubjectValue(formValues.subject);
     if (!formValues.class) {
       message.error('Please fill the Class');
       return;
@@ -593,26 +612,33 @@ const Paper = () => {
       message.error('Please fill the Duration');
       return;
     }
-    if (selectedTypes.length === 0) {
-      message.error('Please select at least one Question Type');
-      return;
-    }
-    const hasValue = (v: any) => (Array.isArray(v) ? v.length > 0 : !!v);
-    if (selectedTypes.includes('multiplechoice') && !hasValue(mcqSubtype)) {
-      message.error('Please select a Multiple Choice Questions type');
-      return;
-    }
-    if (selectedTypes.includes('direct') && !hasValue(directSubtype)) {
-      message.error('Please select a Direct Questions type');
-      return;
-    }
-    if (selectedTypes.includes('answerthefollowing') && !hasValue(answerFollowingSubtype)) {
-      message.error('Please select an Answer the following questions type');
-      return;
-    }
-    if (selectedTypes.includes('picture') && !hasValue(pictureSubtype)) {
-      message.error('Please select a Picture questions type');
-      return;
+    if (english) {
+      if (!selectedSections.length) {
+        message.error('Please select at least one Section');
+        return;
+      }
+    } else {
+      if (selectedTypes.length === 0) {
+        message.error('Please select at least one Question Type');
+        return;
+      }
+      const hasValue = (v: any) => (Array.isArray(v) ? v.length > 0 : !!v);
+      if (selectedTypes.includes('multiplechoice') && !hasValue(mcqSubtype)) {
+        message.error('Please select a Multiple Choice Questions type');
+        return;
+      }
+      if (selectedTypes.includes('direct') && !hasValue(directSubtype)) {
+        message.error('Please select a Direct Questions type');
+        return;
+      }
+      if (selectedTypes.includes('answerthefollowing') && !hasValue(answerFollowingSubtype)) {
+        message.error('Please select an Answer the following questions type');
+        return;
+      }
+      if (selectedTypes.includes('picture') && !hasValue(pictureSubtype)) {
+        message.error('Please select a Picture questions type');
+        return;
+      }
     }
     try {
       setChooseLoading(true);
@@ -709,6 +735,7 @@ const Paper = () => {
     setPage(1);
     setPageSize(10);
     setModalFilterTypes([]);
+    setSelectedSections([]);
     
     // Reset MCQ subtype, Direct subtype, Answer Following subtype, and Picture subtype
     setMcqSubtype(undefined);
@@ -1092,94 +1119,117 @@ const Paper = () => {
           <Divider className="mt-0" />
 
           <div>
-            <div className="mb-2 text-gray-700 font-medium">Question Types</div>
-            <Checkbox.Group
-              options={[
-                { label: 'Multiple Choice Questions', value: 'multiplechoice' },
-                { label: 'Direct Questions', value: 'direct' },
-                { label: 'Answer the following questions', value: 'answerthefollowing' },
-                { label: 'Picture Questions', value: 'picture' },
-              ]}
-              value={selectedTypes}
-              onChange={(vals) => { 
-                setSelectedTypes(vals as QuestionType[]);
-                // Clear MCQ subtype if Multiple Choice Questions is deselected
-                if (!vals.includes('multiplechoice')) {
-                  setMcqSubtype(undefined);
-                }
-                // Clear Direct subtype if Direct Questions is deselected
-                if (!vals.includes('direct')) {
-                  setDirectSubtype(undefined);
-                }
-                // Clear Answer Following subtype if Answer the following questions is deselected
-                if (!vals.includes('answerthefollowing')) {
-                  setAnswerFollowingSubtype(undefined);
-                }
-                // Clear Picture subtype if Picture questions is deselected
-                if (!vals.includes('picture')) {
-                  setPictureSubtype(undefined);
-                }
-              }}
-            />
-            {selectedTypes.includes('multiplechoice') && (
-              <div className="mt-4">
-                <div className="mb-2 text-gray-700 font-medium">Multiple Choice Questions title</div>
+            {isEnglishSubjectValue(selectedSubject) ? (
+              <>
+                <div className="mb-2 text-gray-700 font-medium">Sections</div>
                 <Select
                   mode="multiple"
                   size="large"
-                  placeholder="Select MCQ type"
-                  value={mcqSubtype}
-                  onChange={(value) => setMcqSubtype(value)}
-                  options={mcqSubtypeOptions}
+                  placeholder="Select sections"
+                  value={selectedSections}
+                  onChange={(vals) => setSelectedSections(vals as string[])}
+                  options={[
+                    { label: 'Reading', value: 'reading' },
+                    { label: 'Writing', value: 'writing' },
+                    { label: 'Example 1', value: 'example1' },
+                    { label: 'Example 2', value: 'example2' },
+                  ]}
                   className="w-full"
                   allowClear
                 />
-              </div>
-            )}
-            {selectedTypes.includes('direct') && (
-              <div className="mt-4">
-                <div className="mb-2 text-gray-700 font-medium">Direct Questions title</div>
-                <Select
-                  mode="multiple"
-                  size="large"
-                  placeholder="Select Direct Questions type"
-                  value={directSubtype}
-                  onChange={(value) => setDirectSubtype(value)}
-                  options={directSubtypeOptions}
-                  className="w-full"
-                  allowClear
+              </>
+            ) : (
+              <>
+                <div className="mb-2 text-gray-700 font-medium">Question Types</div>
+                <Checkbox.Group
+                  options={[
+                    { label: 'Multiple Choice Questions', value: 'multiplechoice' },
+                    { label: 'Direct Questions', value: 'direct' },
+                    { label: 'Answer the following questions', value: 'answerthefollowing' },
+                    { label: 'Picture Questions', value: 'picture' },
+                  ]}
+                  value={selectedTypes}
+                  onChange={(vals) => { 
+                    setSelectedTypes(vals as QuestionType[]);
+                    // Clear MCQ subtype if Multiple Choice Questions is deselected
+                    if (!vals.includes('multiplechoice')) {
+                      setMcqSubtype(undefined);
+                    }
+                    // Clear Direct subtype if Direct Questions is deselected
+                    if (!vals.includes('direct')) {
+                      setDirectSubtype(undefined);
+                    }
+                    // Clear Answer Following subtype if Answer the following questions is deselected
+                    if (!vals.includes('answerthefollowing')) {
+                      setAnswerFollowingSubtype(undefined);
+                    }
+                    // Clear Picture subtype if Picture questions is deselected
+                    if (!vals.includes('picture')) {
+                      setPictureSubtype(undefined);
+                    }
+                  }}
                 />
-              </div>
-            )}
-            {selectedTypes.includes('answerthefollowing') && (
-              <div className="mt-4">
-                <div className="mb-2 text-gray-700 font-medium">Answer the following questions title</div>
-                <Select
-                  mode="multiple"
-                  size="large"
-                  placeholder="Select Answer the following questions type"
-                  value={answerFollowingSubtype}
-                  onChange={(value) => setAnswerFollowingSubtype(value)}
-                  options={answerFollowingSubtypeOptions}
-                  className="w-full"
-                  allowClear
-                />
-              </div>
-            )}
-            {selectedTypes.includes('picture') && (
-              <div className="mt-4">
-                <div className="mb-2 text-gray-700 font-medium">Picture questions title</div>
-                <Select
-                  mode="multiple"
-                  size="large"
-                  placeholder="Select Picture questions type"
-                  value={pictureSubtype}
-                  onChange={(value) => setPictureSubtype(value)}
-                  options={pictureSubtypeOptions}
-                  className="w-full"
-                  allowClear
-                />
-              </div>
+                {selectedTypes.includes('multiplechoice') && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-gray-700 font-medium">Multiple Choice Questions title</div>
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Select MCQ type"
+                      value={mcqSubtype}
+                      onChange={(value) => setMcqSubtype(value)}
+                      options={mcqSubtypeOptions}
+                      className="w-full"
+                      allowClear
+                    />
+                  </div>
+                )}
+                {selectedTypes.includes('direct') && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-gray-700 font-medium">Direct Questions title</div>
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Select Direct Questions type"
+                      value={directSubtype}
+                      onChange={(value) => setDirectSubtype(value)}
+                      options={directSubtypeOptions}
+                      className="w-full"
+                      allowClear
+                    />
+                  </div>
+                )}
+                {selectedTypes.includes('answerthefollowing') && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-gray-700 font-medium">Answer the following questions title</div>
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Select Answer the following questions type"
+                      value={answerFollowingSubtype}
+                      onChange={(value) => setAnswerFollowingSubtype(value)}
+                      options={answerFollowingSubtypeOptions}
+                      className="w-full"
+                      allowClear
+                    />
+                  </div>
+                )}
+                {selectedTypes.includes('picture') && (
+                  <div className="mt-4">
+                    <div className="mb-2 text-gray-700 font-medium">Picture questions title</div>
+                    <Select
+                      mode="multiple"
+                      size="large"
+                      placeholder="Select Picture questions type"
+                      value={pictureSubtype}
+                      onChange={(value) => setPictureSubtype(value)}
+                      options={pictureSubtypeOptions}
+                      className="w-full"
+                      allowClear
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
