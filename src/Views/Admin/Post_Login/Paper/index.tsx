@@ -838,22 +838,12 @@ const Paper = () => {
       const question = selectedQuestionsData[questionId] || questionsData.find(q => q.id === questionId);
       if (!question) return null;
       
-      // Map new question types to API format
-      const mapTypeToAPI = (type: QuestionType): string => {
-        const typeMap: Record<QuestionType, string> = {
-          'multiplechoice': 'mcq',
-          'direct': 'shortanswer',
-          'answerthefollowing': 'essay',
-          'picture': 'image'
-        };
-        return typeMap[type] || 'shortanswer';
-      };
-      
+      // Use new question types directly (no mapping to old types)
       // Base question payload with full details
       const baseQuestion: any = {
         questionId: question.id,
         question: question.text,
-        questionType: mapTypeToAPI(question.type),
+        questionType: question.type, // Send new question types: multiplechoice, direct, answerthefollowing, picture
         mark: marks,
         qtitle: question.qtitle,
         // Send sub-questions as an array of objects with text (matches question save format)
