@@ -176,8 +176,8 @@ const QuestionForm = () => {
         label: "Long Answer Questions",
       },
       {
-        value: "Paragraph Wrirting",
-        label: "Paragraph Wrirting",
+        value: "Paragraph Writing",
+        label: "Paragraph Writing",
       },
       {
         value: "Essay Writing",
