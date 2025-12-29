@@ -1068,10 +1068,10 @@ const QuestionForm = () => {
                               size="large"
                               placeholder="Select section"
                               options={[
-                                { label: 'Reading', value: 'reading' },
-                                { label: 'Writing', value: 'writing' },
-                                { label: 'Example 1', value: 'example1' },
-                                { label: 'Example 2', value: 'example2' },
+                                { label: 'Section A (Reading)', value: 'SectionA' },
+                                { label: 'Section B (Writing)', value: 'SectionB' },
+                                { label: 'Section C (Grammer)', value: 'SectionC' },
+                                { label: 'Section D (Textual Questions)', value: 'SectionD' },
                               ]}
                               allowClear
                             />

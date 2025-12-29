@@ -26,6 +26,7 @@ type QuestionListItem = {
   marks?: number;
   options?: Array<{ text: string; isCorrect?: boolean } | string>;
   correctAnswer?: number | number[];
+  section?: string;
 };
 
 const DUMMY_ITEMS: QuestionListItem[] = [
@@ -195,6 +196,7 @@ const Questions: React.FC = () => {
         const marks = r?.marks || 0;
         const options = r?.options || [];
         const correctAnswer = r?.correctAnswer;
+        const section = r?.section;
         
         // Preserve all question fields (question1, question2, etc.) and subQuestions for picture questions
         const baseItem: any = { 
@@ -211,7 +213,8 @@ const Questions: React.FC = () => {
           imageUrl,
           marks,
           options,
-          correctAnswer
+          correctAnswer,
+          section
         };
         
         // Add question1, question2, etc. if they exist
@@ -577,8 +580,18 @@ const Questions: React.FC = () => {
              selectedQuestion.questionType?.toLowerCase() === 'fillblank') &&
             selectedQuestion.qtitle === 'Tick the odd one in the following';
 
+          const sectionLabels: Record<string, string> = {
+            SectionA: 'Section A (Reading)',
+            SectionB: 'Section B (Writing)',
+            SectionC: 'Section C (Grammer)',
+            SectionD: 'Section D (Textual Questions)',
+          };
+          const displaySectionLabel = selectedQuestion.section ? (sectionLabels[selectedQuestion.section] || selectedQuestion.section) : null;
+
           return (
             <div className="space-y-4">
+              {/* Section (for English questions that have section) */}
+             
               {/* Display questions - multiple for picture questions, single for others */}
               {(isPictureQuestion || isMultiQuestionMcq) && allQuestions.length > 0 ? (
                 <div>
@@ -640,6 +653,11 @@ const Questions: React.FC = () => {
                 <div className="col-span-2">
                   <strong>Question Title:</strong>
                   <span className="ml-2">{selectedQuestion.qtitle}</span>
+                </div>
+              )}
+               {displaySectionLabel && (
+                <div>
+                  <strong>Section:</strong> <span>{displaySectionLabel}</span>
                 </div>
               )}
             </div>

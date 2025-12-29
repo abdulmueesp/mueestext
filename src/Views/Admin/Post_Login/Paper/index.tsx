@@ -6,6 +6,8 @@ import { Download } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { API, GET, POST } from "../../../../Components/common/api";
+import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TabStopType, TextRun, WidthType } from "docx";
+import { saveAs } from "file-saver";
 const { Title, Text } = Typography;
 
 type QuestionType = 'multiplechoice' | 'direct' | 'answerthefollowing' | 'picture';
@@ -27,6 +29,8 @@ interface QuestionItem {
   pictureSubtype?: PictureSubtype | PictureSubtype[];
   qtitle?: string;
   subQuestions?: string[];
+  originalQuestionType?: string;
+  section?: string;
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -466,10 +470,10 @@ const Paper = () => {
       // Map API response types back to new question types
       const mapAPIToType = (apiType: string): QuestionType => {
         const normalizedType = apiType?.toLowerCase().trim() || '';
-        if (normalizedType === 'image') return 'picture';
+        if (normalizedType === 'image' || normalizedType === 'picture questions') return 'picture';
         if (normalizedType === 'mcq' || normalizedType === 'multiple choice') return 'multiplechoice';
         if (normalizedType === 'shortanswer' || normalizedType === 'short answer' || normalizedType === 'direct questions') return 'direct';
-        if (normalizedType === 'essay' || normalizedType === 'longanswer' || normalizedType === 'long answer') return 'answerthefollowing';
+        if (normalizedType === 'essay' || normalizedType === 'longanswer' || normalizedType === 'long answer' || normalizedType === 'answer the following questions') return 'answerthefollowing';
         // Fallback for any unmatched type
         return 'direct' as QuestionType;
       };
@@ -523,7 +527,9 @@ const Paper = () => {
               answerFollowingSubtype: q.answerFollowingSubtype,
               pictureSubtype: q.pictureSubtype,
               qtitle: q.qtitle || q.questionTitle || '',
-              subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+              subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
+              originalQuestionType: q.questionType || q.type,
+              section: q.section
             };
           })
         : Array.isArray(data?.results)
@@ -541,7 +547,9 @@ const Paper = () => {
                 answerFollowingSubtype: q.answerFollowingSubtype,
                 pictureSubtype: q.pictureSubtype,
                 qtitle: q.qtitle || q.questionTitle || '',
-                subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+                subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
+                originalQuestionType: q.questionType || q.type,
+                section: q.section
               };
             })
           : Array.isArray(data?.questions)
@@ -559,7 +567,9 @@ const Paper = () => {
                   answerFollowingSubtype: q.answerFollowingSubtype,
                   pictureSubtype: q.pictureSubtype,
                   qtitle: q.qtitle || q.questionTitle || '',
-                  subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+                  subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
+                  originalQuestionType: q.questionType || q.type,
+                  section: q.section
                 };
               })
             : Array.isArray(data)
@@ -577,7 +587,9 @@ const Paper = () => {
                     answerFollowingSubtype: q.answerFollowingSubtype,
                     pictureSubtype: q.pictureSubtype,
                     qtitle: q.qtitle || q.questionTitle || '',
-                    subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+                    subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
+                    originalQuestionType: q.questionType || q.type,
+                    section: q.section
                   };
                 })
               : [];
@@ -837,10 +849,21 @@ const Paper = () => {
         return typeMap[type] || 'shortanswer';
       };
       
-      const baseQuestion = {
+      // Base question payload with full details
+      const baseQuestion: any = {
+        questionId: question.id,
         question: question.text,
         questionType: mapTypeToAPI(question.type),
-        mark: marks
+        mark: marks,
+        qtitle: question.qtitle,
+        // Send sub-questions as an array of objects with text (matches question save format)
+        ...(question.subQuestions && question.subQuestions.length > 0
+          ? {
+              subQuestions: question.subQuestions.map((sq: string) => ({ text: sq }))
+            }
+          : {}),
+        // Include image URL when available (useful for picture / match type questions)
+        ...(question.imageUrl ? { imageUrl: question.imageUrl } : {})
       };
     const pickFirst = (v: any) => Array.isArray(v) ? v[0] : v;
       
@@ -908,6 +931,118 @@ const Paper = () => {
     }
   };
 
+  // Helper function to fetch image as ArrayBuffer
+  const fetchImageArrayBuffer = async (url?: string) => {
+    if (!url) return null;
+    try {
+      if (url.startsWith("data:")) {
+        const data = url.split(",")[1];
+        if (!data) return null;
+        const binaryString = atob(data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i += 1) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+      }
+
+      const sameOrigin = url.startsWith(window.location.origin);
+      const fetchOptions: RequestInit = sameOrigin
+        ? { credentials: "include" }
+        : { mode: "cors" };
+      const response = await fetch(url, fetchOptions);
+      if (!response.ok) throw new Error("Image fetch failed");
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.warn("Unable to load image for Word export:", error);
+      return null;
+    }
+  };
+
+  // Helper function to convert image via canvas
+  const convertImageToArrayBufferViaCanvas = async (url?: string) => {
+    if (!url) return null;
+    return new Promise<ArrayBuffer | null>((resolve) => {
+      try {
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        image.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = image.naturalWidth || 320;
+            canvas.height = image.naturalHeight || 180;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(null);
+              return;
+            }
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                resolve(null);
+                return;
+              }
+              blob
+                .arrayBuffer()
+                .then((buffer) => resolve(buffer))
+                .catch(() => resolve(null));
+            }, "image/png");
+          } catch (canvasError) {
+            console.warn("Canvas conversion failed:", canvasError);
+            resolve(null);
+          }
+        };
+        image.onerror = () => resolve(null);
+        image.src = url;
+      } catch (error) {
+        console.warn("Canvas setup failed:", error);
+        resolve(null);
+      }
+    });
+  };
+
+  // Helper function to create header table
+  const createHeaderTable = (stdLabel: string, subjectDisplay: string, totalMarks: number, durationLabel: string) => {
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ text: `Std: ${stdLabel}`, alignment: AlignmentType.LEFT })],
+              width: { size: 33, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: subjectDisplay, alignment: AlignmentType.CENTER })],
+              width: { size: 34, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: `Marks: ${totalMarks}`, alignment: AlignmentType.RIGHT })],
+              width: { size: 33, type: WidthType.PERCENTAGE }
+            })
+          ]
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              children: [new Paragraph({ text: "HM", alignment: AlignmentType.LEFT })],
+              width: { size: 33, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: "" })],
+              width: { size: 34, type: WidthType.PERCENTAGE }
+            }),
+            new TableCell({
+              children: [new Paragraph({ text: `Time: ${durationLabel}`, alignment: AlignmentType.RIGHT })],
+              width: { size: 33, type: WidthType.PERCENTAGE }
+            })
+          ]
+        })
+      ]
+    });
+  };
+
   const handlePrintQuestionPaper = async () => {
     // Check if total selected marks match the total marks field
     if (totalMarksField && currentSumMarks !== totalMarksField) {
@@ -920,177 +1055,16 @@ const Paper = () => {
     }
 
     try {
-      // Save examination data to API first
+      setDownloadLoading(true);
       await saveExaminationData();
       message.success('Examination data saved successfully');
+      navigate('/mypapers');
     } catch (error) {
-      // If API call fails, don't proceed to print
-      return;
+      // If API call fails, don't proceed
+      message.error('Failed to save examination data');
+    } finally {
+      setDownloadLoading(false);
     }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      message.error("Popup blocked. Please allow popups for this site.");
-      return;
-    }
-    
-    const paperTitle = `${formValues?.examType || 'Examination'} EXAMINATION - 2025-26 `.trim();
-    const stdLabel = getStdLabel(formValues?.class);
-    const selectedBookName = booksOptions.find(book => book.value === formValues?.book)?.label || formValues?.book;
-    const subjectDisplay = getSubjectDisplay(formValues?.subject, selectedBookName);
-    const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
-    
-    const typeLabels: Record<QuestionType, string> = {
-      'multiplechoice': 'Multiple Choice Questions',
-      'direct': 'Direct Questions',
-      'answerthefollowing': 'Answer the following questions',
-      'picture': 'Picture questions'
-    };
-    
-    const sectionsWithQuestions = (['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[])
-      .filter(type => organizedQuestions[type].length > 0);
-    
-    const sectionsHtml = sectionsWithQuestions
-      .map((type, sectionIndex) => {
-        const romanNumeral = toRomanNumeral(sectionIndex + 1);
-        const questionsOfType = organizedQuestions[type];
-        const allMarks = questionsOfType.map(q => q.marks);
-        const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
-        const questionCount = questionsOfType.length;
-        const sectionMarks = allSameMarks ? allMarks[0] : null;
-        const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-        
-        return `
-        <div class="section">
-          <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>${romanNumeral}. ${typeLabels[type] || type}</span>
-            ${allSameMarks ? `<span style="font-weight: bold;">[${questionCount} × ${sectionMarks} = ${sectionTotal}]</span>` : ''}
-          </div>
-          ${questionsOfType.map(({ question, marks }, questionIndex) => `
-            <div class="question">
-              <div class="question-no">${questionIndex + 1})</div>
-              <div class="question-content">
-                <div class="question-text">${question.text}</div>
-                ${question.type === 'picture' && question.imageUrl ? `
-                  <div class="question-image">
-                    <img src="${question.imageUrl.startsWith('http') ? question.imageUrl : (question.imageUrl.startsWith('/') ? window.location.origin + question.imageUrl : window.location.origin + '/' + question.imageUrl)}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
-                  </div>
-                ` : ''}
-                ${question.type === 'multiplechoice' && question.options ? `
-                  <div class="question-options" style="margin-top: 10px;">
-                    ${question.options.map((option, index) => `
-                      <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option.text || option}</div>
-                    `).join('')}
-                  </div>
-                ` : ''}
-              </div>
-              ${!allSameMarks ? `<div class="marks">[${marks} marks]</div>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      `;
-      }).join('');
-    
-    const content = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${paperTitle}</title>
-          <style>
-            body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 10px; }
-            .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-            .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
-            .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
-            .name-roll-label { font-weight: 600; white-space: nowrap; }
-            .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
-            .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
-            .name-group { flex: 1; min-width: 0; }
-            .rollno-group { flex: 0 0 200px; max-width: 200px; }
-            .subject-line { margin: 8px 0 18px; color: #000; }
-            .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-            .subject-row + .subject-row { margin-top: 4px; }
-            .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
-            .subject-left { text-align: left; }
-            .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
-            .subject-right { text-align: right; }
-            .subject-secondary { font-size: 18px; font-weight: 600; }
-            .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
-            .section { margin: 30px 0; }
-            .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
-            .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-            .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
-            .question-content { flex: 1; }
-            .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
-            .question-image { margin-top: 1px; }
-            .marks { font-weight: normal; margin-left: 10px; color: #000; }
-            @media print {
-              body { margin: 20px; }
-              /* Allow sections to flow across pages; do not force whole-section moves */
-              .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
-              /* Keep an individual question together on the same page */
-              .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
-              .question-image img { max-width: 250px; max-height: 150px; }
-            }
-          </style>
-        </head>
-        <body>
-          ${isClassFourOrBelow(formValues?.class) ? `
-          <div class="name-roll-section">
-            <div class="name-roll-row">
-              <div class="name-roll-group name-group">
-                <span class="name-roll-label">NAME:</span>
-                <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
-              </div>
-              <div class="name-roll-group rollno-group">
-                <span class="name-roll-label">ROLL NO:</span>
-                <span class="name-roll-dots">........................................................</span>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-          <div class="header">
-            <div class="title">${paperTitle}</div>
-          </div>
-          <div class="subject-line">
-            <div class="subject-row">
-              <div class="subject-left">Std: ${stdLabel || '-'}</div>
-              <div class="subject-center">${subjectDisplayUpper || ''}</div>
-              <div class="subject-right">Marks: ${totalMarksField || currentSumMarks}</div>
-            </div>
-            <div class="subject-row subject-row-secondary">
-              <div class="subject-left subject-secondary">HM</div>
-              <div class="subject-right subject-secondary">Time: ${formatDuration(formValues?.duration || 60)}</div>
-            </div>
-            <div class="subject-line-divider"></div>
-          </div>
-          ${sectionsHtml}
-        </body>
-      </html>
-    `;
-    
-    printWindow.document.write(content);
-    printWindow.document.close();
-    
-    // Add a small delay for mobile devices
-    setTimeout(() => {
-      try {
-        printWindow.print();
-        
-        // Navigate to mypapers after download is triggered
-        setTimeout(() => {
-          navigate('/mypapers');
-        }, 2000); // Wait 2 seconds for download to start
-        
-        // Don't close immediately on mobile
-        if (!isMobileDevice()) {
-          setTimeout(() => printWindow.close(), 500);
-        }
-      } catch (error) {
-        message.error("Failed to print. Please try again.");
-        printWindow.close();
-      }
-    }, 1000);
   };
 
   return (
@@ -1190,10 +1164,10 @@ const Paper = () => {
                   value={selectedSections}
                   onChange={(vals) => setSelectedSections(vals as string[])}
                   options={[
-                    { label: 'Reading', value: 'reading' },
-                    { label: 'Writing', value: 'writing' },
-                    { label: 'Example 1', value: 'example1' },
-                    { label: 'Example 2', value: 'example2' },
+                    { label: 'Section A (Reading)', value: 'SectionA' },
+                    { label: 'Section B (Writing)', value: 'SectionB' },
+                    { label: 'Section C (Grammer)', value: 'SectionC' },
+                    { label: 'Section D (Textual Questions)', value: 'SectionD' },
                   ]}
                   className="w-full"
                   allowClear
@@ -1324,7 +1298,7 @@ const Paper = () => {
                   const typeLabels: Record<QuestionType, string> = {
                     'multiplechoice': 'Multiple Choice',
                     'direct': 'Direct Questions',
-                    'answerthefollowing': 'Answer Following',
+                    'answerthefollowing': 'Answer The Following Questions',
                     'picture': 'Picture Questions'
                   };
                   return (
@@ -1382,6 +1356,25 @@ const Paper = () => {
                 const checked = q.id in selectedQuestions;
                 const currentMarks = selectedQuestions[q.id] ?? q.defaultMarks;
                 const questionNumber = getQuestionNumber(index);
+                const isPictureType = q.type === 'picture' || (typeof q.originalQuestionType === 'string' && q.originalQuestionType.toLowerCase().includes('picture'));
+                const sectionLabels: Record<string, string> = {
+                  SectionA: 'Section A (Reading)',
+                  SectionB: 'Section B (Writing)',
+                  SectionC: 'Section C (Grammer)',
+                  SectionD: 'Section D (Textual Questions)',
+                };
+                const displaySectionLabel = q.section ? (sectionLabels[q.section] || q.section) : null;
+                const typeLabel =
+                  q.originalQuestionType ||
+                  (q.type === 'multiplechoice'
+                    ? 'Multiple Choice'
+                    : q.type === 'direct'
+                      ? 'Direct Questions'
+                      : q.type === 'answerthefollowing'
+                        ? 'Answer the following questions'
+                        : q.type === 'picture'
+                          ? 'Picture questions'
+                          : q.type);
                 return (
                   <Card key={q.id} className={`border ${checked ? 'border-blue-400' : 'border-gray-200'}`}>
                     <div className="flex items-start gap-3">
@@ -1389,14 +1382,19 @@ const Paper = () => {
                         {questionNumber}.
                       </div>
                       <div className="flex-1">
-                        <div className="text-xs uppercase text-gray-500 mb-1">
-                          {q.type === 'multiplechoice' ? 'Multiple Choice' : 
-                           q.type === 'direct' ? 'Direct' :
-                           q.type === 'answerthefollowing' ? 'Answer Following' :
-                           q.type === 'picture' ? 'Picture' : q.type}
+                        {/* Show Section first when subject is English */}
+                        {isEnglishSubjectValue(selectedSubject) && displaySectionLabel && (
+                          <div className="text-xs text-gray-700 mb-0.5">
+                            {displaySectionLabel}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-700 mb-1">
+                          Question type :- {typeLabel}
                         </div>
                         {q.qtitle && (
-                          <div className="text-gray-800 font-medium mb-2">{q.qtitle}</div>
+                          <div className="text-xs text-gray-700 mb-2">
+                            Question title :- {q.qtitle}
+                          </div>
                         )}
                         {/* Handle "Tick the odd one in the following" - don't show question text, only options */}
                         {q.qtitle === 'Tick the odd one in the following' ? null : (
@@ -1414,14 +1412,31 @@ const Paper = () => {
                             )}
                           </>
                         )}
-                        {/* Show image for "Match the following" and picture questions */}
-                        {(q.qtitle === 'Match the following' || q.type === 'picture') && q.imageUrl && (
+                        {/* Show image for picture questions and "Match the following" */}
+                        {isPictureType && q.imageUrl && (
                           <div className="mt-2">
                             <img
                               src={q.imageUrl}
                               alt="Question Image"
                               className="w-48 h-32 object-cover rounded border cursor-pointer"
                               onClick={() => setImagePreview({ open: true, url: q.imageUrl || '' })}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                        {/* Show image for "Match the following" (Direct Questions with image) */}
+                        {q.qtitle === 'Match the following' && q.type === 'direct' && q.imageUrl && (
+                          <div className="mt-2">
+                            <img
+                              src={q.imageUrl}
+                              alt="Question Image"
+                              className="w-48 h-32 object-cover rounded border cursor-pointer"
+                              onClick={() => setImagePreview({ open: true, url: q.imageUrl || '' })}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
                             />
                           </div>
                         )}
@@ -1486,6 +1501,7 @@ const Paper = () => {
                 }} 
                 showSizeChanger 
                 pageSizeOptions={['10', '20', '50']}
+                showTotal={(total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} items`}
                 className="font-local2" 
               />
             </div>
@@ -1515,7 +1531,7 @@ const Paper = () => {
               disabled={downloadLoading}
               className="bg-gradient-to-br from-[#007575] to-[#339999] border-none text-white font-local2"
             >
-              {downloadLoading ? 'Saving...' : 'Download PDF'}
+              {downloadLoading ? 'Saving...' : 'Generate Paper'}
             </Button>
           </div>
         }
