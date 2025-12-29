@@ -25,6 +25,8 @@ interface QuestionItem {
   directSubtype?: DirectSubtype | DirectSubtype[];
   answerFollowingSubtype?: AnswerFollowingSubtype | AnswerFollowingSubtype[];
   pictureSubtype?: PictureSubtype | PictureSubtype[];
+  qtitle?: string;
+  subQuestions?: string[];
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -463,29 +465,54 @@ const Paper = () => {
       
       // Map API response types back to new question types
       const mapAPIToType = (apiType: string): QuestionType => {
-        if (apiType === 'image' || apiType === 'Image') return 'picture';
-        if (apiType === 'mcq') return 'multiplechoice';
-        if (apiType === 'shortanswer' || apiType === 'shortAnswer') return 'direct';
-        if (apiType === 'essay' || apiType === 'longAnswer') return 'answerthefollowing';
-        return apiType as QuestionType;
+        const normalizedType = apiType?.toLowerCase().trim() || '';
+        if (normalizedType === 'image') return 'picture';
+        if (normalizedType === 'mcq' || normalizedType === 'multiple choice') return 'multiplechoice';
+        if (normalizedType === 'shortanswer' || normalizedType === 'short answer' || normalizedType === 'direct questions') return 'direct';
+        if (normalizedType === 'essay' || normalizedType === 'longanswer' || normalizedType === 'long answer') return 'answerthefollowing';
+        // Fallback for any unmatched type
+        return 'direct' as QuestionType;
+      };
+      
+      // Helper function to extract sub-questions from API response
+      const extractSubQuestions = (q: any): string[] => {
+        const subQuestions: string[] = [];
+        
+        // First, try to use subQuestions array if it exists and has items
+        if (Array.isArray(q.subQuestions) && q.subQuestions.length > 0) {
+          q.subQuestions.forEach((sq: any) => {
+            if (sq?.text && sq.text.trim()) {
+              subQuestions.push(sq.text.trim());
+            }
+          });
+          // If we got sub-questions from array, return them
+          if (subQuestions.length > 0) {
+            return subQuestions;
+          }
+        }
+        
+        // If no subQuestions array or it's empty, collect from question, question1, question2, etc.
+        // Start with question field
+        if (q.question && q.question.trim()) {
+          subQuestions.push(q.question.trim());
+        }
+        
+        // Add question1, question2, etc. if they exist and are not null
+        for (let i = 1; i <= 5; i++) {
+          const questionField = q[`question${i}`];
+          if (questionField && questionField.trim()) {
+            subQuestions.push(questionField.trim());
+          }
+        }
+        
+        return subQuestions;
       };
       
       const questionsList = Array.isArray(data?.data)
-        ? data.data.map((q: any) => ({
-            id: q.questionId || q.id || q._id,
-            type: mapAPIToType(q.questionType || q.type || 'direct'),
-            text: q.question || q.text || q.title,
-            imageUrl: q.imageUrl || q.image,
-            defaultMarks: q.marks || q.defaultMarks || 1,
-            options: q.options || q.choices,
-            mcqSubtype: q.mcqSubtype,
-            directSubtype: q.directSubtype,
-            answerFollowingSubtype: q.answerFollowingSubtype,
-            pictureSubtype: q.pictureSubtype
-          }))
-        : Array.isArray(data?.results)
-          ? data.results.map((q: any) => ({
-              id: q.id || q._id,
+        ? data.data.map((q: any) => {
+            const subQuestions = extractSubQuestions(q);
+            return {
+              id: q.questionId || q.id || q._id,
               type: mapAPIToType(q.questionType || q.type || 'direct'),
               text: q.question || q.text || q.title,
               imageUrl: q.imageUrl || q.image,
@@ -494,10 +521,15 @@ const Paper = () => {
               mcqSubtype: q.mcqSubtype,
               directSubtype: q.directSubtype,
               answerFollowingSubtype: q.answerFollowingSubtype,
-              pictureSubtype: q.pictureSubtype
-            }))
-          : Array.isArray(data?.questions)
-            ? data.questions.map((q: any) => ({
+              pictureSubtype: q.pictureSubtype,
+              qtitle: q.qtitle || q.questionTitle || '',
+              subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+            };
+          })
+        : Array.isArray(data?.results)
+          ? data.results.map((q: any) => {
+              const subQuestions = extractSubQuestions(q);
+              return {
                 id: q.id || q._id,
                 type: mapAPIToType(q.questionType || q.type || 'direct'),
                 text: q.question || q.text || q.title,
@@ -507,10 +539,15 @@ const Paper = () => {
                 mcqSubtype: q.mcqSubtype,
                 directSubtype: q.directSubtype,
                 answerFollowingSubtype: q.answerFollowingSubtype,
-                pictureSubtype: q.pictureSubtype
-              }))
-            : Array.isArray(data)
-              ? data.map((q: any) => ({
+                pictureSubtype: q.pictureSubtype,
+                qtitle: q.qtitle || q.questionTitle || '',
+                subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+              };
+            })
+          : Array.isArray(data?.questions)
+            ? data.questions.map((q: any) => {
+                const subQuestions = extractSubQuestions(q);
+                return {
                   id: q.id || q._id,
                   type: mapAPIToType(q.questionType || q.type || 'direct'),
                   text: q.question || q.text || q.title,
@@ -520,8 +557,29 @@ const Paper = () => {
                   mcqSubtype: q.mcqSubtype,
                   directSubtype: q.directSubtype,
                   answerFollowingSubtype: q.answerFollowingSubtype,
-                  pictureSubtype: q.pictureSubtype
-                }))
+                  pictureSubtype: q.pictureSubtype,
+                  qtitle: q.qtitle || q.questionTitle || '',
+                  subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+                };
+              })
+            : Array.isArray(data)
+              ? data.map((q: any) => {
+                  const subQuestions = extractSubQuestions(q);
+                  return {
+                    id: q.id || q._id,
+                    type: mapAPIToType(q.questionType || q.type || 'direct'),
+                    text: q.question || q.text || q.title,
+                    imageUrl: q.imageUrl || q.image,
+                    defaultMarks: q.marks || q.defaultMarks || 1,
+                    options: q.options || q.choices,
+                    mcqSubtype: q.mcqSubtype,
+                    directSubtype: q.directSubtype,
+                    answerFollowingSubtype: q.answerFollowingSubtype,
+                    pictureSubtype: q.pictureSubtype,
+                    qtitle: q.qtitle || q.questionTitle || '',
+                    subQuestions: subQuestions.length > 0 ? subQuestions : undefined
+                  };
+                })
               : [];
       setQuestionsData(questionsList);
       setTotalQuestions(data?.total || 0);
@@ -1331,23 +1389,33 @@ const Paper = () => {
                         {questionNumber}.
                       </div>
                       <div className="flex-1">
-                        <div className="text-xs uppercase text-gray-500">
+                        <div className="text-xs uppercase text-gray-500 mb-1">
                           {q.type === 'multiplechoice' ? 'Multiple Choice' : 
                            q.type === 'direct' ? 'Direct' :
                            q.type === 'answerthefollowing' ? 'Answer Following' :
                            q.type === 'picture' ? 'Picture' : q.type}
                         </div>
-                        <div className="text-gray-800">{q.text}</div>
-                        {q.type === 'multiplechoice' && q.options && (
-                          <div className="text-xs text-gray-600 mt-2">
-                            {q.options.map((option: any, index: number) => (
-                              <div key={index}>
-                                {String.fromCharCode(65 + index)}. {option.text || option}
-                              </div>
-                            ))}
-                          </div>
+                        {q.qtitle && (
+                          <div className="text-gray-800 font-medium mb-2">{q.qtitle}</div>
                         )}
-                        {q.type === 'picture' && q.imageUrl && (
+                        {/* Handle "Tick the odd one in the following" - don't show question text, only options */}
+                        {q.qtitle === 'Tick the odd one in the following' ? null : (
+                          <>
+                            {q.subQuestions && q.subQuestions.length > 1 ? (
+                              <div className="space-y-2">
+                                {q.subQuestions.map((subQ: string, index: number) => (
+                                  <div key={index} className="text-gray-800">
+                                    {index + 1}. {subQ}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-gray-800">{q.text}</div>
+                            )}
+                          </>
+                        )}
+                        {/* Show image for "Match the following" and picture questions */}
+                        {(q.qtitle === 'Match the following' || q.type === 'picture') && q.imageUrl && (
                           <div className="mt-2">
                             <img
                               src={q.imageUrl}
@@ -1355,6 +1423,32 @@ const Paper = () => {
                               className="w-48 h-32 object-cover rounded border cursor-pointer"
                               onClick={() => setImagePreview({ open: true, url: q.imageUrl || '' })}
                             />
+                          </div>
+                        )}
+                        {/* Show options for multiple choice questions */}
+                        {q.type === 'multiplechoice' && q.options && Array.isArray(q.options) && q.options.length > 0 && (
+                          <div className="text-gray-600 mt-3">
+                            <div className="text-xs font-medium mb-1 text-gray-700">Options:</div>
+                            <div className="space-y-1">
+                              {q.options.map((option: any, index: number) => (
+                                <div key={index} className="text-sm">
+                                  {String.fromCharCode(65 + index)}. {option.text || option}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* Show options for direct questions (like "Tick the odd one in the following") */}
+                        {q.type === 'direct' && q.options && Array.isArray(q.options) && q.options.length > 0 && (
+                          <div className="text-gray-600 mt-3">
+                            <div className="text-xs font-medium mb-1 text-gray-700">Options:</div>
+                            <div className="space-y-1">
+                              {q.options.map((option: any, index: number) => (
+                                <div key={index} className="text-sm">
+                                  {String.fromCharCode(65 + index)}. {option.text || option}
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-3">
