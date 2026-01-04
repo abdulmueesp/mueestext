@@ -177,7 +177,7 @@ const Paper = () => {
   const [modalFilterTypes, setModalFilterTypes] = useState<QuestionType[]>([]);
   const [subjectsOptions, setSubjectsOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [subjectsLoading, setSubjectsLoading] = useState<boolean>(false);
-  const [booksOptions, setBooksOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [booksOptions, setBooksOptions] = useState<Array<{ value: string; label: string; code?: string }>>([]);
   const [booksLoading, setBooksLoading] = useState<boolean>(false);
   const [chaptersOptions, setChaptersOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [chaptersLoading, setChaptersLoading] = useState<boolean>(false);
@@ -255,17 +255,20 @@ const Paper = () => {
       const booksList = Array.isArray(data?.results)
         ? data.results.map((book: any) => ({ 
             value: book.id || book._id || book.name || book.title, 
-            label: book.name || book.title || book.book 
+            label: book.name || book.title || book.book,
+            code: book.code
           }))
         : Array.isArray(data?.books)
           ? data.books.map((book: any) => ({ 
               value: book.id || book._id || book.name || book.title, 
-              label: book.name || book.title || book.book 
+              label: book.name || book.title || book.book,
+              code: book.code
             }))
           : Array.isArray(data)
             ? data.map((book: any) => ({ 
                 value: book.id || book._id || book.name || book.title, 
-                label: book.name || book.title || book.book 
+                label: book.name || book.title || book.book,
+                code: book.code
               }))
             : [];
       setBooksOptions(booksList);
@@ -822,9 +825,12 @@ const Paper = () => {
   // Function to save examination data to API
   const saveExaminationData = async () => {
     const formValues = form.getFieldsValue();
+    const english = isEnglishSubjectValue(formValues.subject);
     
-    // Get book name from selected book ID
-    const selectedBookName = booksOptions.find(book => book.value === formValues.book)?.label || formValues.book;
+    // Get book name and code from selected book ID
+    const selectedBook = booksOptions.find(book => book.value === formValues.book);
+    const selectedBookName = selectedBook?.label || formValues.book;
+    const selectedBookCode = selectedBook?.code;
     
     // Get chapter names from selected chapter IDs
     const selectedChapterNames = Array.isArray(formValues.chapters) 
@@ -853,7 +859,9 @@ const Paper = () => {
             }
           : {}),
         // Include image URL when available (useful for picture / match type questions)
-        ...(question.imageUrl ? { imageUrl: question.imageUrl } : {})
+        ...(question.imageUrl ? { imageUrl: question.imageUrl } : {}),
+        // Include section field for English subject
+        ...(english && question.section ? { section: question.section } : {})
       };
     const pickFirst = (v: any) => Array.isArray(v) ? v[0] : v;
       
@@ -899,6 +907,7 @@ const Paper = () => {
       subject: formValues.subject,
       class: formValues.class,
       book: selectedBookName,
+      ...(selectedBookCode ? { code: selectedBookCode } : {}),
       chapters: selectedChapterNames,
       examinationType: formValues.examType,
       totalMark: totalMarksField,
