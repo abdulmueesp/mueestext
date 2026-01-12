@@ -13,8 +13,6 @@ interface MathInputProps {
 const MathInput: React.FC<MathInputProps> = ({
   value = '',
   onChange,
-  placeholder,
-  rows = 3,
 }) => {
   const mathFieldRef = useRef<any>(null);
 
