@@ -38,6 +38,23 @@ const DUMMY_ITEMS: QuestionListItem[] = [
   { id: "5A", className: "Class 11", subject: "Computer Science", title: "Data Structures", chapter: "Chapter 5", variant: "A", question: "Which of the following is NOT guaranteed under Article 19?" },
 ];
 
+import { InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+
+// Helper to detect Math/Maths subject (case/space insensitive)
+const isMathSubjectValue = (subject?: string): boolean => {
+  if (!subject) return false;
+  const subjectLower = String(subject).trim().toLowerCase();
+  return subjectLower === 'math' || subjectLower === 'maths' || subjectLower === 'mathematics';
+};
+
+// Helper to unescape LaTeX backslashes from API response
+const unescapeLatex = (text: string | undefined): string => {
+  if (!text || typeof text !== 'string') return text || '';
+  // Replace double backslashes with single backslash
+  return text.replace(/\\\\/g, '\\');
+};
+
 const Questions: React.FC = () => {
   const navigate = useNavigate();
 
@@ -197,16 +214,16 @@ const Questions: React.FC = () => {
         const options = r?.options || [];
         const correctAnswer = r?.correctAnswer;
         const section = r?.section;
-        
+
         // Preserve all question fields (question1, question2, etc.) and subQuestions for picture questions
-        const baseItem: any = { 
-          id, 
+        const baseItem: any = {
+          id,
           quizId,
-          className, 
-          subject, 
-          title, 
-          chapter, 
-          question, 
+          className,
+          subject,
+          title,
+          chapter,
+          question,
           variant: r?.variant || "",
           questionType,
           qtitle,
@@ -216,7 +233,7 @@ const Questions: React.FC = () => {
           correctAnswer,
           section
         };
-        
+
         // Add question1, question2, etc. if they exist
         for (let i = 1; i <= 5; i++) {
           const qKey = `question${i}`;
@@ -224,12 +241,12 @@ const Questions: React.FC = () => {
             baseItem[qKey] = r[qKey];
           }
         }
-        
+
         // Add subQuestions if they exist
         if (r?.subQuestions) {
           baseItem.subQuestions = r.subQuestions;
         }
-        
+
         return baseItem as QuestionListItem;
       });
       setRows(mapped);
@@ -270,11 +287,32 @@ const Questions: React.FC = () => {
   };
 
   const columns: any[] = [
-    { title: "Question", dataIndex: "question", key: "question", width: 450 },
-    { 
-      title: "Question Type", 
-      dataIndex: "questionType", 
-      key: "questionType", 
+    {
+      title: "Question",
+      dataIndex: "question",
+      key: "question",
+      width: 450,
+      render: (text: string, record: QuestionListItem) => {
+        if (!text) return "";
+        const isMath = isMathSubjectValue(record.subject);
+        if (isMath) {
+          try {
+            return (
+              <div className="math-preview" onClick={(e) => e.stopPropagation()}>
+                <InlineMath math={`\\mathrm{${unescapeLatex(text)}}`} />
+              </div>
+            );
+          } catch (e) {
+            return text;
+          }
+        }
+        return text;
+      }
+    },
+    {
+      title: "Question Type",
+      dataIndex: "questionType",
+      key: "questionType",
       width: 140,
       render: (value: string) => {
         const normalizedValue = value?.toLowerCase();
@@ -292,35 +330,35 @@ const Questions: React.FC = () => {
         return <Tag color={typeColors[normalizedValue] || typeColors[value] || 'default'}>{value?.toUpperCase()}</Tag>;
       }
     },
-    { 
-      title: "Class", 
-      dataIndex: "className", 
-      key: "className", 
+    {
+      title: "Class",
+      dataIndex: "className",
+      key: "className",
       width: 120,
       render: (value: string) => <Tag color="geekblue">{value}</Tag>
     },
-    { 
-      title: "Subject", 
-      dataIndex: "subject", 
-      key: "subject", 
+    {
+      title: "Subject",
+      dataIndex: "subject",
+      key: "subject",
       width: 140,
       render: (value: string) => <Tag color="magenta">{value}</Tag>
     },
-    { 
-      title: "Book", 
-      dataIndex: "title", 
-      key: "title", 
+    {
+      title: "Book",
+      dataIndex: "title",
+      key: "title",
       width: 180,
       render: (value: string) => <Tag color="cyan">{value}</Tag>
     },
-    { 
-      title: "Chapter", 
-      dataIndex: "chapter", 
-      key: "chapter", 
+    {
+      title: "Chapter",
+      dataIndex: "chapter",
+      key: "chapter",
       width: 160,
       render: (value: string) => <Tag color="purple">{value}</Tag>
     },
-   
+
     {
       title: "Actions",
       key: "actions",
@@ -345,9 +383,9 @@ const Questions: React.FC = () => {
             title="Are you sure you want to delete this question?"
             onConfirm={() => handleDeleteQuestion(record.quizId)}
             okButtonProps={{ danger: true }}
-             okText="Yes, Delete"
+            okText="Yes, Delete"
             cancelText="No"
-           
+
           >
             <Tooltip title="Delete Question">
               <Button
@@ -481,7 +519,7 @@ const Questions: React.FC = () => {
             marginRight: 8,
           }}
         />
-        
+
         <Button
           type="primary"
           size="medium"
@@ -492,36 +530,36 @@ const Questions: React.FC = () => {
         </Button>
       </PageHeader>
 
-        <Table
-          className="mt-4"
-          rowKey={(row: QuestionListItem) => row.id}
-          columns={columns as any}
-          dataSource={filtered}
-          loading={loading}
-          scroll={{ x: 1500 }}
-          pagination={{ 
-            current: currentPage, 
-            pageSize, 
-            total, 
-            showSizeChanger: true,
-            showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`
-          }}
-          onChange={(pagination) => {
-            const newPage = pagination.current || currentPage;
-            const newPageSize = pagination.pageSize || pageSize;
-            if (newPageSize !== pageSize) setPageSize(newPageSize);
-            if (newPage !== currentPage) setCurrentPage(newPage);
-            fetchQuestions({
-              q: searchValue || undefined,
-              cls: filterClass,
-              subj: filterSubject,
-              book: filterBookName,
-              chapter: filterChapter,
-              page: newPage,
-              pageSize: newPageSize,
-            });
-          }}
-        />
+      <Table
+        className="mt-4"
+        rowKey={(row: QuestionListItem) => row.id}
+        columns={columns as any}
+        dataSource={filtered}
+        loading={loading}
+        scroll={{ x: 1500 }}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          showTotal: (total: any, range: any) => `${range[0]}-${range[1]} of ${total} items`
+        }}
+        onChange={(pagination) => {
+          const newPage = pagination.current || currentPage;
+          const newPageSize = pagination.pageSize || pageSize;
+          if (newPageSize !== pageSize) setPageSize(newPageSize);
+          if (newPage !== currentPage) setCurrentPage(newPage);
+          fetchQuestions({
+            q: searchValue || undefined,
+            cls: filterClass,
+            subj: filterSubject,
+            book: filterBookName,
+            chapter: filterChapter,
+            page: newPage,
+            pageSize: newPageSize,
+          });
+        }}
+      />
 
       {/* View Question Modal */}
       <Modal
@@ -533,8 +571,8 @@ const Questions: React.FC = () => {
         }}
         width={800}
         footer={[
-          <Button 
-            key="close" 
+          <Button
+            key="close"
             onClick={() => {
               setViewModalVisible(false);
               setSelectedQuestion(null);
@@ -546,14 +584,14 @@ const Questions: React.FC = () => {
       >
         {selectedQuestion && (() => {
           // Check if it's a picture question type
-          const isPictureQuestion = selectedQuestion.questionType?.toLowerCase() === 'picture questions' || 
-                                    selectedQuestion.questionType?.toLowerCase() === 'image';
+          const isPictureQuestion = selectedQuestion.questionType?.toLowerCase() === 'picture questions' ||
+            selectedQuestion.questionType?.toLowerCase() === 'image';
           // Check if it's the multi-question MCQ title ("Choose the correct answers")
           const isMultiQuestionMcq = (
             (selectedQuestion.questionType?.toLowerCase() === 'mcq' || selectedQuestion.questionType?.toLowerCase() === 'multiple choice')
             && selectedQuestion.qtitle === 'Choose the correct answers'
           );
-          
+
           // Collect all questions for picture questions and multi-question MCQ from question, question1, question2, etc. fields
           let allQuestions: string[] = [];
           if (isPictureQuestion || isMultiQuestionMcq) {
@@ -577,7 +615,7 @@ const Questions: React.FC = () => {
 
           const hideSingleQuestion =
             (selectedQuestion.questionType?.toLowerCase() === 'direct questions' ||
-             selectedQuestion.questionType?.toLowerCase() === 'fillblank') &&
+              selectedQuestion.questionType?.toLowerCase() === 'fillblank') &&
             selectedQuestion.qtitle === 'Tick the odd one in the following';
 
           const sectionLabels: Record<string, string> = {
@@ -591,7 +629,7 @@ const Questions: React.FC = () => {
           return (
             <div className="space-y-4">
               {/* Section (for English questions that have section) */}
-             
+
               {/* Display questions - multiple for picture questions, single for others */}
               {(isPictureQuestion || isMultiQuestionMcq) && allQuestions.length > 0 ? (
                 <div>
@@ -600,7 +638,9 @@ const Questions: React.FC = () => {
                     {allQuestions.map((q, index) => (
                       <div key={index} className="p-3 bg-gray-50 rounded">
                         <span className="font-medium mr-2">{index + 1}.</span>
-                        <span>{q}</span>
+                        <span>
+                          {isMathSubjectValue(selectedQuestion.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(q)}}`} /> : q}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -608,115 +648,119 @@ const Questions: React.FC = () => {
               ) : (!hideSingleQuestion && selectedQuestion.question && selectedQuestion.question !== 'null' && selectedQuestion.question.trim().length > 0) ? (
                 <div>
                   <strong>Question:</strong>
-                  <p className="mt-1 p-3 bg-gray-50 rounded">{selectedQuestion.question}</p>
+                  <div className="mt-1 p-3 bg-gray-50 rounded">
+                    {isMathSubjectValue(selectedQuestion.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(selectedQuestion.question)}}`} /> : selectedQuestion.question}
+                  </div>
                 </div>
               ) : null}
-              
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <strong>Class:</strong>
-                <Tag color="geekblue" className="ml-2">{selectedQuestion.className}</Tag>
-              </div>
-              <div>
-                <strong>Subject:</strong>
-                <Tag color="magenta" className="ml-2">{selectedQuestion.subject}</Tag>
-              </div>
-              <div>
-                <strong>Book:</strong>
-                <Tag color="cyan" className="ml-2">{selectedQuestion.title}</Tag>
-              </div>
-              <div>
-                <strong>Chapter:</strong>
-                <span className="ml-2">{selectedQuestion.chapter}</span>
-              </div>
-              <div>
-                <strong>Question Type:</strong>
-                <Tag color={
-                  (() => {
-                    const normalizedType = selectedQuestion.questionType?.toLowerCase();
-                    if (normalizedType === 'mcq' || normalizedType === 'multiple choice') return 'blue';
-                    if (normalizedType === 'fillblank' || normalizedType === 'direct questions') return 'green';
-                    if (normalizedType === 'shortanswer' || normalizedType === 'answer the following questions') return 'orange';
-                    if (normalizedType === 'essay') return 'purple';
-                    if (normalizedType === 'image' || normalizedType === 'picture questions') return 'cyan';
-                    return 'default';
-                  })()
-                } className="ml-2">
-                  {selectedQuestion.questionType?.toUpperCase()}
-                </Tag>
-              </div>
-              <div>
-                <strong>Marks:</strong>
-                <span className="ml-2 font-semibold">{selectedQuestion.marks}</span>
-              </div>
-              {selectedQuestion.qtitle && (
-                <div className="col-span-2">
-                  <strong>Question Title:</strong>
-                  <span className="ml-2">{selectedQuestion.qtitle}</span>
-                </div>
-              )}
-               {displaySectionLabel && (
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <strong>Section:</strong> <span>{displaySectionLabel}</span>
+                  <strong>Class:</strong>
+                  <Tag color="geekblue" className="ml-2">{selectedQuestion.className}</Tag>
                 </div>
-              )}
+                <div>
+                  <strong>Subject:</strong>
+                  <Tag color="magenta" className="ml-2">{selectedQuestion.subject}</Tag>
+                </div>
+                <div>
+                  <strong>Book:</strong>
+                  <Tag color="cyan" className="ml-2">{selectedQuestion.title}</Tag>
+                </div>
+                <div>
+                  <strong>Chapter:</strong>
+                  <span className="ml-2">{selectedQuestion.chapter}</span>
+                </div>
+                <div>
+                  <strong>Question Type:</strong>
+                  <Tag color={
+                    (() => {
+                      const normalizedType = selectedQuestion.questionType?.toLowerCase();
+                      if (normalizedType === 'mcq' || normalizedType === 'multiple choice') return 'blue';
+                      if (normalizedType === 'fillblank' || normalizedType === 'direct questions') return 'green';
+                      if (normalizedType === 'shortanswer' || normalizedType === 'answer the following questions') return 'orange';
+                      if (normalizedType === 'essay') return 'purple';
+                      if (normalizedType === 'image' || normalizedType === 'picture questions') return 'cyan';
+                      return 'default';
+                    })()
+                  } className="ml-2">
+                    {selectedQuestion.questionType?.toUpperCase()}
+                  </Tag>
+                </div>
+                <div>
+                  <strong>Marks:</strong>
+                  <span className="ml-2 font-semibold">{selectedQuestion.marks}</span>
+                </div>
+                {selectedQuestion.qtitle && (
+                  <div className="col-span-2">
+                    <strong>Question Title:</strong>
+                    <span className="ml-2">{selectedQuestion.qtitle}</span>
+                  </div>
+                )}
+                {displaySectionLabel && (
+                  <div>
+                    <strong>Section:</strong> <span>{displaySectionLabel}</span>
+                  </div>
+                )}
+              </div>
+
+              {((selectedQuestion.questionType?.toLowerCase() === 'mcq' ||
+                selectedQuestion.questionType?.toLowerCase() === 'multiple choice' ||
+                selectedQuestion.questionType === 'Multiple Choice' ||
+                (selectedQuestion.questionType === 'Direct Questions' && selectedQuestion.qtitle === 'Tick the odd one in the following') ||
+                (selectedQuestion.questionType?.toLowerCase() === 'direct questions' && selectedQuestion.qtitle === 'Match the following')) &&
+                selectedQuestion.options && selectedQuestion.options.length > 0) && (
+                  <div>
+                    <strong>Options:</strong>
+                    <div className="mt-2 space-y-2">
+                      {selectedQuestion.options.map((option: any, index: number) => {
+                        // Handle different option structures
+                        const optionText = option?.text || option?.label || option || '';
+                        const isCorrect = option?.isCorrect ||
+                          (Array.isArray(selectedQuestion.correctAnswer) && selectedQuestion.correctAnswer.includes(index)) ||
+                          selectedQuestion.correctAnswer === index;
+
+                        return (
+                          <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
+                            <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
+                            <span className="flex-1">
+                              {isMathSubjectValue(selectedQuestion.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(optionText)}}`} /> : optionText}
+                            </span>
+                            {isCorrect && (
+                              <Tag color="green" size="small">Correct</Tag>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              {((selectedQuestion.questionType === 'image' && selectedQuestion.imageUrl) ||
+                (selectedQuestion.questionType?.toLowerCase() === 'picture questions' && selectedQuestion.imageUrl) ||
+                (selectedQuestion.questionType?.toLowerCase() === 'direct questions' &&
+                  selectedQuestion.qtitle === 'Match the following' &&
+                  selectedQuestion.imageUrl)) && (
+                  <div>
+                    <strong>Image:</strong>
+                    <div className="mt-2">
+                      <Image
+                        src={selectedQuestion.imageUrl}
+                        alt="Question Image"
+                        className="rounded border"
+                        style={{ maxHeight: '300px', maxWidth: '100%', objectFit: 'contain' }}
+                        preview={{
+                          src: selectedQuestion.imageUrl,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
             </div>
-
-            {((selectedQuestion.questionType?.toLowerCase() === 'mcq' || 
-               selectedQuestion.questionType?.toLowerCase() === 'multiple choice' ||
-               selectedQuestion.questionType === 'Multiple Choice' ||
-               (selectedQuestion.questionType === 'Direct Questions' && selectedQuestion.qtitle === 'Tick the odd one in the following') ||
-               (selectedQuestion.questionType?.toLowerCase() === 'direct questions' && selectedQuestion.qtitle === 'Match the following')) &&
-              selectedQuestion.options && selectedQuestion.options.length > 0) && (
-              <div>
-                <strong>Options:</strong>
-                <div className="mt-2 space-y-2">
-                  {selectedQuestion.options.map((option: any, index: number) => {
-                    // Handle different option structures
-                    const optionText = option?.text || option?.label || option || '';
-                    const isCorrect = option?.isCorrect || 
-                                     (Array.isArray(selectedQuestion.correctAnswer) && selectedQuestion.correctAnswer.includes(index)) ||
-                                     selectedQuestion.correctAnswer === index;
-                    
-                    return (
-                      <div key={index} className="flex items-center p-2 bg-gray-50 rounded">
-                        <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
-                        <span className="flex-1">{optionText}</span>
-                        {isCorrect && (
-                          <Tag color="green" size="small">Correct</Tag>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {((selectedQuestion.questionType === 'image' && selectedQuestion.imageUrl) ||
-              (selectedQuestion.questionType?.toLowerCase() === 'picture questions' && selectedQuestion.imageUrl) ||
-              (selectedQuestion.questionType?.toLowerCase() === 'direct questions' && 
-               selectedQuestion.qtitle === 'Match the following' && 
-               selectedQuestion.imageUrl)) && (
-              <div>
-                <strong>Image:</strong>
-                <div className="mt-2">
-                  <Image
-                    src={selectedQuestion.imageUrl}
-                    alt="Question Image"
-                    className="rounded border"
-                    style={{ maxHeight: '300px', maxWidth: '100%', objectFit: 'contain' }}
-                    preview={{
-                      src: selectedQuestion.imageUrl,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
           );
         })()}
       </Modal>
-    
+
     </>
   );
 };
