@@ -1,0 +1,43 @@
+/* Ensure input field is full width */
+.math-input-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.math-input-wrapper :global(.mq-editable-field),
+.math-input-wrapper :global(.mq-root-block) {
+  width: 100% !important;
+}
+
+/* Reduce keyboard popup size and position it within Questions section */
+:global(div[class*="keyboard"]:not(.mq-editable-field):not(.mq-root-block)),
+:global(div[id*="keyboard"]:not(.mq-editable-field):not(.mq-root-block)) {
+  max-width: 400px !important;
+  width: 70% !important;
+  transform: scale(0.75) !important;
+  transform-origin: top left !important;
+  z-index: 1000 !important;
+  position: fixed !important;
+}
+
+/* Reduce button sizes in keyboard */
+:global(div[class*="keyboard"]:not(.mq-editable-field)) button,
+:global(div[id*="keyboard"]:not(.mq-editable-field)) button {
+  font-size: 10px !important;
+  padding: 3px 5px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+}
+
+/* Reduce toolbar size */
+:global(div[class*="toolbar"]:not(.mq-editable-field)),
+:global(div[class*="numericToolbar"]:not(.mq-editable-field)) {
+  font-size: 10px !important;
+  padding: 3px !important;
+}
+
+/* Ensure keyboard appears above form but below modals */
+:global(div[style*="position: fixed"]:not(.mq-editable-field):not(.mq-root-block)) {
+  z-index: 1000 !important;
+  max-width: 400px !important;
+}

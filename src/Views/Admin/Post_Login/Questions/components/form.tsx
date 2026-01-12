@@ -9,6 +9,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import PageHeader from "@/Components/common/PageHeader";
 import axios from "axios";
 import { API, GET, BASE_URL } from "@/Components/common/api";
+import MathInput from "./MathInput";
 // Cropping functionality removed
 
 const { Option } = Select;
@@ -82,6 +83,29 @@ const QuestionForm = () => {
   const isEnglishSubjectValue = (subject?: string) => {
     if (!subject) return false;
     return String(subject).trim().toLowerCase() === 'english';
+  };
+
+  // Helper to detect Math/Maths subject (case/space insensitive)
+  const isMathSubjectValue = (subject?: string) => {
+    if (!subject) return false;
+    const subjectLower = String(subject).trim().toLowerCase();
+    return subjectLower === 'math' || subjectLower === 'maths' || subjectLower === 'mathematics';
+  };
+
+  // Helper to unescape LaTeX backslashes from API response
+  // API returns: "x^2\\ is\\ a" -> MathInput needs: "x^2\ is\ a"
+  const unescapeLatex = (text: string | undefined): string => {
+    if (!text || typeof text !== 'string') return text || '';
+    // Replace double backslashes with single backslash
+    return text.replace(/\\\\/g, '\\');
+  };
+
+  // Helper to ensure LaTeX format is correct for API
+  // MathInput provides: "x^2\ is\ a" -> API expects: "x^2\ is\ a" (JSON.stringify will handle escaping)
+  const prepareLatexForApi = (text: string | undefined): string => {
+    if (!text || typeof text !== 'string') return text || '';
+    // Return as-is, JSON.stringify will handle escaping when sending
+    return text;
   };
 
   // Fetch subjects similar to Chapters form
@@ -677,7 +701,9 @@ const QuestionForm = () => {
                 const mappedQuestion: any = {
                   questionType: internalType,
                   questionTitle: questionTitle,
-                  question: q.question,
+                  question: isMathSubjectValue(isEdit ? selectedSubject : questionData.subject) 
+                    ? unescapeLatex(q.question) 
+                    : q.question,
                   marks: q.marks,
                 };
 
@@ -697,7 +723,10 @@ const QuestionForm = () => {
 
                 // Handle MCQ-like options (including odd-one-out direct questions)
                 if ((internalType === 'mcq' || isOddOneOutFillBlank) && q.options) {
-                  mappedQuestion.options = q.options;
+                  const isMath = isMathSubjectValue(isEdit ? selectedSubject : questionData.subject);
+                  mappedQuestion.options = q.options.map((opt: any) => ({
+                    text: isMath && opt.text ? unescapeLatex(opt.text) : (opt.text || opt)
+                  }));
                   mappedQuestion.correctAnswer = q.correctAnswer;
                 }
 
@@ -722,16 +751,17 @@ const QuestionForm = () => {
 
                 // For picture questions, rehydrate subQuestions if present,
                 // or split the main question text by lines as a fallback.
+                const isMath = isMathSubjectValue(isEdit ? selectedSubject : questionData.subject);
                 if (internalType === 'image') {
                   if (Array.isArray(q.subQuestions) && q.subQuestions.length > 0) {
                     mappedQuestion.subQuestions = q.subQuestions.map((sq: any) => ({
-                      text: sq?.text || ''
+                      text: isMath ? unescapeLatex(sq?.text) : (sq?.text || '')
                     }));
                   } else if (typeof q.question === 'string' && q.question.trim().length > 0) {
                     const parts = q.question.split('\n').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
                     if (parts.length > 0) {
                       mappedQuestion.subQuestions = parts.map((t: string) => ({ 
-                        text: t
+                        text: isMath ? unescapeLatex(t) : t
                       }));
                     }
                   }
@@ -741,13 +771,13 @@ const QuestionForm = () => {
                 ) {
                   if (Array.isArray(q.subQuestions) && q.subQuestions.length > 0) {
                     mappedQuestion.subQuestions = q.subQuestions.map((sq: any) => ({
-                      text: sq?.text || ''
+                      text: isMath ? unescapeLatex(sq?.text) : (sq?.text || '')
                     }));
                   } else if (typeof q.question === 'string' && q.question.trim().length > 0) {
                     const parts = q.question.split('\n').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
                     if (parts.length > 0) {
                       mappedQuestion.subQuestions = parts.map((t: string) => ({
-                        text: t
+                        text: isMath ? unescapeLatex(t) : t
                       }));
                     }
                   }
@@ -813,10 +843,17 @@ const QuestionForm = () => {
                             label={subName === 0 ? 'Questions' : undefined}
                             rules={[{ required: true, message: 'Please enter question!' }]}
                           >
-                            <TextArea
-                              rows={2}
-                              placeholder="Enter your question"
-                            />
+                            {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
+                              <MathInput
+                                rows={2}
+                                placeholder="Enter your question"
+                              />
+                            ) : (
+                              <TextArea
+                                rows={2}
+                                placeholder="Enter your question"
+                              />
+                            )}
                           </Form.Item>
                         </Col>
                         <Col span={2}>
@@ -858,9 +895,16 @@ const QuestionForm = () => {
                           name={[name, 'text']}
                           rules={[{ required: true, message: 'Please enter option text!' }]}
                         >
-                          <Input 
-                            placeholder={`Option ${name + 1}`}
-                          />
+                          {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
+                            <MathInput 
+                              rows={1}
+                              placeholder={`Option ${name + 1}`}
+                            />
+                          ) : (
+                            <Input 
+                              placeholder={`Option ${name + 1}`}
+                            />
+                          )}
                         </Form.Item>
                       </Col>
                       <Col span={4}>
@@ -1161,7 +1205,7 @@ const QuestionForm = () => {
                                         label={subName === 0 ? 'Questions' : undefined}
                                         rules={[{ required: true, message: 'Please enter question!' }]}
                                       >
-                                        <TextArea
+                                        <MathInput
                                           rows={2}
                                           placeholder="Enter your question"
                                         />
@@ -1207,10 +1251,17 @@ const QuestionForm = () => {
                                 label="Question"
                                 rules={[{ required: true, message: 'Please enter question!' }]}
                               >
-                                <TextArea 
-                                  rows={3}
-                                  placeholder="Enter your question" 
-                                />
+                                {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
+                                  <MathInput 
+                                    rows={3}
+                                    placeholder="Enter your question"
+                                  />
+                                ) : (
+                                  <TextArea 
+                                    rows={3}
+                                    placeholder="Enter your question" 
+                                  />
+                                )}
                               </Form.Item>
                             </Col>
                           </Row>
