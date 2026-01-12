@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import MathInputKeyboard from '@karyum/react-math-keyboard';
-import './MathInput.css';
 
 interface MathInputProps {
   value?: string;
@@ -36,14 +35,15 @@ const MathInput: React.FC<MathInputProps> = ({
   };
 
   return (
-    <div style={{ width: '100%' }} className="math-input-wrapper">
-      <MathInputKeyboard 
+    <div style={{ width: '100%' }} >
+      <MathInputKeyboard
+
         setValue={handleValueChange}
         setMathfieldRef={(mathfield: any) => {
           mathFieldRef.current = mathfield;
         }}
         defaultValue={value}
-        style={{ width: '100%' }}
+        style={{ width: '100%', fontSize: '16px', fontFamily: 'Arial, sans-serif' }}
       />
     </div>
   );
