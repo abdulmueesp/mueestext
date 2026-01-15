@@ -101,12 +101,12 @@ const getStdLabel = (classValue?: string | number) => {
   return String(classValue).toUpperCase();
 };
 
-const getSubjectDisplay = (subject?: string, book?: string) => {
+const getSubjectDisplay = (subject?: string, code?: string) => {
   const cleanSubject = subject?.trim();
-  const cleanBook = book?.trim();
-  if (cleanSubject && cleanBook) return `${cleanSubject} (${cleanBook})`;
+  const cleanCode = code?.trim();
+  if (cleanSubject && cleanCode) return `${cleanSubject} (${cleanCode})`;
   if (cleanSubject) return cleanSubject;
-  if (cleanBook) return cleanBook;
+  if (cleanCode) return cleanCode;
   return '';
 };
 
@@ -122,7 +122,7 @@ const isClassFourOrBelow = (classValue?: string | number): boolean => {
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [wordLoading, setWordLoading] = useState(false);
   const stdLabel = getStdLabel(paper.class);
-  const subjectDisplay = getSubjectDisplay(paper.subject, paper.bookName || paper.book);
+  const subjectDisplay = getSubjectDisplay(paper.subject, paper.code);
   const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
 
   // Logic to group questions by qtitle
@@ -329,13 +329,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       if (isClassFourOrBelow(paper.class)) {
         docChildren.push(
           new Paragraph({
-            children: [new TextRun({ text: "NAME: ________________________________________________", bold: true })],
-            spacing: { after: 100 }
-          })
-        );
-        docChildren.push(
-          new Paragraph({
-            children: [new TextRun({ text: "ROLL NO: ______________________", bold: true })],
+            children: [
+              new TextRun({ text: "NAME: .............................................................................................", bold: true }),
+              new TextRun({ text: " ROLL NO: .....................", bold: true })
+            ],
             spacing: { after: 200 }
           })
         );
@@ -554,17 +551,17 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           children: [
             new TableCell({
               borders: cellBorders,
-              width: { size: 33, type: WidthType.PERCENTAGE },
+              width: { size: 20, type: WidthType.PERCENTAGE },
               children: [new Paragraph({ text: `Std: ${stdValue || '-'}`, bold: true })]
             }),
             new TableCell({
               borders: cellBorders,
-              width: { size: 34, type: WidthType.PERCENTAGE },
+              width: { size: 60, type: WidthType.PERCENTAGE },
               children: [new Paragraph({ text: subjectValue || '', alignment: AlignmentType.CENTER, bold: true })]
             }),
             new TableCell({
               borders: cellBorders,
-              width: { size: 33, type: WidthType.PERCENTAGE },
+              width: { size: 20, type: WidthType.PERCENTAGE },
               children: [new Paragraph({ text: `Marks: ${marksValue}`, alignment: AlignmentType.RIGHT, bold: true })]
             })
           ]
