@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { Button, Card, Typography, Modal, Input, Dropdown, message, Select, Pagination } from "antd";
@@ -19,7 +18,7 @@ const { Title, Text } = Typography;
 // Class options (same as Books module)
 const CLASS_OPTIONS = [
   "0",
-  "LKG", 
+  "LKG",
   "UKG",
   "1",
   "2",
@@ -59,7 +58,7 @@ const toRomanNumeral = (num: number): string => {
     [4, 'IV'],
     [1, 'I']
   ];
-  
+
   let result = '';
   for (const [value, numeral] of romanNumerals) {
     while (num >= value) {
@@ -73,23 +72,23 @@ const toRomanNumeral = (num: number): string => {
 // Convert minutes to hours and minutes format
 const formatDuration = (minutes: number): string => {
   if (!minutes || minutes <= 0) return '0 minutes';
-  
+
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  
+
   if (hours === 0) {
     return `${minutes} minutes`;
   }
-  
+
   if (mins === 0) {
     return `${hours} ${hours === 1 ? 'hr' : 'hrs'}`;
   }
-  
+
   // Check if minutes is 30 for "1/2" format
   if (mins === 30) {
     return `${hours} 1/2 ${hours === 1 ? 'hr' : 'hrs'}`;
   }
-  
+
   return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
 };
 
@@ -120,224 +119,331 @@ const isClassFourOrBelow = (classValue?: string | number): boolean => {
   return classesFourOrBelow.includes(classStr);
 };
 
-type PaperSection = {
-  heading: string;
-  summary?: string;
-  questions: Array<{
-    number: number;
-    text: string;
-    marks?: number | null;
-    showMarks?: boolean;
-    options?: string[];
-    imageUrl?: string | null;
-  }>;
-};
-
-type PrintableBodyArgs = {
-  includeNameRoll: boolean;
-  paperTitle: string;
-  stdLabel: string;
-  subjectDisplay: string;
-  totalMarks: number;
-  durationLabel: string;
-  sectionsHtml: string;
-};
-
-const renderSectionsHtml = (sections: PaperSection[]) =>
-  sections
-    .map((section) => `
-      <div class="section">
-        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>${section.heading}</span>
-          ${section.summary ? `<span style="color: #000;">${section.summary}</span>` : ''}
-        </div>
-        ${section.questions
-          .map(
-            (question) => `
-              <div class="question">
-                <div class="question-no">${question.number})</div>
-                <div class="question-content">
-                  <div class="question-text">${question.text || ''}</div>
-                  ${
-                    question.imageUrl
-                      ? `
-                        <div class="question-image">
-                          <img src="${question.imageUrl}" alt="Question Image" style="max-width: 250px; max-height: 150px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.style.display='none';" />
-                        </div>
-                      `
-                      : ''
-                  }
-                  ${
-                    question.options && question.options.length > 0
-                      ? `
-                        <div class="question-options" style="margin-top: 10px;">
-                          ${question.options
-                            .map(
-                              (option, index) => `
-                                <div style="margin: 5px 0; color: #000;">${String.fromCharCode(65 + index)}. ${option}</div>
-                              `
-                            )
-                            .join('')}
-                        </div>
-                      `
-                      : ''
-                  }
-                </div>
-                  ${
-                    question.showMarks === false || question.marks === null || question.marks === undefined
-                    ? ''
-                    : `<div class="marks">[${question.marks}]</div>`
-                  }
-              </div>
-            `
-          )
-          .join('')}
-      </div>
-    `)
-    .join('');
-
-const PRINT_TEMPLATE_STYLES = `
-  body { font-family: 'Times New Roman', serif; margin: 40px; line-height: 1.6; color: #000; }
-  .header { text-align: center; margin-bottom: 10px; }
-  .title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-  .name-roll-section { margin-bottom: 15px; font-size: 18px; color: #000; }
-  .name-roll-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; gap: 10px; }
-  .name-roll-label { font-weight: 600; white-space: nowrap; }
-  .name-roll-dots { color: #000; letter-spacing: 2px; font-size: 20px; line-height: 1; overflow: hidden; }
-  .name-roll-group { display: flex; align-items: flex-end; min-width: 0; }
-  .name-group { flex: 1; min-width: 0; }
-  .rollno-group { flex: 0 0 200px; max-width: 200px; }
-  .subject-line { margin: 8px 0 18px; color: #000; }
-  .subject-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .subject-row + .subject-row { margin-top: 4px; }
-  .subject-left, .subject-right { flex: 0 0 140px; font-weight: 600; font-size: 18px; }
-  .subject-left { text-align: left; }
-  .subject-center { flex: 1; text-align: center; font-weight: 600; font-size: 18px; }
-  .subject-right { text-align: right; }
-  .subject-secondary { font-size: 18px; font-weight: 600; }
-  .subject-line-divider { width: 100%; border-bottom: 1px solid #000; height: 2px; }
-  .section { margin: 30px 0; }
-  .section-title { font-size: 18px; font-weight: bold; text-align: left; margin-bottom: 15px; color: #000; }
-  .question { margin: 15px 0; display: flex; align-items: flex-start; page-break-inside: avoid; }
-  .question-no { width: 30px; font-weight: normal; color: #000; font-size: 18px; margin-left: 10px; }
-  .question-content { flex: 1; }
-  .question-text { margin-bottom: 5px; font-size: 18px; color: #000; font-weight: normal; }
-  .question-image { margin-top: 1px; }
-  .marks { font-weight: normal; margin-left: 10px; color: #000; white-space: nowrap; }
-  @media print {
-    body { margin: 20px; }
-    .section { page-break-inside: auto; break-inside: auto; page-break-before: auto; page-break-after: auto; }
-    .question { page-break-inside: avoid; break-inside: avoid; margin: 10px 0; }
-    .question-image img { max-width: 250px; max-height: 150px; }
-  }
-`;
-
-const buildPrintableBody = ({
-  includeNameRoll,
-  paperTitle,
-  stdLabel,
-  subjectDisplay,
-  totalMarks,
-  durationLabel,
-  sectionsHtml
-}: PrintableBodyArgs) => `
-  ${includeNameRoll
-    ? `<div class="name-roll-section">
-        <div class="name-roll-row">
-          <div class="name-roll-group name-group">
-            <span class="name-roll-label">NAME:</span>
-            <span class="name-roll-dots">................................................................................................................................................................................................................................................</span>
-          </div>
-          <div class="name-roll-group rollno-group">
-            <span class="name-roll-label">ROLL NO:</span>
-            <span class="name-roll-dots">........................................................</span>
-          </div>
-        </div>
-      </div>`
-    : ''}
-  <div class="header">
-    <div class="title">${paperTitle}</div>
-  </div>
-  <div class="subject-line">
-    <div class="subject-row">
-      <div class="subject-left">Std: ${stdLabel || '-'}</div>
-      <div class="subject-center">${subjectDisplay || ''}</div>
-      <div class="subject-right">Marks: ${totalMarks}</div>
-    </div>
-    <div class="subject-row subject-row-secondary">
-      <div class="subject-left subject-secondary">HM</div>
-      <div class="subject-right subject-secondary">Time: ${durationLabel}</div>
-    </div>
-    <div class="subject-line-divider"></div>
-  </div>
-  ${sectionsHtml}
-`;
-
-const buildPrintableDocumentHtml = (paperTitle: string, bodyContent: string) => `
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <title>${paperTitle}</title>
-      <style>
-        ${PRINT_TEMPLATE_STYLES}
-      </style>
-    </head>
-    <body>
-      ${bodyContent}
-    </body>
-  </html>
-`;
-
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [wordLoading, setWordLoading] = useState(false);
-  const [pdfLoading, setPdfLoading] = useState(false);
   const stdLabel = getStdLabel(paper.class);
   const subjectDisplay = getSubjectDisplay(paper.subject, paper.bookName || paper.book);
   const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
 
-  const handlePrintQuestionPaper = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      message.error("Popup blocked. Please allow popups for this site.");
-      return;
-    }
+  // Logic to group questions by qtitle
+  const groupedQuestions = React.useMemo(() => {
+    if (!paper.questions || !Array.isArray(paper.questions)) return [];
 
-    const sectionsHtml = renderSectionsHtml(buildPaperSections());
-    const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26`.trim();
-    const bodyContent = buildPrintableBody({
-      includeNameRoll: isClassFourOrBelow(paper.class),
-      paperTitle,
-      stdLabel: stdLabel || '-',
-      subjectDisplay: subjectDisplayUpper || '',
-      totalMarks: currentSumMarks,
-      durationLabel: formatDuration(paper.duration || 60),
-      sectionsHtml
-    });
-    const content = buildPrintableDocumentHtml(paperTitle, bodyContent);
-    
-    printWindow.document.write(content);
-    printWindow.document.close();
-    
-    // Add a small delay for mobile devices
-    setTimeout(() => {
-      try {
-        printWindow.print();
-        // Don't close immediately on mobile
-        if (!isMobileDevice()) {
-          setTimeout(() => printWindow.close(), 500);
-        }
-      } catch (error) {
-        message.error("Failed to print. Please try again.");
-        printWindow.close();
+    // Group by qtitle
+    const groups: Record<string, any[]> = {};
+    const titlesOrder: string[] = [];
+
+    paper.questions.forEach((q: any) => {
+      const title = q.qtitle || "Miscellaneous"; // Fallback title
+      if (!groups[title]) {
+        groups[title] = [];
+        titlesOrder.push(title);
       }
-    }, 1000);
+      groups[title].push(q);
+    });
+
+    return titlesOrder.map(title => ({
+      title,
+      questions: groups[title]
+    }));
+  }, [paper.questions]);
+
+
+  // Helper to resolve Roman numerals for sub-questions
+  const getRomanSubIndex = (index: number) => {
+    const romans = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"];
+    return romans[index] || `${index + 1}`;
   };
 
+  // Helper to calculate total marks for the paper
+  const currentSumMarks = paper.totalMark || paper.totalMarks ||
+    (paper.questions ? paper.questions.reduce((sum: number, q: any) => sum + (q.mark || q.marks || 0), 0) : 0);
 
-  // Calculate total marks from API data or organized questions
-  const currentSumMarks = paper.totalMark || paper.totalMarks || 
-    (paper.organizedQuestions ? Object.values(paper.organizedQuestions).reduce((total: number, questions: any) => 
-      total + questions.reduce((sum: number, q: any) => sum + q.marks, 0), 0) : 0);
+
+  const renderQuestionSection = (group: { title: string, questions: any[] }, groupIndex: number) => {
+    const { title, questions } = group;
+    const sectionRoman = toRomanNumeral(groupIndex + 1);
+
+    // Determine rendering logic based on title
+    // Case 1: "Choose the correct answer from the brackets and fill in the blanks"
+    if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
+      return (
+        <div key={title} className="mb-6">
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+          {questions.map((q, idx) => (
+            <div key={idx} className="mb-4 ml-4">
+              {/* Always Render Question Text if present */}
+              {q.question && <div className="text-lg text-black font-local2 mb-2 hidden">{q.question}</div>}
+              {/* Note: In sample API, q.question might be duplicate of first subquestion or main text. Subquestions are primary if present. */}
+
+              {/* Subquestions */}
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                    <span>{subQ.text || q.question}</span>
+                    {q.options && q.options.length > 0 && (
+                      <span className="ml-4 font-semibold">
+                        ({q.options.join(', ')})
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Case 2: "Tick the correct answers"
+    if (title.trim() === "Tick the correct answers") {
+      return (
+        <div key={title} className="mb-6">
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+          {questions.map((q, idx) => (
+            <div key={idx} className="mb-4 ml-4">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                    <span>{subQ.text || q.question}</span>
+
+                    {/* Options with Checkboxes - Inline block */}
+                    {q.options && q.options.length > 0 && (
+                      <span className="ml-4">
+                        {q.options.map((opt: string, optIdx: number) => (
+                          <span key={optIdx} className="inline-flex items-center gap-2 mr-6">
+                            <span className="font-semibold">{String.fromCharCode(97 + optIdx)}.</span>
+                            <span className="text-2xl leading-none">☐</span>
+                            <span>{opt}</span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Case 3: "Choose the correct answers"
+    if (title.trim() === "Choose the correct answers") {
+      return (
+        <div key={title} className="mb-6">
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+
+          {questions.map((q, idx) => (
+            <div key={idx} className="mb-6 ml-4">
+              {/* Options at top */}
+              <div className="mb-3 font-local2 text-black">
+                <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
+                <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
+                  <span className="font-semibold">({q.options && q.options.join(', ')})</span>
+                </div>
+              </div>
+
+              {/* Subquestions */}
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 ml-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{subIdx + 1})</span>
+                    <span>{subQ.text || q.question}</span>
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    // Default Fallback Rendering
+    return (
+      <div key={title} className="mb-6">
+        <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+        {questions.map((q, idx) => (
+          <div key={idx} className="mb-4 ml-4">
+            <div className="flex justify-between items-start text-lg text-black font-local2">
+              <div className="flex-1 pr-4">
+                <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                <span>{q.question}</span>
+              </div>
+              <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                {q.mark || q.marks ? `[${q.mark || q.marks}]` : null}
+              </div>
+            </div>
+            {q.options && (
+              <div className="ml-6 mt-1 text-sm text-gray-700">
+                {q.options.map((opt: string, i: number) => <div key={i}>{String.fromCharCode(65 + i)}. {opt}</div>)}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Word Download Logic Updates
+  const handleDownloadWord = async () => {
+    try {
+      setWordLoading(true);
+      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} Examination - 2025-26`.toUpperCase();
+
+      const doc = new Document({
+        styles: {
+          default: {
+            document: {
+              run: { font: 'Times New Roman', size: 24, color: '000000' },
+              paragraph: { spacing: { after: 120 } }
+            },
+            heading1: {
+              run: { font: 'Times New Roman', size: 28, bold: true },
+              paragraph: { spacing: { after: 200 } }
+            },
+            heading2: {
+              run: { font: 'Times New Roman', size: 24, bold: true },
+              paragraph: { spacing: { before: 100, after: 100 } }
+            }
+          }
+        },
+        sections: []
+      });
+
+      const docChildren: any[] = [];
+
+      // Header
+      if (isClassFourOrBelow(paper.class)) {
+        docChildren.push(
+          new Paragraph({
+            children: [new TextRun({ text: "NAME: ________________________________________________", bold: true })],
+            spacing: { after: 100 }
+          })
+        );
+        docChildren.push(
+          new Paragraph({
+            children: [new TextRun({ text: "ROLL NO: ______________________", bold: true })],
+            spacing: { after: 200 }
+          })
+        );
+      }
+
+      docChildren.push(
+        new Paragraph({
+          heading: HeadingLevel.HEADING1,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 },
+          children: [new TextRun({ text: paperTitle, bold: true })]
+        })
+      );
+      docChildren.push(createHeaderTable(stdLabel || '-', subjectDisplayUpper || '-', currentSumMarks, formatDuration(paper.duration || 60)));
+      docChildren.push(new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12, space: 1 } }, spacing: { after: 200 }, children: [new TextRun({ text: '' })] }));
+
+
+      // Content Logic grouped by Title
+      for (let i = 0; i < groupedQuestions.length; i++) {
+        const group = groupedQuestions[i];
+        const { title, questions } = group;
+        const sectionRoman = toRomanNumeral(i + 1);
+
+        docChildren.push(
+          new Paragraph({
+            heading: HeadingLevel.HEADING2,
+            children: [new TextRun({ text: `${sectionRoman}. ${title}`, bold: true })]
+          })
+        );
+
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          const subQuestions = q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }];
+          const options = q.options || [];
+
+          if (title.trim() === "Choose the correct answers") {
+            // Logic: i) Options block
+            docChildren.push(new Paragraph({
+              children: [
+                new TextRun({ text: `${getRomanSubIndex(i)}) (${options.join(', ')})`, })
+              ],
+              spacing: { after: 100 }
+            }));
+          }
+
+          subQuestions.forEach((subQ: any, subIdx: number) => {
+            let prefix = "";
+
+            if (title.trim() === "Tick the correct answers" || title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
+              // Logic: i), ii), iii) based on Question Index (i)
+              prefix = `${getRomanSubIndex(i)})`;
+            } else if (title.trim() === "Choose the correct answers") {
+              // Logic: 1), 2), 3) for subquestions
+              prefix = `${subIdx + 1})`;
+            } else {
+              // Default: i), ii) based on subIndex
+              prefix = `${getRomanSubIndex(subIdx)})`;
+            }
+
+            const qText = `${prefix} ${subQ.text || q.question}`;
+            const marks = (subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
+
+            docChildren.push(new Paragraph({
+              tabStops: [
+                { type: TabStopType.RIGHT, position: 9500 }
+              ],
+              children: [
+                new TextRun({ text: qText }),
+                new TextRun({ text: `\t${marks}`, bold: true })
+              ],
+              spacing: { after: title.trim() === "Tick the correct answers" ? 50 : 100 }
+            }));
+
+            if (title.trim() === "Tick the correct answers") {
+              const optsText = options.map((opt: string, i: number) => `${String.fromCharCode(97 + i)}. ☐ ${opt}`).join('    ');
+              docChildren.push(new Paragraph({
+                children: [new TextRun({ text: optsText })],
+                spacing: { after: 150 },
+                indent: { left: 720 }
+              }));
+            }
+          });
+
+          if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
+            docChildren.push(new Paragraph({
+              children: [new TextRun({ text: `(${options.join(', ')})` })],
+              indent: { left: 720 },
+              spacing: { after: 150 }
+            }));
+            // Ensure prefix is set for this type in the loop below or handle it here?
+            // Actually the loop below handles subQuestions. We need to make sure 'prefix' calc is correct.
+          }
+        }
+      }
+
+      doc.addSection({ children: docChildren });
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `${paper.title || 'paper'}.docx`);
+      message.success("Word document downloaded successfully.");
+
+    } catch (e) {
+      console.error(e);
+      message.error("Failed to download Word.");
+    } finally {
+      setWordLoading(false);
+    }
+  }
+
 
   const resolveImageUrl = (url?: string) => {
     if (!url) return null;
@@ -418,91 +524,6 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     });
   };
 
-  const buildPaperSections = (): PaperSection[] => {
-    const sections: PaperSection[] = [];
-
-    const typeLabels: Record<string, string> = {
-      mcq: 'Multiple Choice',
-      shortanswer: 'Short Answer',
-      essay: 'Essay',
-      fillblank: 'Fill in the blank',
-      image: 'Image'
-    };
-    const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-
-    if (paper.questions && Array.isArray(paper.questions)) {
-      const groupedQuestions = paper.questions.reduce((acc: Record<string, any[]>, question: any) => {
-        const type = question.questionType;
-        if (!acc[type]) {
-          acc[type] = [];
-        }
-        acc[type].push(question);
-        return acc;
-      }, {});
-
-      desiredOrder
-        .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
-        .forEach((type, sectionIndex) => {
-          const questionsOfType = groupedQuestions[type];
-          const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
-          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-          const sectionMarks = allSameMarks ? allMarks[0] : null;
-          const sectionTotal = allSameMarks ? sectionMarks! * questionsOfType.length : null;
-
-          sections.push({
-            heading: `${toRomanNumeral(sectionIndex + 1)}. ${typeLabels[type] || type}`,
-            summary: allSameMarks ? `[${questionsOfType.length} × ${sectionMarks} = ${sectionTotal}]` : undefined,
-            questions: questionsOfType.map((question: any, index: number) => ({
-              number: index + 1,
-              text: question.question || '',
-              marks: question.mark ?? question.marks ?? null,
-              showMarks: !allSameMarks,
-              options: question.questionType === 'mcq' ? question.options : undefined,
-              imageUrl: question.questionType === 'image' && question.imageUrl ? resolveImageUrl(question.imageUrl) : null
-            }))
-          });
-        });
-    } else if (paper.organizedQuestions) {
-      const typeMapping: Record<string, string> = {
-        'Multiple Choice': 'mcq',
-        'Fill in the blank': 'fillblank',
-        'Short Answer': 'shortanswer',
-        'Matching': 'image',
-        'Essay': 'essay'
-      };
-
-      desiredOrder
-        .map((type) => {
-          const typeName = Object.keys(typeMapping).find((key) => typeMapping[key] === type) || type;
-          const questionsOfType = paper.organizedQuestions?.[typeName];
-          return questionsOfType && questionsOfType.length > 0 ? { typeName, questionsOfType } : null;
-        })
-        .filter(Boolean)
-        .forEach((section: any, sectionIndex: number) => {
-          const { typeName, questionsOfType } = section;
-          const allMarks = questionsOfType.map((q: any) => q.marks || 0);
-          const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-          const sectionMarks = allSameMarks ? allMarks[0] : null;
-          const sectionTotal = allSameMarks ? sectionMarks! * questionsOfType.length : null;
-
-          sections.push({
-            heading: `${toRomanNumeral(sectionIndex + 1)}. ${typeName}`,
-            summary: allSameMarks ? `[${questionsOfType.length} × ${sectionMarks} = ${sectionTotal}]` : undefined,
-            questions: questionsOfType.map(({ question, marks }: any, index: number) => ({
-              number: index + 1,
-              text: question.text || question.question || '',
-              marks: marks ?? question?.marks ?? null,
-              showMarks: !allSameMarks,
-              options: question.type === 'Multiple Choice' ? question.options : undefined,
-              imageUrl: (question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl ? resolveImageUrl(question.imageUrl) : null
-            }))
-          });
-        });
-    }
-
-    return sections;
-  };
-
   const createHeaderTable = (stdValue: string, subjectValue: string, marksValue: number, durationValue: string) => {
     const cellBorders = {
       top: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
@@ -510,7 +531,6 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       left: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
       right: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 }
     };
-
     return new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       margins: { left: 0, right: 0 },
@@ -554,276 +574,16 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     });
   };
 
-  const handleDownloadWord = async () => {
-    try {
-      setWordLoading(true);
-      const sections = buildPaperSections();
-      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} Examination - 2025-26`.toUpperCase();
-      const doc = new Document({
-        styles: {
-          default: {
-            document: {
-              run: { font: 'Times New Roman', size: 24, color: '000000' },
-              paragraph: { spacing: { after: 120 } }
-            },
-            heading1: {
-              run: { font: 'Times New Roman', size: 32, bold: true },
-              paragraph: { spacing: { after: 200 } }
-            },
-            heading2: {
-              run: { font: 'Times New Roman', size: 28, bold: true },
-              paragraph: { spacing: { before: 200, after: 120 } }
-            }
-          }
-        },
-        sections: []
-      });
-      const docChildren: any[] = [];
-
-      if (isClassFourOrBelow(paper.class)) {
-        docChildren.push(
-          new Paragraph({
-            children: [new TextRun({ text: "NAME: ________________________________________________", bold: true })],
-            spacing: { after: 100 }
-          })
-        );
-        docChildren.push(
-          new Paragraph({
-            children: [new TextRun({ text: "ROLL NO: ______________________", bold: true })],
-            spacing: { after: 200 }
-          })
-        );
-      }
-
-      docChildren.push(
-        new Paragraph({
-          heading: HeadingLevel.HEADING1,
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
-          children: [new TextRun({ text: paperTitle, bold: true })]
-        })
-      );
-
-      docChildren.push(createHeaderTable(stdLabel || '-', subjectDisplayUpper || '-', currentSumMarks, formatDuration(paper.duration || 60)));
-      docChildren.push(
-        new Paragraph({
-          border: {
-            bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12, space: 1 }
-          },
-          spacing: { after: 200 },
-          children: [new TextRun({ text: '' })]
-        })
-      );
-
-      const appendImageParagraph = async (imageUrl?: string | null) => {
-        if (!imageUrl) return;
-        try {
-          let buffer = await fetchImageArrayBuffer(imageUrl);
-          if (!buffer) {
-            buffer = await convertImageToArrayBufferViaCanvas(imageUrl);
-          }
-          if (!buffer) {
-            docChildren.push(
-              new Paragraph({
-                text: `Image not available: ${imageUrl}`,
-                italics: true
-              })
-            );
-            return;
-          }
-          try {
-            const uintArray = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
-            const image = Media.addImage(doc, uintArray, 320, 180);
-            docChildren.push(
-              new Paragraph({
-                children: [image],
-                alignment: AlignmentType.LEFT,
-                spacing: { after: 150 }
-              })
-            );
-          } catch (imageError) {
-            console.warn('Unable to embed image in Word export:', imageError);
-            docChildren.push(
-              new Paragraph({
-                text: `Image not embedded: ${imageUrl}`,
-                italics: true
-              })
-            );
-          }
-        } catch (error) {
-          console.warn('Unable to fetch image for Word export:', error);
-          docChildren.push(
-            new Paragraph({
-              text: `Image not available: ${imageUrl}`,
-              italics: true
-            })
-          );
-        }
-      };
-
-      for (const section of sections) {
-        const headingChildren = [new TextRun({ text: section.heading, bold: true })];
-        const hasSummary = Boolean(section.summary && section.summary.trim());
-        if (hasSummary) {
-          headingChildren.push(new TextRun({ text: '\t' }));
-          headingChildren.push(
-            new TextRun({
-              text: section.summary!,
-          
-              bold: true
-            })
-          );
-        }
-
-        docChildren.push(
-          new Paragraph({
-            heading: HeadingLevel.HEADING2,
-            spacing: { before: 200, after: 50 },
-            tabStops: hasSummary
-              ? [
-                  {
-                    type: TabStopType.RIGHT,
-                    position: 9000
-                  }
-                ]
-              : undefined,
-            children: headingChildren
-          })
-        );
-
-        // eslint-disable-next-line no-await-in-loop
-        for (const question of section.questions) {
-          const shouldShowMarks = question.showMarks !== false && question.marks !== null && question.marks !== undefined;
-          const questionParagraphChildren = [
-            new TextRun({
-              text: `${question.number}) ${question.text}`
-            })
-          ];
-
-          if (shouldShowMarks) {
-            questionParagraphChildren.push(new TextRun({ text: '\t' }));
-            questionParagraphChildren.push(
-              new TextRun({
-            text: `[${question.marks}]`,
-                bold: true
-              })
-            );
-          }
-
-          docChildren.push(
-            new Paragraph({
-              spacing: { after: 50 },
-              tabStops: shouldShowMarks
-                ? [
-                    {
-                      type: TabStopType.RIGHT,
-                      position: 9000
-                    }
-                  ]
-                : undefined,
-              children: questionParagraphChildren
-            })
-          );
-
-          if (question.options && question.options.length > 0) {
-            question.options.forEach((option, index) => {
-              docChildren.push(
-                new Paragraph({
-                  text: `${String.fromCharCode(65 + index)}. ${option}`,
-                  bullet: { level: 0 },
-                  spacing: { after: 20 }
-                })
-              );
-            });
-          }
-
-          if (question.imageUrl) {
-            // eslint-disable-next-line no-await-in-loop
-            await appendImageParagraph(question.imageUrl);
-          }
-        }
-      }
-
-      if (docChildren.length === 0) {
-        docChildren.push(new Paragraph({ text: "No questions available for this paper." }));
-      }
-
-      doc.addSection({
-        properties: {},
-        children: docChildren
-      });
-
-      const blob = await Packer.toBlob(doc);
-      const filename = `${paper.title || subjectDisplayUpper || 'question-paper'}.docx`;
-      saveAs(blob, filename);
-      message.success("Word document downloaded successfully.");
-    } catch (error) {
-      console.error("Failed to download Word document:", error);
-      message.error("Failed to download Word document. Please try again.");
-    } finally {
-      setWordLoading(false);
-    }
+  const handlePrintQuestionPaper = () => {
+    window.print();
   };
 
-  const handleDownloadPdf = async () => {
-    let container: HTMLDivElement | null = null;
-    try {
-      setPdfLoading(true);
-      const sectionsHtml = renderSectionsHtml(buildPaperSections());
-      const paperTitle = `${paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26`.trim();
-      const bodyContent = buildPrintableBody({
-        includeNameRoll: isClassFourOrBelow(paper.class),
-        paperTitle,
-        stdLabel: stdLabel || '-',
-        subjectDisplay: subjectDisplayUpper || '',
-        totalMarks: currentSumMarks,
-        durationLabel: formatDuration(paper.duration || 60),
-        sectionsHtml
-      });
-
-      container = document.createElement("div");
-      container.style.position = "fixed";
-      container.style.left = "-9999px";
-      container.style.top = "-9999px";
-      container.style.width = "210mm";
-      container.style.background = "#fff";
-      container.innerHTML = `<style>${PRINT_TEMPLATE_STYLES}</style>${bodyContent}`;
-      document.body.appendChild(container);
-
-      const docInstance = new jsPDF("p", "pt", "a4");
-      await docInstance.html(container, {
-        margin: [40, 40, 40, 40],
-        autoPaging: "text",
-        html2canvas: {
-          scale: 0.55,
-          useCORS: true
-        },
-        callback: (docRef) => {
-          const filename = `${paper.title || subjectDisplayUpper || 'question-paper'}.pdf`;
-          docRef.save(filename);
-        }
-      });
-
-      message.success("PDF downloaded successfully.");
-    } catch (error) {
-      console.error('Failed to download PDF:', error);
-      message.error('Failed to download PDF. Please try again.');
-    } finally {
-      if (container && container.parentNode) {
-        container.parentNode.removeChild(container);
-      }
-      setPdfLoading(false);
-    }
-  };
 
   return (
     <div className="p-6">
       {/* Header with Back Button */}
       <div className="flex items-center gap-3 mb-6">
-        <Button
-          onClick={onBack}
-          className="flex items-center justify-center"
-        >
+        <Button onClick={onBack} className="flex items-center justify-center">
           <ArrowLeft size={18} />
         </Button>
         <Title level={4} className="!mb-0 text-gray-700 font-local2">
@@ -831,69 +591,74 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         </Title>
       </div>
 
-      {/* Print Options */}
+      {/* Action Buttons */}
       <div className="mb-6">
         <Card className="shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:justify-between">
+          <div className="flex flex-col sm:flex-row sm:justify-between items-center">
             <Button
-              onClick={handlePrintQuestionPaper}
-              className="flex items-center gap-2 bg-green-500 text-white hover:bg-green-500"
+              onClick={() => window.print()}
+              className="flex items-center gap-2 bg-green-500 text-white hover:bg-green-600 print:hidden"
             >
               <Printer size={16} />
-              Print Question Paper
+              Print
             </Button>
-           
-            <Button
-              onClick={handleDownloadWord}
-              className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-3 bg-blue-500 text-white hover:bg-blue-500"
-              loading={wordLoading}
-            >
-              <Download size={16} />
-              Download Word
-            </Button>
-            <div>
-            <Popconfirm
-           title="Are you sure you want to delete this paper?"
-            onConfirm={() => onDelete && onDelete(paper.id || paper._id)}
-            okText="Yes, Delete"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Button
-              type="link"
-              icon={<MdDeleteOutline size={23} color="red" />}
-              size="small"
-              title="Delete"
-            />
-          </Popconfirm>
-          </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={handleDownloadWord}
+                className="flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600 print:hidden"
+                loading={wordLoading}
+              >
+                <Download size={16} />
+                Download Word
+              </Button>
+
+              <Popconfirm
+                title="Are you sure you want to delete this paper?"
+                onConfirm={() => onDelete && onDelete(paper.id || paper._id)}
+                okText="Yes, Delete"
+                cancelText="No"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  type="link"
+                  icon={<MdDeleteOutline size={23} color="red" />}
+                  size="small"
+                  title="Delete"
+                  className="print:hidden"
+                />
+              </Popconfirm>
+            </div>
+
           </div>
         </Card>
       </div>
 
       {/* Question Paper Preview */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm print:shadow-none" id="print-area">
         <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
-          {/* Header */}
+          {/* Header Section */}
           {isClassFourOrBelow(paper.class) && (
             <div className="mb-4 text-lg font-local2 text-black">
               <div className="flex items-end justify-between gap-2">
                 <div className="flex items-end flex-1 min-w-0">
                   <span className="font-semibold whitespace-nowrap">NAME:</span>
-                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">................................................................................................................................................................................................................................................</span>
+                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden border-b border-dotted border-black flex-1"></span>
                 </div>
                 <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
                   <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
-                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">........................................................</span>
+                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden border-b border-dotted border-black flex-1"></span>
                 </div>
               </div>
             </div>
           )}
+
           <div className="text-center mb-3">
             <h1 className="text-2xl font-bold uppercase font-local2">
               {paper.examinationType || paper.examType || 'Examination'} EXAMINATION - 2025-26
             </h1>
           </div>
+
           <div className="flex flex-col gap-1 mb-5 text-base font-local2 text-black">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="font-semibold text-lg text-left whitespace-nowrap sm:flex-[0_0_140px]">
@@ -906,203 +671,52 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 Marks: {currentSumMarks}
               </div>
             </div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-base font-local2 normal-case mb-2">
-            <div className="text-left whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">HM</div>
-            <div className="flex-1" />
-            <div className="text-right whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">
-              Time: {formatDuration(paper.duration || 60)}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-base font-local2 normal-case mb-2">
+              <div className="text-left whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">HM</div>
+              <div className="flex-1" />
+              <div className="text-right whitespace-nowrap sm:flex-[0_0_140px] font-semibold text-lg">
+                Time: {formatDuration(paper.duration || 60)}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center sm:justify-between gap-3">
             <div className="flex-1 border-b border-gray-400" />
           </div>
-          </div>
 
-          {/* <div className="border-b mb-6" /> */}
 
-          {/* Sections and Questions */}
-          <div className="space-y-8">
-            {paper.questions && Array.isArray(paper.questions) ? (
-              // Group questions by type and display in sections
-              (() => {
-                const groupedQuestions = paper.questions.reduce((acc: any, question: any) => {
-                  const type = question.questionType;
-                  if (!acc[type]) {
-                    acc[type] = [];
-                  }
-                  acc[type].push(question);
-                  return acc;
-                }, {});
-
-                const typeLabels: any = {
-                  'mcq': 'Multiple Choice',
-                  'shortanswer': 'Short Answer',
-                  'essay': 'Essay',
-                  'fillblank': 'Fill in the blank',
-                  'image': 'Image'
-                };
-
-                const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-                return desiredOrder
-                  .filter((type) => groupedQuestions[type] && groupedQuestions[type].length > 0)
-                  .map((type, sectionIndex) => {
-                    const romanNumeral = toRomanNumeral(sectionIndex + 1);
-                    const questionsOfType = groupedQuestions[type];
-                    const allMarks = questionsOfType.map((q: any) => q.mark || q.marks || 0);
-                    const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-                    const questionCount = questionsOfType.length;
-                    const sectionMarks = allSameMarks ? allMarks[0] : null;
-                    const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-                    
-                    return (
-                      <div key={type} className="section">
-                        <div className="text-left mb-4 border-b pb-2">
-                          <h3 className="text-lg font-semibold text-black font-local2 flex justify-between items-center">
-                            <span>{romanNumeral}. {typeLabels[type] || type}</span>
-                            {allSameMarks && <span className="text-base font-bold text-black">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
-                          </h3>
-                        </div>
-                        
-                        <div className="space-y-4">
-                          {questionsOfType.map((question: any, questionIndex: number) => (
-                            <div key={questionIndex} className="flex items-start gap-3 py-2" style={{ marginLeft: '8px' }}>
-                              <div className="w-8 flex-shrink-0">
-                                <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.question}</div>
-                                {question.questionType === 'image' && question.imageUrl && (
-                                  <div className="mt-2">
-                                    <img 
-                                      src={question.imageUrl} 
-                                      alt="Question Image" 
-                                      className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                        e.currentTarget.nextElementSibling.style.display = 'block';
-                                      }}
-                                    />
-                                    <div 
-                                      className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
-                                      style={{ display: 'none' }}
-                                    >
-                                      Image not available
-                                    </div>
-                                  </div>
-                                )}
-                                {question.questionType === 'mcq' && question.options && question.options.length > 0 && (
-                                  <div className="mt-2 space-y-1">
-                                    {question.options.map((option: string, optIndex: number) => (
-                                      <div key={optIndex} className="text-sm font-local2" style={{ color: '#000' }}>
-                                        {String.fromCharCode(65 + optIndex)}. {option}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              {!allSameMarks && (
-                                <div className="w-12 flex-shrink-0 text-right">
-                                  <span className="text-lg font-local2" style={{ color: '#000', fontWeight: 400 }}>[{question.mark || question.marks || 0}]</span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  });
-              })()
+          {/* Questions Grouped by Title */}
+          <div className="space-y-6">
+            {groupedQuestions.length > 0 ? (
+              groupedQuestions.map((group, index) => renderQuestionSection(group, index))
             ) : (
-              // Handle organized questions format (fallback)
-              (() => {
-                const typeMapping: any = {
-                  'Multiple Choice': 'mcq',
-                  'Fill in the blank': 'fillblank',
-                  'Short Answer': 'shortanswer',
-                  'Matching': 'image',
-                  'Essay': 'essay'
-                };
-                
-                const desiredOrder = ['mcq', 'fillblank', 'shortanswer', 'image', 'essay'];
-                const sectionsWithQuestions = desiredOrder
-                  .map(type => {
-                    const typeName = Object.keys(typeMapping).find(key => typeMapping[key] === type) || type;
-                    const questionsOfType = paper.organizedQuestions?.[typeName];
-                    return questionsOfType && questionsOfType.length > 0 ? { type, typeName, questionsOfType } : null;
-                  })
-                  .filter(Boolean);
-                
-                return sectionsWithQuestions.map((section: any, sectionIndex: number) => {
-                  const romanNumeral = toRomanNumeral(sectionIndex + 1);
-                  const { typeName, questionsOfType } = section;
-                  const allMarks = questionsOfType.map((q: any) => q.marks || 0);
-                  const allSameMarks = allMarks.length > 0 && allMarks.every((mark: number) => mark === allMarks[0]);
-                  const questionCount = questionsOfType.length;
-                  const sectionMarks = allSameMarks ? allMarks[0] : null;
-                  const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-                  
-                  return (
-                    <div key={typeName} className="section">
-                      <div className="text-left mb-4 border-b pb-2">
-                        <h3 className="text-lg font-semibold text-black font-local2 flex justify-between items-center">
-                          <span>{romanNumeral}. {typeName}</span>
-                          {allSameMarks && <span className="text-base font-bold text-black">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
-                        </h3>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {questionsOfType.map(({ question, marks }: any, questionIndex: number) => (
-                          <div key={questionIndex} className="flex items-start gap-3 py-2" style={{ marginLeft: '8px' }}>
-                            <div className="w-8 flex-shrink-0">
-                              <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.text}</div>
-                              {(question.type === 'Matching' || question.type === 'Image' || question.type === 'image') && question.imageUrl && (
-                                <div className="mt-2">
-                                  <img 
-                                    src={question.imageUrl} 
-                                    alt="Question Image" 
-                                    className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm" 
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.nextElementSibling.style.display = 'block';
-                                    }}
-                                  />
-                                  <div 
-                                    className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-gray-50 text-gray-500 text-sm font-local2"
-                                    style={{ display: 'none' }}
-                                  >
-                                    Image not available
-                                  </div>
-                                </div>
-                              )}
-                              {question.type === 'Multiple Choice' && question.options && (
-                                <div className="mt-2 space-y-1">
-                                  {question.options.map((option: string, index: number) => (
-                                    <div key={index} className="text-sm font-local2" style={{ color: '#000' }}>
-                                      {String.fromCharCode(65 + index)}. {option}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            {!allSameMarks && (
-                              <div className="w-12 flex-shrink-0 text-right">
-                                <span className="text-lg font-local2" style={{ color: '#000', fontWeight: 400 }}>[{marks}]</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                });
-              })()
+              <div className="text-center text-gray-500">No questions found.</div>
             )}
           </div>
+
         </div>
       </Card>
+
+      {/* Print Styles */}
+      <style>{`
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            .print\\:hidden { // Escaping colon for JS string
+                display: none !important;
+            }
+        }
+      `}</style>
     </div>
   );
 };
@@ -1114,7 +728,7 @@ const MyPapers = () => {
   const [selectedBookName, setSelectedBookName] = useState<string>('');
   const [selectedExamType, setSelectedExamType] = useState(undefined);
   const [viewingPaper, setViewingPaper] = useState(null);
-  
+
   // Exam type options
   const examTypes = [
     { label: 'UNIT TEST', value: 'UNIT TEST' },
@@ -1140,7 +754,7 @@ const MyPapers = () => {
   const [totalPapers, setTotalPapers] = useState<number>(0);
 
   const navigate = useNavigate();
-  
+
   // Get user from Redux
   const user = useSelector((state: any) => state.user.user);
 
@@ -1180,20 +794,20 @@ const MyPapers = () => {
       };
       const data = await GET("/books/filter", query);
       const booksList = Array.isArray(data?.results)
-        ? data.results.map((book: any) => ({ 
-            value: book.id || book._id || book.name || book.title, 
-            label: book.name || book.title || book.book 
-          }))
+        ? data.results.map((book: any) => ({
+          value: book.id || book._id || book.name || book.title,
+          label: book.name || book.title || book.book
+        }))
         : Array.isArray(data?.books)
-          ? data.books.map((book: any) => ({ 
-              value: book.id || book._id || book.name || book.title, 
-              label: book.name || book.title || book.book 
-            }))
+          ? data.books.map((book: any) => ({
+            value: book.id || book._id || book.name || book.title,
+            label: book.name || book.title || book.book
+          }))
           : Array.isArray(data)
-            ? data.map((book: any) => ({ 
-                value: book.id || book._id || book.name || book.title, 
-                label: book.name || book.title || book.book 
-              }))
+            ? data.map((book: any) => ({
+              value: book.id || book._id || book.name || book.title,
+              label: book.name || book.title || book.book
+            }))
             : [];
       setBooksOptions(booksList);
     } catch (e) {
@@ -1242,14 +856,14 @@ const MyPapers = () => {
 
     try {
       setPapersLoading(true);
-      
+
       // Build query parameters for filters
       const query: any = {};
-      
+
       // Add pagination parameters
       query.page = currentPage;
       query.pageSize = pageSize;
-      
+
       // Add filter parameters if they are selected
       if (selectedClass) {
         query.class = selectedClass;
@@ -1263,10 +877,10 @@ const MyPapers = () => {
       if (selectedExamType) {
         query.examinationType = selectedExamType;
       }
-      
+
       // Use school ID in the URL path
       const data = await GET(`/examinations/school/${user.id}`, query);
-      
+
       // Handle API response format - examinations array
       const papersList = Array.isArray(data?.examinations)
         ? data.examinations
@@ -1277,7 +891,7 @@ const MyPapers = () => {
             : Array.isArray(data)
               ? data
               : [];
-      
+
       setPapers(papersList);
       setTotalPapers(data?.total || 0);
     } catch (e) {
@@ -1332,10 +946,12 @@ const MyPapers = () => {
     return <ViewQuestionPaper paper={viewingPaper} onBack={handleBackToList} onDelete={handleDelete} />;
   }
   const users = [
-  { id: "1", name: "Batch A" },
-  { id: "2", name: "Batch B" },
-  { id: "3", name: "Batch C" },
-];
+    { id: "1", name: "Batch A" },
+    { id: "2", name: "Batch B" },
+    { id: "3", name: "Batch C" },
+    { id: "4", name: "Batch D" },
+    { id: "5", name: "Batch E" },
+  ];
 
   return (
     <div className="p-6 h-min">
@@ -1350,8 +966,8 @@ const MyPapers = () => {
       <div className="w-full mb-5">
         <Card className="shadow-sm bg-white w-full">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
-             {/* Class Filter */}
-             <div className="flex items-center gap-2">
+            {/* Class Filter */}
+            <div className="flex items-center gap-2">
               <Select
                 value={selectedClass}
                 allowClear
@@ -1427,72 +1043,71 @@ const MyPapers = () => {
           </div>
         </Card>
         <Modal
-  title={<span className="font-local2">Share Test Link / Assign Test</span>}
-  open={isShareModalOpen}
-  onCancel={() => setIsShareModalOpen(false)}
-  footer={null}
->
-  {/* User boxes */}
-  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-    {users.map((user) => (
-      <div
-        key={user.id}
-        onClick={() =>
-          setSelectedUsers((prev) =>
-            prev.includes(user.id)
-              ? prev.filter((u) => u !== user.id)
-              : [...prev, user.id]
-          )
-        }
-        className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center transition ${
-          selectedUsers.includes(user.id)
-            ? "border-teal-500 bg-teal-50"
-            : "border-gray-200"
-        }`}
-      >
-        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
-          <User size={20} className="text-gray-600" />
-        </div>
-        <span className="text-sm text-gray-700 font-local2">{user.name}</span>
+          title={<span className="font-local2">Share Test Link / Assign Test</span>}
+          open={isShareModalOpen}
+          onCancel={() => setIsShareModalOpen(false)}
+          footer={null}
+        >
+          {/* User boxes */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                onClick={() =>
+                  setSelectedUsers((prev) =>
+                    prev.includes(user.id)
+                      ? prev.filter((u) => u !== user.id)
+                      : [...prev, user.id]
+                  )
+                }
+                className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center transition ${selectedUsers.includes(user.id)
+                  ? "border-teal-500 bg-teal-50"
+                  : "border-gray-200"
+                  }`}
+              >
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                  <User size={20} className="text-gray-600" />
+                </div>
+                <span className="text-sm text-gray-700 font-local2">{user.name}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Submit button */}
+          <div className="mt-6 flex justify-end">
+            <Button
+              type="primary"
+              className="bg-gradient-to-r from-[#007575] to-[#339999] text-white font-local2"
+              onClick={() => {
+                if (selectedUsers.length === 0) {
+                  message.warning("Please select at least one batch!");
+                  return;
+                }
+                message.success("Test link shared successfully!");
+                setIsShareModalOpen(false);
+                setSelectedUsers([]);
+              }}
+            >
+              Submit
+            </Button>
+          </div>
+        </Modal>
+
       </div>
-    ))}
-  </div>
 
-  {/* Submit button */}
-  <div className="mt-6 flex justify-end">
-    <Button
-      type="primary"
-      className="bg-gradient-to-r from-[#007575] to-[#339999] text-white font-local2"
-      onClick={() => {
-        if (selectedUsers.length === 0) {
-          message.warning("Please select at least one batch!");
-          return;
-        }
-        message.success("Test link shared successfully!");
-        setIsShareModalOpen(false);
-        setSelectedUsers([]);
-      }}
-    >
-      Submit
-    </Button>
-  </div>
-</Modal>
-
-      </div>
-
-       {/* Create Test Paper Button */}
-       <div className="w-full mb-5">
-         <Button 
-           type="primary"
-           size="middle"
+      {/* Create Test Paper Button */}
+      <div className="w-full mb-5">
+        <Button
+          type="primary"
+          size="middle"
           className="bg-gradient-to-r from-[#007575] to-[#339999] text-white border-0 font-local2
              hover:!bg-gradient-to-r hover:!from-[#007575] hover:!to-[#339999] hover:!text-white transition-transform duration-200 "
-           
-            onClick={() => navigate("/paper")}
-         >
-           Create Test Paper
-         </Button>
-       </div>
+
+          onClick={() => navigate("/paper")}
+        >
+          Create Test Paper
+        </Button>
+      </div>
 
       {/* Papers Grid */}
       <div className="w-full">
@@ -1504,51 +1119,51 @@ const MyPapers = () => {
             </div>
           </div>
         ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {filteredPapers.map((paper) => (
-            <div 
-                key={paper.id || paper._id} 
-              className="bg-white border border-gray-200  shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
-              onClick={() => handleView(paper)}
-            >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {filteredPapers.map((paper) => (
+              <div
+                key={paper.id || paper._id}
+                className="bg-white border border-gray-200  shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group relative overflow-hidden"
+                onClick={() => handleView(paper)}
+              >
                 {/* Triangle Corner Decoration */}
                 <div className="absolute top-0 left-0 w-0 h-0 border-t-[40px] border-r-[40px] border-t-teal-600 border-r-transparent z-10"></div>
-                
-              {/* PDF-like Box Design */}
-              <div className="aspect-[3/4] flex flex-col">
-                {/* Main Content Area with PDF Image - Reduced Height */}
-                <div className="flex-1 relative bg-gray-50" style={{ height: '75%' }}>
-                  {/* PDF Preview Image */}
-                  <div className="w-full h-full flex items-center justify-center p-4">
-                    <img 
-                      src={paperDummy} 
-                      alt="Paper Preview" 
-                      className="w-full h-full object-contain rounded"
-                    />
-                  </div>
-                  
-                  {/* Hover Overlay with View Icon */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="bg-white rounded-full p-3 shadow-lg">
-                        <Eye size={24} className="text-[#007575]" />
+
+                {/* PDF-like Box Design */}
+                <div className="aspect-[3/4] flex flex-col">
+                  {/* Main Content Area with PDF Image - Reduced Height */}
+                  <div className="flex-1 relative bg-gray-50" style={{ height: '75%' }}>
+                    {/* PDF Preview Image */}
+                    <div className="w-full h-full flex items-center justify-center p-4">
+                      <img
+                        src={paperDummy}
+                        alt="Paper Preview"
+                        className="w-full h-full object-contain rounded"
+                      />
+                    </div>
+
+                    {/* Hover Overlay with View Icon */}
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="bg-white rounded-full p-3 shadow-lg">
+                          <Eye size={24} className="text-[#007575]" />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
                   {/* Footer - Class-Subject-ExaminationType */}
-                <div className="p-3 bg-gradient-to-r from-[#007575] to-[#339999]" style={{ height: '17%' }}>
-                  <div className="text-center flex items-center justify-center h-full">
-                    <h3 className="font-local2 font-semibold text-white text-sm">
+                  <div className="p-3 bg-gradient-to-r from-[#007575] to-[#339999]" style={{ height: '17%' }}>
+                    <div className="text-center flex items-center justify-center h-full">
+                      <h3 className="font-local2 font-semibold text-white text-sm">
                         {paper.class || 'N/A'} - {paper.subject || 'subject'} - {paper.examinationType || 'exam'}
-                    </h3>
+                      </h3>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         )}
 
         {/* Empty State */}
@@ -1557,8 +1172,8 @@ const MyPapers = () => {
             <FileText size={48} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-local2 text-gray-600 mb-2">No Papers Found</h3>
             <p className="text-gray-500 font-local2">
-              {papers.length === 0 
-                ? "Create your first question paper to get started." 
+              {papers.length === 0
+                ? "Create your first question paper to get started."
                 : "No papers match your current filters."}
             </p>
           </div>
@@ -1581,7 +1196,7 @@ const MyPapers = () => {
               }}
               showSizeChanger
               showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} papers`}
-              pageSizeOptions={['5','10', '20', '50', '100']}
+              pageSizeOptions={['5', '10', '20', '50', '100']}
               className="font-local2"
             />
           </div>
