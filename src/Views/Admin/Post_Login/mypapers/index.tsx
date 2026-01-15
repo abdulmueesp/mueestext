@@ -164,12 +164,23 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     const { title, questions } = group;
     const sectionRoman = toRomanNumeral(groupIndex + 1);
 
+    // Calculate marks breakdown
+    let markBreakdown = "";
+    if (questions.length > 0) {
+      const firstMark = questions[0].mark || questions[0].marks || 0;
+      const allSame = questions.every((q: any) => (q.mark || q.marks || 0) === firstMark);
+      if (allSame && firstMark > 0) {
+        markBreakdown = `[${firstMark} x ${questions.length} = ${firstMark * questions.length}]`;
+      }
+    }
+    const showIndividualMarks = !markBreakdown;
+
     // Determine rendering logic based on title
     // Case 1: "Choose the correct answer from the brackets and fill in the blanks"
     if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
       return (
         <div key={title} className="mb-6">
-          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
               {/* Always Render Question Text if present */}
@@ -189,7 +200,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     )}
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
                   </div>
                 </div>
               ))}
@@ -203,7 +214,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     if (title.trim() === "Tick the correct answers") {
       return (
         <div key={title} className="mb-6">
-          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
               {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
@@ -227,7 +238,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   </div>
 
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
                   </div>
                 </div>
               ))}
@@ -241,7 +252,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     if (title.trim() === "Choose the correct answers") {
       return (
         <div key={title} className="mb-6">
-          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
 
           {questions.map((q, idx) => (
             <div key={idx} className="mb-6 ml-5">
@@ -261,7 +272,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     <span>{subQ.text || q.question}</span>
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
                   </div>
                 </div>
               ))}
@@ -274,7 +285,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     // Default Fallback Rendering
     return (
       <div key={title} className="mb-6">
-        <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
+        <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
         {questions.map((q, idx) => (
           <div key={idx} className="mb-4 ml-8">
             <div className="flex justify-between items-start text-lg text-black font-local2">
@@ -283,7 +294,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <span>{q.question}</span>
               </div>
               <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                {q.mark || q.marks ? `[${q.mark || q.marks}]` : null}
+                {showIndividualMarks && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
               </div>
             </div>
             {q.options && (
@@ -356,10 +367,27 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         const { title, questions } = group;
         const sectionRoman = toRomanNumeral(i + 1);
 
+        // Calculate marks breakdown for Word
+        let markBreakdown = "";
+        if (questions.length > 0) {
+          const firstMark = questions[0].mark || questions[0].marks || 0;
+          const allSame = questions.every((q: any) => (q.mark || q.marks || 0) === firstMark);
+          if (allSame && firstMark > 0) {
+            markBreakdown = `\t[${firstMark} x ${questions.length} = ${firstMark * questions.length}]`;
+          }
+        }
+        const showIndividualMarksWord = !markBreakdown;
+
         docChildren.push(
           new Paragraph({
             heading: HeadingLevel.HEADING2,
-            children: [new TextRun({ text: `${sectionRoman}. ${title}`, bold: true })]
+            children: [
+              new TextRun({ text: `${sectionRoman}. ${title}`, bold: true }),
+              new TextRun({ text: markBreakdown, bold: true }) // Tab is handled by \t in string if supported or we might need a tab stop
+            ],
+            tabStops: [
+              { type: TabStopType.RIGHT, position: 9500 }
+            ]
           })
         );
 
@@ -394,7 +422,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             }
 
             let qText = `${prefix} ${subQ.text || q.question}`;
-            const marks = (subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
+            const marks = (showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
 
             let optionsText = "";
             let optionsParagraph = null;
