@@ -171,7 +171,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         <div key={title} className="mb-6">
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
           {questions.map((q, idx) => (
-            <div key={idx} className="mb-4 ml-4">
+            <div key={idx} className="mb-4 ml-5">
               {/* Always Render Question Text if present */}
               {q.question && <div className="text-lg text-black font-local2 mb-2 hidden">{q.question}</div>}
               {/* Note: In sample API, q.question might be duplicate of first subquestion or main text. Subquestions are primary if present. */}
@@ -205,16 +205,16 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         <div key={title} className="mb-6">
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
           {questions.map((q, idx) => (
-            <div key={idx} className="mb-4 ml-4">
+            <div key={idx} className="mb-4 ml-5">
               {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
                 <div key={subIdx} className="mb-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{getRomanSubIndex(idx)})</span>
                     <span>{subQ.text || q.question}</span>
 
-                    {/* Options with Checkboxes - Inline block */}
+                    {/* Options with Checkboxes - Block below question */}
                     {q.options && q.options.length > 0 && (
-                      <span className="ml-4">
+                      <div className="mt-2 ml-4">
                         {q.options.map((opt: string, optIdx: number) => (
                           <span key={optIdx} className="inline-flex items-center gap-2 mr-6">
                             <span className="font-semibold">{String.fromCharCode(97 + optIdx)}.</span>
@@ -222,7 +222,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                             <span>{opt}</span>
                           </span>
                         ))}
-                      </span>
+                      </div>
                     )}
                   </div>
 
@@ -244,7 +244,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
 
           {questions.map((q, idx) => (
-            <div key={idx} className="mb-6 ml-4">
+            <div key={idx} className="mb-6 ml-5">
               {/* Options at top */}
               <div className="mb-3 font-local2 text-black">
                 <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
@@ -257,7 +257,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
                 <div key={subIdx} className="mb-2 ml-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
-                    <span className="mr-2">{subIdx + 1})</span>
+                    <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
                     <span>{subQ.text || q.question}</span>
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
@@ -276,7 +276,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       <div key={title} className="mb-6">
         <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title}</h3>
         {questions.map((q, idx) => (
-          <div key={idx} className="mb-4 ml-4">
+          <div key={idx} className="mb-4 ml-8">
             <div className="flex justify-between items-start text-lg text-black font-local2">
               <div className="flex-1 pr-4">
                 <span className="mr-2">{getRomanSubIndex(idx)})</span>
@@ -377,7 +377,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               children: [
                 new TextRun({ text: `${getRomanSubIndex(i)}) (${options.join(', ')})`, })
               ],
-              spacing: { after: 100 }
+              spacing: { after: 100 },
+              indent: { left: 250 }
             }));
           }
 
@@ -389,14 +390,31 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               prefix = `${getRomanSubIndex(i)})`;
             } else if (title.trim() === "Choose the correct answers") {
               // Logic: 1), 2), 3) for subquestions
-              prefix = `${subIdx + 1})`;
+              prefix = `${String.fromCharCode(97 + subIdx)})`;
             } else {
               // Default: i), ii) based on subIndex
               prefix = `${getRomanSubIndex(subIdx)})`;
             }
 
-            const qText = `${prefix} ${subQ.text || q.question}`;
+            let qText = `${prefix} ${subQ.text || q.question}`;
             const marks = (subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
+
+            let optionsText = "";
+            let optionsParagraph = null;
+
+            if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
+              const optsStr = ` (${options.join(', ')})`;
+              // Heuristic: 75 chars limit for inline
+              if ((qText.length + optsStr.length) <= 75) {
+                qText += optsStr;
+              } else {
+                optionsParagraph = new Paragraph({
+                  children: [new TextRun({ text: optsStr })],
+                  indent: { left: 500 },
+                  spacing: { after: 150 }
+                });
+              }
+            }
 
             docChildren.push(new Paragraph({
               tabStops: [
@@ -406,28 +424,25 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 new TextRun({ text: qText }),
                 new TextRun({ text: `\t${marks}`, bold: true })
               ],
-              spacing: { after: title.trim() === "Tick the correct answers" ? 50 : 100 }
+              spacing: { after: title.trim() === "Tick the correct answers" ? 50 : 100 },
+              indent: { left: title.trim() === "Choose the correct answers" ? 500 : 250 }
             }));
+
+            if (optionsParagraph) {
+              docChildren.push(optionsParagraph);
+            }
 
             if (title.trim() === "Tick the correct answers") {
               const optsText = options.map((opt: string, i: number) => `${String.fromCharCode(97 + i)}. ☐ ${opt}`).join('    ');
               docChildren.push(new Paragraph({
                 children: [new TextRun({ text: optsText })],
                 spacing: { after: 150 },
-                indent: { left: 720 }
+                indent: { left: 500 }
               }));
             }
           });
 
-          if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
-            docChildren.push(new Paragraph({
-              children: [new TextRun({ text: `(${options.join(', ')})` })],
-              indent: { left: 720 },
-              spacing: { after: 150 }
-            }));
-            // Ensure prefix is set for this type in the loop below or handle it here?
-            // Actually the loop below handles subQuestions. We need to make sure 'prefix' calc is correct.
-          }
+
         }
       }
 
