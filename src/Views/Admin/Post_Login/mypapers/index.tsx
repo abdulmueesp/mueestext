@@ -176,6 +176,58 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     const showIndividualMarks = !markBreakdown;
 
     // Determine rendering logic based on title
+
+    // Case: Picture Questions
+    const pictureTitles = [
+      "describe the following picture",
+      "look at the pictures and answer the following",
+      "identify the pictures",
+      "identity the pictures"
+    ];
+    const cleanLowerTitle = title.trim().toLowerCase().replace(/\.$/, '');
+
+    if (pictureTitles.some(t => cleanLowerTitle === t || cleanLowerTitle.startsWith(t))) {
+      return (
+        <div key={title} className="mb-6">
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
+          {questions.map((q, idx) => (
+            <div key={idx} className="mb-4 ml-5">
+              {/* 1. Main Number (No Text) & Marks */}
+              <div className="flex justify-between items-start text-lg text-black font-local2 mb-2">
+                <div className="flex-1 pr-4">
+                  <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                </div>
+                <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                  {showIndividualMarks && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                </div>
+              </div>
+
+              {/* 2. Image */}
+              {q.imageUrl && (
+                <div className="mb-3 ml-6">
+                  <img
+                    src={q.imageUrl}
+                    alt="Question"
+                    className="max-w-full h-auto max-h-[200px] object-contain border border-gray-200 rounded"
+                  />
+                </div>
+              )}
+
+              {/* 3. Sub-questions a, b, c */}
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : []).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 ml-6 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
+                    <span>{subQ.text || ''}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
     // Case 1: "Choose the correct answer from the brackets and fill in the blanks"
     if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
       return (
@@ -461,6 +513,72 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           const subQuestions = q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }];
           const options = q.options || [];
 
+          // Logic for Picture Questions
+          const pictureTitles = [
+            "describe the following picture",
+            "look at the pictures and answer the following",
+            "identify the pictures",
+            "identity the pictures" // Handle potential typo from data
+          ];
+
+          // Check if title matches any of the picture titles (ignoring case and trailing dots)
+          const cleanLowerTitle = title.trim().toLowerCase().replace(/\.$/, '');
+          if (pictureTitles.some(t => cleanLowerTitle === t || cleanLowerTitle.startsWith(t))) {
+            // 1. Render Main Question Line: i) Question Text [Marks]
+            const prefix = `${getRomanSubIndex(i)})`;
+            const marks = (q.mark || q.marks) ? ` [${q.mark || q.marks}]` : '';
+
+            docChildren.push(new Paragraph({
+              tabStops: [
+                { type: TabStopType.RIGHT, position: 9500 }
+              ],
+              children: [
+                new TextRun({ text: `${prefix}` }),
+                new TextRun({ text: `\t${marks}`, bold: true })
+              ],
+              spacing: { after: 100 },
+              indent: { left: 250 }
+            }));
+
+            // 2. Render Image
+            if (q.imageUrl) {
+              try {
+                const imageBuffer = await fetchImageArrayBuffer(resolveImageUrl(q.imageUrl)) || await convertImageToArrayBufferViaCanvas(resolveImageUrl(q.imageUrl));
+                if (imageBuffer) {
+                  docChildren.push(new Paragraph({
+                    children: [
+                      new ImageRun({
+                        data: imageBuffer,
+                        transformation: {
+                          width: 300,
+                          height: 200,
+                        },
+                      }),
+                    ],
+                    indent: { left: 500 },
+                    spacing: { after: 200 }
+                  }));
+                }
+              } catch (err) {
+                console.warn("Failed to add image to word doc", err);
+              }
+            }
+
+            // 3. Render Sub-questions: a) Text
+            subQuestions.forEach((subQ: any, subIdx: number) => {
+              const subPrefix = `${String.fromCharCode(97 + subIdx)})`; // a), b), c)
+              docChildren.push(new Paragraph({
+                children: [
+                  new TextRun({ text: `${subPrefix} ${subQ.text || ''}` })
+                ],
+                indent: { left: 500 }, // Indent sub-questions
+                spacing: { after: 100 }
+              }));
+            });
+
+            continue; // Skip default rendering
+          }
+
           // Logic for "Tick the odd one in the following"
           if (title.trim() === "Tick the odd one in the following") {
             subQuestions.forEach((subQ: any, subIdx: number) => {
@@ -498,20 +616,29 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
           subQuestions.forEach((subQ: any, subIdx: number) => {
             let prefix = "";
+            const lowerTitle = title.trim().toLowerCase();
 
-            if (
-              title.trim() === "Tick the correct answers" ||
-              title.trim() === "Choose the correct answer from the brackets and fill in the blanks" ||
-              title.trim() === "Give one word of the following" ||
-              title.trim() === "Name the following" ||
-              title.trim() === "Fill in the blanks with correct answers" ||
-              title.trim() === "Write true or false" ||
-              title.trim() === "Match the following"
-            ) {
+            const useMainIndexTitles = [
+              "tick the correct answers",
+              "choose the correct answer from the brackets and fill in the blanks",
+              "give one word of the following",
+              "name the following",
+              "fill in the blanks with correct answers",
+              "write true or false",
+              "match the following",
+              "letter writing",
+              "essay writing",
+              "paragraph writing",
+              "long answer questions",
+              "short answer questions",
+              "define the following"
+            ];
+
+            if (useMainIndexTitles.includes(lowerTitle)) {
               // Logic: i), ii), iii) based on Question Index (i)
               prefix = `${getRomanSubIndex(i)})`;
-            } else if (title.trim() === "Choose the correct answers") {
-              // Logic: 1), 2), 3) for subquestions
+            } else if (lowerTitle === "choose the correct answers") {
+              // Logic: a), b), c) for subquestions
               prefix = `${String.fromCharCode(97 + subIdx)})`;
             } else {
               // Default: i), ii) based on subIndex
