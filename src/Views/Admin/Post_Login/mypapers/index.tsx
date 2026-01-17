@@ -5,7 +5,7 @@ import { Search, Eye, Download, ArrowLeft, Printer, User, MoreVertical, FileText
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import jsPDF from "jspdf";
-import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TabStopType, TextRun, WidthType } from "docx";
+import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TabStopType, TextRun, WidthType, ImageRun } from "docx";
 import { saveAs } from "file-saver";
 import img1 from "../../../../assets/matching.png"
 import img2 from "../../../../assets/match2.jpeg"
@@ -282,6 +282,71 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       )
     }
 
+    // Case 4: "Tick the odd one in the following"
+    if (title.trim() === "Tick the odd one in the following") {
+      return (
+        <div key={title} className="mb-6">
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
+          {questions.map((q, idx) => (
+            <div key={idx} className="mb-4 ml-5">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                    {q.options && q.options.length > 0 && (
+                      <span className="inline-flex flex-wrap gap-4">
+                        {q.options.map((opt: string, optIdx: number) => (
+                          <span key={optIdx} className="inline-flex items-center gap-1">
+                            <span className="text-2xl leading-none">☐</span>
+                            <span>{opt}</span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Case 5: "Match the following"
+    if (title.trim() === "Match the following") {
+      return (
+        <div key={title} className="mb-6">
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
+          {questions.map((q, idx) => (
+            <div key={idx} className="mb-4 ml-5">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 text-lg text-black font-local2 pr-4">
+                      <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                      <span>{subQ.text || q.question}</span>
+                    </div>
+                    <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                      {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    </div>
+                  </div>
+                  {/* Render Image */}
+                  {q.imageUrl && (
+                    <div className="mt-2 ml-6">
+                      <img src={q.imageUrl} alt="Match" className="max-w-full h-auto max-h-[200px] object-contain border border-gray-200 rounded" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
     // Default Fallback Rendering
     return (
       <div key={title} className="mb-6">
@@ -396,6 +461,30 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           const subQuestions = q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }];
           const options = q.options || [];
 
+          // Logic for "Tick the odd one in the following"
+          if (title.trim() === "Tick the odd one in the following") {
+            subQuestions.forEach((subQ: any, subIdx: number) => {
+              const prefix = `${getRomanSubIndex(i)})`;
+              const marks = (showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
+
+              const optsText = options.map((opt: string) => `☐ ${opt}`).join('    ');
+              const fullText = `${prefix} ${optsText}`;
+
+              docChildren.push(new Paragraph({
+                tabStops: [
+                  { type: TabStopType.RIGHT, position: 9500 }
+                ],
+                children: [
+                  new TextRun({ text: fullText }),
+                  new TextRun({ text: `\t${marks}`, bold: true })
+                ],
+                spacing: { after: 100 },
+                indent: { left: 250 }
+              }));
+            });
+            continue; // Skip the default addition
+          }
+
           if (title.trim() === "Choose the correct answers") {
             // Logic: i) Options block
             docChildren.push(new Paragraph({
@@ -410,7 +499,15 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           subQuestions.forEach((subQ: any, subIdx: number) => {
             let prefix = "";
 
-            if (title.trim() === "Tick the correct answers" || title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
+            if (
+              title.trim() === "Tick the correct answers" ||
+              title.trim() === "Choose the correct answer from the brackets and fill in the blanks" ||
+              title.trim() === "Give one word of the following" ||
+              title.trim() === "Name the following" ||
+              title.trim() === "Fill in the blanks with correct answers" ||
+              title.trim() === "Write true or false" ||
+              title.trim() === "Match the following"
+            ) {
               // Logic: i), ii), iii) based on Question Index (i)
               prefix = `${getRomanSubIndex(i)})`;
             } else if (title.trim() === "Choose the correct answers") {
@@ -466,6 +563,31 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               }));
             }
           });
+
+          // Add Image if exists
+          if (q.imageUrl) {
+            try {
+              const imageBuffer = await fetchImageArrayBuffer(resolveImageUrl(q.imageUrl)) || await convertImageToArrayBufferViaCanvas(resolveImageUrl(q.imageUrl));
+              if (imageBuffer) {
+                docChildren.push(new Paragraph({
+                  children: [
+                    new ImageRun({
+                      data: imageBuffer,
+                      transformation: {
+                        width: 300,
+                        height: 200,
+                      },
+                    }),
+                  ],
+                  indent: { left: 500 },
+                  spacing: { after: 200 }
+                }));
+              }
+            } catch (err) {
+              console.warn("Failed to add image to word doc", err);
+            }
+          }
+
 
 
         }
