@@ -35,7 +35,7 @@ const QuestionForm = () => {
   const [chaptersLoading, setChaptersLoading] = React.useState<boolean>(false);
   const [uploadingImages, setUploadingImages] = React.useState<Record<number, boolean>>({});
   const [loadingQuestionData, setLoadingQuestionData] = React.useState<boolean>(false);
-  
+
   // Image upload modal states
   const [imageModalVisible, setImageModalVisible] = React.useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState<number | null>(null);
@@ -231,7 +231,7 @@ const QuestionForm = () => {
   const handleFinish = async (values: any) => {
     try {
       setSubmitting(true);
-  
+
       // Validate image questions have images
       const questions = values?.questions || [];
       for (let i = 0; i < questions.length; i++) {
@@ -253,7 +253,7 @@ const QuestionForm = () => {
           }
         }
       }
-  
+
       // Normalize questions
       const normalizedQuestions = questions.map((q: any) => {
         const internalType = q?.questionType;
@@ -278,17 +278,17 @@ const QuestionForm = () => {
           const subTexts = q.subQuestions
             .map((sq: any) => (sq?.text || '').trim())
             .filter((t: string) => t.length > 0);
-          
+
           // Set question for first sub-question
           if (subTexts.length > 0) {
             normalized.question = subTexts[0];
           }
-          
+
           // Set question1, question2, etc. for remaining sub-questions
           for (let i = 1; i < subTexts.length; i++) {
             normalized[`question${i}`] = subTexts[i];
           }
-          
+
           normalized.subQuestions = q.subQuestions.map((sq: any) => ({ text: sq?.text || '' }));
         } else if (
           internalType === 'fillblank' &&
@@ -300,7 +300,7 @@ const QuestionForm = () => {
           // For other questions, set the question field normally
           normalized.question = q?.question;
         }
-  
+
         if (
           internalType === 'mcq' ||
           (internalType === 'fillblank' &&
@@ -309,7 +309,7 @@ const QuestionForm = () => {
           normalized.options = (q?.options || []).map((opt: any) => ({ text: opt?.text || '' }));
           normalized.correctAnswer = q?.correctAnswer;
         }
-  
+
         if (
           (internalType === 'fillblank' &&
             q?.questionTitle !== 'Tick the odd one in the following') ||
@@ -318,7 +318,7 @@ const QuestionForm = () => {
         ) {
           normalized.correctAnswer = q?.correctAnswer;
         }
-  
+
         const isImageLike =
           internalType === 'image' ||
           (internalType === 'fillblank' &&
@@ -334,10 +334,10 @@ const QuestionForm = () => {
         } else {
           normalized.imageUrl = null;
         }
-  
+
         return normalized;
       });
-  
+
       // Resolve book name (send name, not id)
       const resolvedBookName = selectedBookName || (booksOptions.find(b => b.value === values?.book)?.label) || values?.book;
 
@@ -351,9 +351,9 @@ const QuestionForm = () => {
         status: values?.status ?? true,
         questions: normalizedQuestions,
       };
-  
+
       console.log("REQ BODY >>>", payload);
-  
+
       if (!isEdit) {
         await axios.post(`${BASE_URL}${API.QUIZ_ITEMS}`, payload, {
           headers: {
@@ -361,12 +361,12 @@ const QuestionForm = () => {
           },
         });
         message.success("Questions created successfully!");
-        
+
         // Reset only questions, keep class, subject, book, and chapter selected
         form.setFieldsValue({
           questions: [{}]
         });
-        
+
         // Keep the form values for class, subject, book, and chapter
         // They are already set in the form, so no need to reset them
       } else {
@@ -376,7 +376,7 @@ const QuestionForm = () => {
           },
         });
         message.success("Questions updated successfully!");
-        
+
         // For edit mode, navigate back to questions list
         const q = searchParams.get('q');
         navigate(`/questions${q ? `?q=${encodeURIComponent(q)}` : ''}`);
@@ -390,7 +390,7 @@ const QuestionForm = () => {
       setSubmitting(false);
     }
   };
-  
+
 
   const handleCancel = () => {
     const q = searchParams.get('q');
@@ -399,9 +399,9 @@ const QuestionForm = () => {
 
   // Removed dependency handlers; selectors are independent now
 
-  
 
-  
+
+
 
   const fetchBooks = async (cls?: string, subj?: string) => {
     if (!cls || !subj) return;
@@ -498,13 +498,13 @@ const QuestionForm = () => {
 
   // Chapters are fetched only when book changes
 
-  
+
 
   // Handle image selection - open modal for cropping
   const handleImageSelect = (file: File, questionIndex: number) => {
     setCurrentQuestionIndex(questionIndex);
     setSelectedFile(file);
-    
+
     // Create image URL for preview
     const reader = new FileReader();
     reader.addEventListener('load', () => {
@@ -512,7 +512,7 @@ const QuestionForm = () => {
       setImageModalVisible(true);
     });
     reader.readAsDataURL(file);
-    
+
     return false; // Prevent default upload
   };
 
@@ -522,7 +522,7 @@ const QuestionForm = () => {
     setCurrentQuestionIndex(null);
     setSelectedFile(null);
     setImgSrc('');
-    
+
     // Clear the image from form if modal was cancelled
     if (currentQuestionIndex !== null) {
       const questions = form.getFieldValue('questions') || [];
@@ -546,17 +546,17 @@ const QuestionForm = () => {
 
     try {
       setUploadingImages(prev => ({ ...prev, [currentQuestionIndex]: true }));
-      
+
       // Create form data with original image
       const formData = new FormData();
       formData.append('image', selectedFile);
-      
+
       const response = await axios.post(`${BASE_URL}${API.UPLOAD}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       if (response.data && response.data.url) {
         // Update the form with the uploaded image URL
         const questions = form.getFieldValue('questions') || [];
@@ -574,7 +574,7 @@ const QuestionForm = () => {
           form.setFieldValue('questions', questions);
         }
         message.success('Image uploaded successfully!');
-        
+
         // Close modal and reset state
         setImageModalVisible(false);
         setCurrentQuestionIndex(null);
@@ -601,7 +601,7 @@ const QuestionForm = () => {
       form.setFieldValue('questions', questions);
     }
   };
-  
+
 
   // Handle question type change to force re-render
   const handleQuestionTypeChange = (questionIndex: number, questionType: string) => {
@@ -619,7 +619,7 @@ const QuestionForm = () => {
       correctAnswer: undefined
     };
     form.setFieldValue('questions', questions);
-    
+
     // Force re-render
     setQuestionTypeChangeKey(prev => prev + 1);
   };
@@ -650,13 +650,13 @@ const QuestionForm = () => {
     const nextSubQuestions =
       isMcqMultiQuestion
         ? (Array.isArray(current.subQuestions) && current.subQuestions.length > 0
+          ? current.subQuestions
+          : [{ text: '' }])
+        : (questionType === 'image'
+          ? (Array.isArray(current.subQuestions) && current.subQuestions.length > 0
             ? current.subQuestions
             : [{ text: '' }])
-        : (questionType === 'image'
-            ? (Array.isArray(current.subQuestions) && current.subQuestions.length > 0
-                ? current.subQuestions
-                : [{ text: '' }])
-            : undefined);
+          : undefined);
 
     questions[questionIndex] = {
       ...current,
@@ -676,7 +676,7 @@ const QuestionForm = () => {
   // Set initial values if editing
   React.useEffect(() => {
     const loadQuestionData = async () => {
-    if (isEdit && quizId) {
+      if (isEdit && quizId) {
         try {
           const questionData = await fetchQuestionData(quizId);
           if (questionData) {
@@ -701,8 +701,8 @@ const QuestionForm = () => {
                 const mappedQuestion: any = {
                   questionType: internalType,
                   questionTitle: questionTitle,
-                  question: isMathSubjectValue(isEdit ? selectedSubject : questionData.subject) 
-                    ? unescapeLatex(q.question) 
+                  question: isMathSubjectValue(isEdit ? selectedSubject : questionData.subject)
+                    ? unescapeLatex(q.question)
                     : q.question,
                   marks: q.marks,
                 };
@@ -760,7 +760,7 @@ const QuestionForm = () => {
                   } else if (typeof q.question === 'string' && q.question.trim().length > 0) {
                     const parts = q.question.split('\n').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
                     if (parts.length > 0) {
-                      mappedQuestion.subQuestions = parts.map((t: string) => ({ 
+                      mappedQuestion.subQuestions = parts.map((t: string) => ({
                         text: isMath ? unescapeLatex(t) : t
                       }));
                     }
@@ -784,11 +784,11 @@ const QuestionForm = () => {
                 }
 
                 return mappedQuestion;
-          }),
-        };
+              }),
+            };
 
             form.setFieldsValue(formData);
-            
+
             // Set dependent dropdowns
             if (questionData.className) {
               setSelectedClass(questionData.className);
@@ -896,12 +896,12 @@ const QuestionForm = () => {
                           rules={[{ required: true, message: 'Please enter option text!' }]}
                         >
                           {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
-                            <MathInput 
+                            <MathInput
                               rows={1}
                               placeholder={`Option ${name + 1}`}
                             />
                           ) : (
-                            <Input 
+                            <Input
                               placeholder={`Option ${name + 1}`}
                             />
                           )}
@@ -972,7 +972,7 @@ const QuestionForm = () => {
   return (
     <>
       <PageHeader title={isEdit ? "Edit Question" : "Add Question"} backButton={true} />
-      
+
       <Card className="w-full mt-4 shadow-md">
         <Spin spinning={loadingQuestionData} tip="Loading question data...">
           <Form
@@ -985,86 +985,86 @@ const QuestionForm = () => {
               questions: [{}]
             }}
           >
-          {/* Basic Information - Only show when creating new question */}
-          {!isEdit && (
-            <>
-              <Row gutter={24}>
-                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                  <Form.Item
-                    required={false}
-                    name="className"
-                    label="Class"
-                    rules={[{ required: true, message: 'Please select a class!' }]}
-                  >
-                    <Select 
-                    showSearch
-                      placeholder="Select class" 
-                      size="large"
-                      options={classOptions}
-                      onChange={onChangeClass}
-                      allowClear
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                  <Form.Item
-                  required={false}
-                    name="subject"
-                    label="Subject"
-                    rules={[{ required: true, message: 'Please select a subject!' }]}
-                  >
-                    <Select 
-                      showSearch
-                      placeholder="Select subject" 
-                      size="large"
-                      options={subjectsOptions}
-                      loading={subjectsLoading}
-                      onChange={onChangeSubject}
-                      allowClear
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                  <Form.Item
-                  required={false}
-                    name="book"
-                    label="Book"
-                    rules={[{ required: true, message: 'Please select a title!' }]}
-                  >
-                    <Select 
-                    showSearch
-                      placeholder="Select book" 
-                      size="large"
-                      allowClear
-                      loading={booksLoading}
-                      disabled={!selectedClass || !selectedSubject}
-                      options={booksOptions}
-                      onChange={onChangeBook}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
+            {/* Basic Information - Only show when creating new question */}
+            {!isEdit && (
+              <>
+                <Row gutter={24}>
+                  <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                    <Form.Item
+                      required={false}
+                      name="className"
+                      label="Class"
+                      rules={[{ required: true, message: 'Please select a class!' }]}
+                    >
+                      <Select
+                        showSearch
+                        placeholder="Select class"
+                        size="large"
+                        options={classOptions}
+                        onChange={onChangeClass}
+                        allowClear
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                    <Form.Item
+                      required={false}
+                      name="subject"
+                      label="Subject"
+                      rules={[{ required: true, message: 'Please select a subject!' }]}
+                    >
+                      <Select
+                        showSearch
+                        placeholder="Select subject"
+                        size="large"
+                        options={subjectsOptions}
+                        loading={subjectsLoading}
+                        onChange={onChangeSubject}
+                        allowClear
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                    <Form.Item
+                      required={false}
+                      name="book"
+                      label="Book"
+                      rules={[{ required: true, message: 'Please select a title!' }]}
+                    >
+                      <Select
+                        showSearch
+                        placeholder="Select book"
+                        size="large"
+                        allowClear
+                        loading={booksLoading}
+                        disabled={!selectedClass || !selectedSubject}
+                        options={booksOptions}
+                        onChange={onChangeBook}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
 
-              <Row gutter={24}>
-                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                  <Form.Item
-                  required={false}
-                    name="chapter"
-                    label="Chapter"
-                    rules={[{ required: true, message: 'Please select a chapter!' }]}
-                  >
-                    <Select 
-                    showSearch
-                      placeholder="Select chapter" 
-                      size="large"
-                      allowClear
-                      loading={chaptersLoading}
-                      disabled={!selectedClass || !selectedSubject || !selectedBook}
-                      options={chaptersOptions}
-                    />
-                  </Form.Item>
-                </Col>
-                {/* <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Row gutter={24}>
+                  <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                    <Form.Item
+                      required={false}
+                      name="chapter"
+                      label="Chapter"
+                      rules={[{ required: true, message: 'Please select a chapter!' }]}
+                    >
+                      <Select
+                        showSearch
+                        placeholder="Select chapter"
+                        size="large"
+                        allowClear
+                        loading={chaptersLoading}
+                        disabled={!selectedClass || !selectedSubject || !selectedBook}
+                        options={chaptersOptions}
+                      />
+                    </Form.Item>
+                  </Col>
+                  {/* <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                   <Form.Item
                   required={false}
                     name="examType"
@@ -1078,282 +1078,289 @@ const QuestionForm = () => {
                     />
                   </Form.Item>
                 </Col> */}
-               
-              </Row>
-            </>
-          )}
 
-          <Divider orientation="left">Questions</Divider>
+                </Row>
+              </>
+            )}
 
-          {/* Dynamic Questions */}
-          <Form.List name="questions">
-            {(fields) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Card 
-                    key={key} 
-                    size="small" 
-                    className="mb-4"
-                    style={{ backgroundColor: '#f8f9fa' }}
-                    
-                  >
-                    <Row gutter={16}>
-                      {/* Show Section selector first when subject is English */}
-                      {isEnglishSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) && (
+            <Divider orientation="left">Questions</Divider>
+
+            {/* Dynamic Questions */}
+            <Form.List name="questions">
+              {(fields) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Card
+                      key={key}
+                      size="small"
+                      className="mb-4"
+                      style={{ backgroundColor: '#f8f9fa' }}
+
+                    >
+                      <Row gutter={16}>
+                        {/* Show Section selector first when subject is English */}
+                        {isEnglishSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) && (
+                          <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                            <Form.Item
+                              required={true}
+                              {...restField}
+                              name={[name, 'section']}
+                              label="Section"
+                              rules={[{ required: true, message: 'Please select section!' }]}
+                            >
+                              <Select
+                                size="large"
+                                placeholder="Select section"
+                                options={[
+                                  { label: 'Section A (Reading)', value: 'SectionA' },
+                                  { label: 'Section B (Writing)', value: 'SectionB' },
+                                  { label: 'Section C (Grammer)', value: 'SectionC' },
+                                  { label: 'Section D (Textual Questions)', value: 'SectionD' },
+                                ]}
+                                allowClear
+                              />
+                            </Form.Item>
+                          </Col>
+                        )}
+                        <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                          <Form.Item
+                            required={false}
+                            {...restField}
+                            name={[name, 'questionType']}
+                            label="Question Type"
+                            rules={[{ required: true, message: 'Please select question type!' }]}
+                          >
+                            <Select
+                              size="large"
+                              placeholder="Select type"
+                              onChange={(value) => handleQuestionTypeChange(name, value)}
+                            >
+                              <Option value="mcq">Multiple Choice (MCQ)</Option>
+                              <Option value="fillblank">Direct Questions</Option>
+                              <Option value="shortanswer">Answer the following questions</Option>
+                              <Option value="image">Picture questions</Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
                         <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                           <Form.Item
                             required={true}
                             {...restField}
-                            name={[name, 'section']}
-                            label="Section"
-                            rules={[{ required: true, message: 'Please select section!' }]}
+                            name={[name, 'questionTitle']}
+                            label="Question Title"
+                            rules={[{ required: true, message: 'Please select question title!' }]}
                           >
                             <Select
                               size="large"
-                              placeholder="Select section"
-                              options={[
-                                { label: 'Section A (Reading)', value: 'SectionA' },
-                                { label: 'Section B (Writing)', value: 'SectionB' },
-                                { label: 'Section C (Grammer)', value: 'SectionC' },
-                                { label: 'Section D (Textual Questions)', value: 'SectionD' },
-                              ]}
+                              placeholder="Select question title"
+                              onChange={(value) => handleQuestionTitleChange(name, value)}
+                              disabled={
+                                !form.getFieldValue(['questions', name, 'questionType']) ||
+                                !questionTitleOptions[
+                                form.getFieldValue(['questions', name, 'questionType'])
+                                ]
+                              }
+                              options={
+                                questionTitleOptions[
+                                form.getFieldValue(['questions', name, 'questionType'])
+                                ] || []
+                              }
                               allowClear
                             />
                           </Form.Item>
                         </Col>
-                      )}
-                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                        <Form.Item
-                          required={false}
-                          {...restField}
-                          name={[name, 'questionType']}
-                          label="Question Type"
-                          rules={[{ required: true, message: 'Please select question type!' }]}
-                        >
-                          <Select 
-                            size="large"
-                            placeholder="Select type"
-                            onChange={(value) => handleQuestionTypeChange(name, value)}
+                        <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                          <Form.Item
+                            required={false}
+                            {...restField}
+                            name={[name, 'marks']}
+                            label="Marks"
+                            rules={[{ required: true, message: 'Please enter marks!' }]}
                           >
-                            <Option value="mcq">Multiple Choice (MCQ)</Option>
-                            <Option value="fillblank">Direct Questions</Option>
-                            <Option value="shortanswer">Answer the following questions</Option>
-                            <Option value="image">Picture questions</Option>
-                          </Select>
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                        <Form.Item
-                          required={true}
-                          {...restField}
-                          name={[name, 'questionTitle']}
-                          label="Question Title"
-                          rules={[{ required: true, message: 'Please select question title!' }]}
-                        >
-                          <Select
-                            size="large"
-                            placeholder="Select question title"
-                            onChange={(value) => handleQuestionTitleChange(name, value)}
-                            disabled={
-                              !form.getFieldValue(['questions', name, 'questionType']) ||
-                              !questionTitleOptions[
-                                form.getFieldValue(['questions', name, 'questionType'])
-                              ]
-                            }
-                            options={
-                              questionTitleOptions[
-                                form.getFieldValue(['questions', name, 'questionType'])
-                              ] || []
-                            }
-                            allowClear
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                        <Form.Item
-                        required={false}
-                          {...restField}
-                          name={[name, 'marks']}
-                          label="Marks"
-                          rules={[{ required: true, message: 'Please enter marks!' }]}
-                        >
-                          <InputNumber 
-                          size="large"
-                            placeholder="Enter marks" 
-                            style={{ width: "100%" }} 
-                            min={1}
-                            max={100}
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
+                            <InputNumber
+                              size="large"
+                              placeholder="Enter marks"
+                              style={{ width: "100%" }}
+                              min={1}
+                              max={100}
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
 
-                    {form.getFieldValue(['questions', name, 'questionType']) && (
-                      <>
-                        {/* For Picture questions, allow multiple sub-questions under the same image */}
-                        {form.getFieldValue(['questions', name, 'questionType']) === 'image' ? (
-                          <Form.List name={[name, 'subQuestions']}>
-                            {(subFields, { add, remove }) => (
-                              <>
-                                {subFields.map(({ key: subKey, name: subName, ...subRestField }) => (
-                                  <Row key={subKey} gutter={16} align="middle" style={{ marginBottom: 16 }}>
-                                    <Col span={22}>
-                                      <Form.Item
-                                        required={false}
-                                        {...subRestField}
-                                        name={[subName, 'text']}
-                                        label={subName === 0 ? 'Questions' : undefined}
-                                        rules={[{ required: true, message: 'Please enter question!' }]}
+                      {form.getFieldValue(['questions', name, 'questionType']) && (
+                        <>
+                          {/* For Picture questions, allow multiple sub-questions under the same image */}
+                          {form.getFieldValue(['questions', name, 'questionType']) === 'image' ? (
+                            <Form.List name={[name, 'subQuestions']}>
+                              {(subFields, { add, remove }) => (
+                                <>
+                                  {subFields.map(({ key: subKey, name: subName, ...subRestField }) => (
+                                    <Row key={subKey} gutter={16} align="middle" style={{ marginBottom: 16 }}>
+                                      <Col span={22}>
+                                        <Form.Item
+                                          required={false}
+                                          {...subRestField}
+                                          name={[subName, 'text']}
+                                          label={subName === 0 ? 'Questions' : undefined}
+                                          rules={[{ required: true, message: 'Please enter question!' }]}
+                                        >
+                                          {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
+                                            <MathInput
+                                              rows={2}
+                                              placeholder="Enter your question"
+                                            />
+                                          ) : (
+                                            <TextArea
+                                              rows={2}
+                                              placeholder="Enter your question"
+                                            />
+                                          )}
+                                        </Form.Item>
+                                      </Col>
+                                      <Col span={2}>
+                                        {subFields.length > 1 && (
+                                          <Button
+                                            type="text"
+                                            icon={<MinusCircleOutlined />}
+                                            onClick={() => remove(subName)}
+                                            danger
+                                          />
+                                        )}
+                                      </Col>
+                                    </Row>
+                                  ))}
+                                  {subFields.length < 4 && (
+                                    <Form.Item>
+                                      <Button
+                                        type="dashed"
+                                        onClick={() => add({ text: '' })}
+                                        icon={<PlusOutlined />}
+                                        className="w-full"
                                       >
-                                        <MathInput
-                                          rows={2}
-                                          placeholder="Enter your question"
-                                        />
-                                      </Form.Item>
-                                    </Col>
-                                    <Col span={2}>
-                                      {subFields.length > 1 && (
-                                        <Button
-                                          type="text"
-                                          icon={<MinusCircleOutlined />}
-                                          onClick={() => remove(subName)}
-                                          danger
-                                        />
-                                      )}
-                                    </Col>
-                                  </Row>
-                                ))}
-                                {subFields.length < 4 && (
-                                  <Form.Item>
-                                    <Button
-                                      type="dashed"
-                                      onClick={() => add({ text: '' })}
-                                      icon={<PlusOutlined />}
-                                      className="w-full"
-                                    >
-                                      Add Question
-                                    </Button>
+                                        Add Question
+                                      </Button>
+                                    </Form.Item>
+                                  )}
+                                </>
+                              )}
+                            </Form.List>
+                          ) : form.getFieldValue(['questions', name, 'questionType']) === 'mcq' &&
+                            form.getFieldValue(['questions', name, 'questionTitle']) === 'Choose the correct answers' ? null :
+                            (form.getFieldValue(['questions', name, 'questionType']) === 'fillblank' &&
+                              form.getFieldValue(['questions', name, 'questionTitle']) === 'Tick the odd one in the following') ? null : (
+                              <Row gutter={16}>
+                                <Col span={24}>
+                                  <Form.Item
+                                    required={false}
+                                    {...restField}
+                                    name={[name, 'question']}
+                                    label="Question"
+                                    rules={[{ required: true, message: 'Please enter question!' }]}
+                                  >
+                                    {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
+                                      <MathInput
+                                        rows={3}
+                                        placeholder="Enter your question"
+                                      />
+                                    ) : (
+                                      <TextArea
+                                        rows={3}
+                                        placeholder="Enter your question"
+                                      />
+                                    )}
                                   </Form.Item>
-                                )}
-                              </>
+                                </Col>
+                              </Row>
                             )}
-                          </Form.List>
-                        ) : form.getFieldValue(['questions', name, 'questionType']) === 'mcq' &&
-                          form.getFieldValue(['questions', name, 'questionTitle']) === 'Choose the correct answers' ? null :
-                          (form.getFieldValue(['questions', name, 'questionType']) === 'fillblank' &&
-                            form.getFieldValue(['questions', name, 'questionTitle']) === 'Tick the odd one in the following') ? null : (
+                        </>
+                      )}
+
+                      {/* Image upload is shown for Image type and Direct Questions with "Match the following" title */}
+                      {(form.getFieldValue(['questions', name, 'questionType']) === 'image' ||
+                        (form.getFieldValue(['questions', name, 'questionType']) === 'fillblank' &&
+                          form.getFieldValue(['questions', name, 'questionTitle']) === 'Match the following')) && (
                           <Row gutter={16}>
                             <Col span={24}>
                               <Form.Item
-                              required={false}
                                 {...restField}
-                                name={[name, 'question']}
-                                label="Question"
-                                rules={[{ required: true, message: 'Please enter question!' }]}
+                                name={[name, 'imageFileList']}
+                                label="Upload Image"
+                                rules={[{ required: true, message: 'Please upload image!' }]}
                               >
-                                {isMathSubjectValue(isEdit ? selectedSubject : form.getFieldValue('subject')) ? (
-                                  <MathInput 
-                                    rows={3}
-                                    placeholder="Enter your question"
-                                  />
-                                ) : (
-                                  <TextArea 
-                                    rows={3}
-                                    placeholder="Enter your question" 
-                                  />
-                                )}
+                                <Upload
+                                  listType="picture-card"
+                                  maxCount={1}
+                                  beforeUpload={(file) => {
+                                    handleImageSelect(file, name);
+                                    return false; // Prevent default upload
+                                  }}
+                                  defaultFileList={form.getFieldValue(['questions', name, 'imageFileList'])}
+                                  onChange={({ fileList }) => {
+                                    // This will be handled by the beforeUpload function
+                                  }}
+                                  onRemove={() => {
+                                    handleImageRemove(name);
+                                    return true;
+                                  }}
+                                  showUploadList={{
+                                    showUploadList: true,
+                                    showRemoveIcon: true,
+                                    showPreviewIcon: false,
+                                  }}
+                                >
+                                  <div>
+                                    {uploadingImages[name] ? (
+                                      <div>
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                                        <div style={{ marginTop: 8 }}>Uploading...</div>
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <UploadOutlined />
+                                        <div style={{ marginTop: 8 }}>Upload</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </Upload>
                               </Form.Item>
                             </Col>
                           </Row>
                         )}
-                      </>
-                    )}
 
-                    {/* Image upload is shown for Image type and Direct Questions with "Match the following" title */}
-                    {(form.getFieldValue(['questions', name, 'questionType']) === 'image' ||
-                      (form.getFieldValue(['questions', name, 'questionType']) === 'fillblank' &&
-                        form.getFieldValue(['questions', name, 'questionTitle']) === 'Match the following')) && (
-                      <Row gutter={16}>
-                        <Col span={24}>
-                          <Form.Item 
-                            {...restField}
-                            name={[name, 'imageFileList']}
-                            label="Upload Image"
-                            rules={[{ required: true, message: 'Please upload image!' }]}
-                          >
-                            <Upload
-                              listType="picture-card"
-                              maxCount={1}
-                              beforeUpload={(file) => {
-                                handleImageSelect(file, name);
-                                return false; // Prevent default upload
-                              }}
-                              defaultFileList={form.getFieldValue(['questions', name, 'imageFileList'])}
-                              onChange={({ fileList }) => {
-                                // This will be handled by the beforeUpload function
-                              }}
-                              onRemove={() => {
-                                handleImageRemove(name);
-                                return true;
-                              }}
-                              showUploadList={{
-                                showUploadList: true,
-                                showRemoveIcon: true,
-                                showPreviewIcon: false,
-                              }}
-                            >
-                              <div>
-                                {uploadingImages[name] ? (
-                                  <div>
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                                    <div style={{ marginTop: 8 }}>Uploading...</div>
-                                  </div>
-                                ) : (
-                              <div>
-                                <UploadOutlined />
-                                <div style={{ marginTop: 8 }}>Upload</div>
-                                  </div>
-                                )}
-                              </div>
-                            </Upload>
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                    )}
+                      {/* Render question type specific fields */}
+                      {renderQuestionTypeFields(
+                        form.getFieldValue(['questions', name, 'questionType']),
+                        name
+                      )}
+                    </Card>
+                  ))}
 
-                    {/* Render question type specific fields */}
-                    {renderQuestionTypeFields(
-                      form.getFieldValue(['questions', name, 'questionType']),
-                      name
-                    )}
-                  </Card>
-                ))}
-                
-              </>
-            )}
-          </Form.List>
+                </>
+              )}
+            </Form.List>
 
-          {/* Action Buttons */}
-          <Row justify="end" className="mt-6">
-            <Space size="middle">
-              <Button size="middle" onClick={handleCancel}>
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="middle"
-                style={{ 
-                  backgroundColor: "#007575", 
-                  borderColor: "#007575" 
-                }}
-                loading={submitting}
-                disabled={submitting}
-              >
-                {isEdit ? "Update Question" : "Submit"}
-              </Button>
-            </Space>
-          </Row>
+            {/* Action Buttons */}
+            <Row justify="end" className="mt-6">
+              <Space size="middle">
+                <Button size="middle" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="middle"
+                  style={{
+                    backgroundColor: "#007575",
+                    borderColor: "#007575"
+                  }}
+                  loading={submitting}
+                  disabled={submitting}
+                >
+                  {isEdit ? "Update Question" : "Submit"}
+                </Button>
+              </Space>
+            </Row>
           </Form>
         </Spin>
       </Card>
@@ -1365,8 +1372,8 @@ const QuestionForm = () => {
         onCancel={handleModalCancel}
         width={600}
         footer={[
-          <Button 
-            key="cancel" 
+          <Button
+            key="cancel"
             onClick={handleModalCancel}
           >
             Cancel
@@ -1377,9 +1384,9 @@ const QuestionForm = () => {
             loading={currentQuestionIndex !== null && uploadingImages[currentQuestionIndex]}
             onClick={handleImageUpload}
             disabled={!selectedFile}
-            style={{ 
-              backgroundColor: "#007575", 
-              borderColor: "#007575" 
+            style={{
+              backgroundColor: "#007575",
+              borderColor: "#007575"
             }}
           >
             Upload Image
