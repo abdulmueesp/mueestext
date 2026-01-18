@@ -9,6 +9,22 @@ import { API, GET, POST } from "../../../../Components/common/api";
 import { AlignmentType, BorderStyle, Document, HeadingLevel, Media, Packer, Paragraph, Table, TableCell, TableRow, TabStopType, TextRun, WidthType } from "docx";
 import { saveAs } from "file-saver";
 const { Title, Text } = Typography;
+import { InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
+
+// Helper to detect Math/Maths subject (case/space insensitive)
+const isMathSubjectValue = (subject?: string): boolean => {
+  if (!subject) return false;
+  const subjectLower = String(subject).trim().toLowerCase();
+  return subjectLower === 'math' || subjectLower === 'maths' || subjectLower === 'mathematics';
+};
+
+// Helper to unescape LaTeX backslashes from API response
+const unescapeLatex = (text: string | undefined): string => {
+  if (!text || typeof text !== 'string') return text || '';
+  // Replace double backslashes with single backslash
+  return text.replace(/\\\\/g, '\\');
+};
 
 type QuestionType = 'multiplechoice' | 'direct' | 'answerthefollowing' | 'picture';
 type MCQSubtype = 'choose_from_brackets' | 'tick_correct' | 'choose_correct';
@@ -1409,12 +1425,14 @@ const Paper = () => {
                                   <div className="space-y-2">
                                     {q.subQuestions.map((subQ: string, index: number) => (
                                       <div key={index} className="text-gray-800">
-                                        {index + 1}. {subQ}
+                                        {index + 1}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(subQ)}}`} /> : subQ}
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-gray-800">{q.text}</div>
+                                  <div className="text-gray-800">
+                                    {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(q.text)}}`} /> : q.text}
+                                  </div>
                                 )}
                               </>
                             )}
@@ -1453,7 +1471,7 @@ const Paper = () => {
                                 <div className="space-y-1">
                                   {q.options.map((option: any, index: number) => (
                                     <div key={index} className="text-sm">
-                                      {String.fromCharCode(65 + index)}. {option.text || option}
+                                      {String.fromCharCode(65 + index)}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} /> : (option.text || option)}
                                     </div>
                                   ))}
                                 </div>
@@ -1466,7 +1484,7 @@ const Paper = () => {
                                 <div className="space-y-1">
                                   {q.options.map((option: any, index: number) => (
                                     <div key={index} className="text-sm">
-                                      {String.fromCharCode(65 + index)}. {option.text || option}
+                                      {String.fromCharCode(65 + index)}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} /> : (option.text || option)}
                                     </div>
                                   ))}
                                 </div>
@@ -1629,7 +1647,9 @@ const Paper = () => {
                                 <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
                               </div>
                               <div className="flex-1">
-                                <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{question.text}</div>
+                                <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>
+                                  {isMathSubjectValue(formValues.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(question.text)}}`} /> : question.text}
+                                </div>
                                 {question.type === 'picture' && question.imageUrl && (
                                   <div className="mt-2">
                                     <img
@@ -1646,7 +1666,7 @@ const Paper = () => {
                                   <div className="mt-2 space-y-1">
                                     {question.options.map((option: any, optIndex: number) => (
                                       <div key={optIndex} className="text-sm font-local2" style={{ color: '#000' }}>
-                                        {String.fromCharCode(65 + optIndex)}. {option.text || option}
+                                        {String.fromCharCode(65 + optIndex)}. {isMathSubjectValue(formValues.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} /> : (option.text || option)}
                                       </div>
                                     ))}
                                   </div>
