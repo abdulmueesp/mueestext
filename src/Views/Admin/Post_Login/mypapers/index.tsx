@@ -69,27 +69,31 @@ const toRomanNumeral = (num: number): string => {
   return result;
 };
 
-// Convert minutes to hours and minutes format
+// Convert minutes to hours/min format with half-hours as ½
 const formatDuration = (minutes: number): string => {
-  if (!minutes || minutes <= 0) return '0 minutes';
+  if (!minutes || minutes <= 0) return '0 min';
 
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
 
+  // If less than an hour
   if (hours === 0) {
-    return `${minutes} minutes`;
+    if (mins === 30) return '½ hr';
+    return `${minutes} min`;
   }
 
+  // Exact hour(s)
   if (mins === 0) {
     return `${hours} ${hours === 1 ? 'hr' : 'hrs'}`;
   }
 
-  // Check if minutes is 30 for "1/2" format
+  // Half hour
   if (mins === 30) {
-    return `${hours} 1/2 ${hours === 1 ? 'hr' : 'hrs'}`;
+    return `${hours} ½ ${hours === 1 ? 'hr' : 'hrs'}`;
   }
 
-  return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
+  // Hour(s) plus minutes
+  return `${hours} ${hours === 1 ? 'hr' : 'hrs'} ${mins} min`;
 };
 
 const getStdLabel = (classValue?: string | number) => {
@@ -593,7 +597,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             },
             heading2: {
               run: { font: 'Times New Roman', size: 24, bold: true },
-              paragraph: { spacing: { before: 100, after: 100 } }
+              // No extra space before heading so it sits right under the border line
+              paragraph: { spacing: { before: 0, after: 80 } }
             }
           }
         },
@@ -602,14 +607,55 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
       const docChildren: any[] = [];
 
-      // Header
+      // Top-right code box (school code) in Word document (above NAME / ROLL NO)
+      const codeText = (paper.code || '535').toString();
+      const codeCellBorders = {
+        top: { style: BorderStyle.SINGLE, color: '000000', size: 12 },
+        bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12 },
+        left: { style: BorderStyle.SINGLE, color: '000000', size: 12 },
+        right: { style: BorderStyle.SINGLE, color: '000000', size: 12 }
+      };
+      docChildren.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  borders: {
+                    top: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
+                    bottom: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
+                    left: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 },
+                    right: { style: BorderStyle.NONE, color: 'FFFFFF', size: 0 }
+                  },
+                  width: { size: 85, type: WidthType.PERCENTAGE },
+                  children: [new Paragraph({ text: '', spacing: { before: 0, after: 0 } })]
+                }),
+                new TableCell({
+                  borders: codeCellBorders,
+                  width: { size: 15, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 0, after: 0 },
+                      children: [new TextRun({ text: codeText, bold: true })]
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
+        })
+      );
+
+      // Header (NAME / ROLL NO) just below the code box with a bit of extra gap
       docChildren.push(
         new Paragraph({
           children: [
             new TextRun({ text: "NAME: .............................................................................................", bold: true }),
             new TextRun({ text: " ROLL NO: .....................", bold: true })
           ],
-          spacing: { after: 200 }
+          spacing: { before: 160, after: 200 }
         })
       );
 
@@ -622,7 +668,19 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         })
       );
       docChildren.push(createHeaderTable(stdLabel || '-', subjectDisplayUpper || '-', currentSumMarks, formatDuration(paper.duration || 60)));
-      docChildren.push(new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12, space: 1 } }, spacing: { after: 200 }, children: [new TextRun({ text: '' })] }));
+      // Bottom border directly under HM / Time with no extra vertical gap
+      docChildren.push(
+        new Paragraph({
+          border: {
+            bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12, space: 1 },
+          },
+          spacing: {
+            before: 0,
+            after: 0,
+          },
+          children: [new TextRun({ text: '' })],
+        })
+      );
 
 
       // Content Logic grouped by Title
@@ -994,17 +1052,28 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             new TableCell({
               borders: cellBorders,
               width: { size: 20, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ text: `Std: ${stdValue || '-'}`, bold: true })]
+              children: [new Paragraph({ 
+                children: [new TextRun({ text: `Std: ${stdValue || '-'}`, bold: true, font: 'Times New Roman', size: 24 })],
+                spacing: { before: 0, after: 0 } 
+              })]
             }),
             new TableCell({
               borders: cellBorders,
               width: { size: 60, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ text: subjectValue || '', alignment: AlignmentType.CENTER, bold: true })]
+              children: [new Paragraph({ 
+                children: [new TextRun({ text: subjectValue || '', bold: true, font: 'Times New Roman', size: 24 })],
+                alignment: AlignmentType.CENTER, 
+                spacing: { before: 0, after: 0 } 
+              })]
             }),
             new TableCell({
               borders: cellBorders,
               width: { size: 20, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ text: `Marks: ${marksValue}`, alignment: AlignmentType.RIGHT, bold: true })]
+              children: [new Paragraph({ 
+                children: [new TextRun({ text: `Marks: ${marksValue}`, bold: true, font: 'Times New Roman', size: 24 })],
+                alignment: AlignmentType.RIGHT, 
+                spacing: { before: 0, after: 0 } 
+              })]
             })
           ]
         }),
@@ -1012,15 +1081,28 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           children: [
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ text: 'HM', bold: true })]
+              children: [new Paragraph({ 
+                children: [new TextRun({ text: 'HM', bold: true, font: 'Times New Roman', size: 24 })],
+                spacing: { before: 0, after: 0 },
+                lineSpacing: { line:0, lineRule: "auto" }
+              })]
             }),
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ text: '' })]
+              children: [new Paragraph({ 
+                text: '', 
+                spacing: { before: 0, after: 0 },
+                lineSpacing: { line:0, lineRule: "auto" }
+              })]
             }),
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ text: `Time: ${durationValue}`, alignment: AlignmentType.RIGHT, bold: true })]
+              children: [new Paragraph({ 
+                children: [new TextRun({ text: `Time: ${durationValue}`, bold: true, font: 'Times New Roman', size: 24 })],
+                alignment: AlignmentType.RIGHT, 
+                spacing: { before: 0, after: 0 },
+                lineSpacing: { line: 0, lineRule: "auto" }
+              })]
             })
           ]
         })
@@ -1092,7 +1174,14 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
       {/* Question Paper Preview */}
       <Card className="shadow-sm print:shadow-none" id="print-area">
-        <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
+        <div className="max-w-4xl mx-auto relative" style={{ fontFamily: 'Times, serif' }}>
+          {/* Top-right code box (school code) above NAME / ROLL NO */}
+          <div className="flex justify-end mb-2">
+            <div className="border border-black px-3 min-h-10 inline-flex items-center justify-center text-sm font-local2 font-semibold">
+              {paper.code || '535'}
+            </div>
+          </div>
+
           {/* Header Section */}
           <div className="mb-4 text-lg font-local2 text-black">
             <div className="flex items-end justify-between gap-2">
