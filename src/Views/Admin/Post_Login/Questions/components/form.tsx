@@ -108,6 +108,30 @@ const QuestionForm = () => {
     return text;
   };
 
+  // Helper to round marks to nearest 0.5 increment
+  // Examples: 1.4 → 1.5, 1.6 → 2, 3.2 → 3.5
+  const roundMarks = (marks: number | undefined | null): number => {
+    if (marks === undefined || marks === null) return 0;
+    const num = Number(marks);
+    if (isNaN(num)) return 0;
+    
+    // If it's already a whole number or exactly .5, return as is
+    if (num % 1 === 0 || num % 1 === 0.5) {
+      return num;
+    }
+    
+    const wholePart = Math.floor(num);
+    const decimalPart = num % 1;
+    
+    // If decimal part <= 0.5, round to wholePart + 0.5
+    // If decimal part > 0.5, round to wholePart + 1.0
+    if (decimalPart <= 0.5) {
+      return wholePart + 0.5;
+    } else {
+      return wholePart + 1.0;
+    }
+  };
+
   // Fetch subjects similar to Chapters form
   const fetchSubjects = async () => {
     try {
@@ -261,7 +285,7 @@ const QuestionForm = () => {
           // Send the user-facing label in the API
           questionType: QUESTION_TYPE_LABELS[internalType] || internalType,
           qtitle: q?.questionTitle,
-          marks: q?.marks,
+          marks: roundMarks(q?.marks),
         };
 
         // Include section field if present (for English subjects)

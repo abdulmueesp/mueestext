@@ -55,6 +55,31 @@ const unescapeLatex = (text: string | undefined): string => {
   return text.replace(/\\\\/g, '\\');
 };
 
+// Helper to format marks - converts .5 decimals to fraction format
+const formatMarks = (marks: number | undefined | null): string => {
+  if (marks === undefined || marks === null) return '0';
+  const num = Number(marks);
+  if (isNaN(num)) return String(marks);
+  
+  // Check if it's a whole number
+  if (num % 1 === 0) {
+    return String(num);
+  }
+  
+  // Check if decimal part is exactly 0.5
+  const decimalPart = num % 1;
+  if (Math.abs(decimalPart - 0.5) < 0.001) {
+    const wholePart = Math.floor(num);
+    if (wholePart === 0) {
+      return '½';
+    }
+    return `${wholePart} ½`;
+  }
+  
+  // For other decimals, return as is
+  return String(num);
+};
+
 const Questions: React.FC = () => {
   const navigate = useNavigate();
 
@@ -689,7 +714,7 @@ const Questions: React.FC = () => {
                 </div>
                 <div>
                   <strong>Marks:</strong>
-                  <span className="ml-2 font-semibold">{selectedQuestion.marks}</span>
+                  <span className="ml-2 font-semibold">{formatMarks(selectedQuestion.marks)}</span>
                 </div>
                 {selectedQuestion.qtitle && (
                   <div className="col-span-2">

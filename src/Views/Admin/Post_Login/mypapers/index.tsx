@@ -110,6 +110,46 @@ const getSubjectDisplay = (subject?: string, code?: string) => {
   return '';
 };
 
+// Helper to format marks - converts .5 decimals to unicode fraction format (½)
+const formatMarks = (marks: number | undefined | null): string => {
+  if (marks === undefined || marks === null) return '0';
+  const num = Number(marks);
+  if (Number.isNaN(num)) return String(marks);
+
+  // Whole number
+  if (num % 1 === 0) return String(num);
+
+  // Exactly .5
+  const decimalPart = num % 1;
+  if (Math.abs(decimalPart - 0.5) < 0.001) {
+    const wholePart = Math.floor(num);
+    return wholePart === 0 ? '½' : `${wholePart} ½`;
+  }
+
+  // Other decimals
+  return String(num);
+};
+
+// Helper to format marks for Word document - converts .5 decimals to unicode fraction format (½)
+const formatMarksForWord = (marks: number | undefined | null): string => {
+  if (marks === undefined || marks === null) return '0';
+  const num = Number(marks);
+  if (Number.isNaN(num)) return String(marks);
+
+  // Whole number
+  if (num % 1 === 0) return String(num);
+
+  // Exactly .5
+  const decimalPart = num % 1;
+  if (Math.abs(decimalPart - 0.5) < 0.001) {
+    const wholePart = Math.floor(num);
+    return wholePart === 0 ? '½' : `${wholePart} ½`;
+  }
+
+  // Other decimals
+  return String(num);
+};
+
 // Check if class is 4 or below
 const isClassFourOrBelow = (classValue?: string | number): boolean => {
   if (classValue === undefined || classValue === null || classValue === '') return false;
@@ -125,28 +165,98 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const subjectDisplay = getSubjectDisplay(paper.subject, paper.code);
   const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
 
-  // Logic to group questions by qtitle
+  // Helper to get section display name
+  const getSectionDisplayName = (section?: string): string | null => {
+    if (!section) return null;
+    const sectionUpper = section.toUpperCase();
+    const sectionMap: Record<string, string> = {
+      'SECTIONA': 'SECTION - A (READING)',
+      'SECTIONB': 'SECTION - B (WRITING)',
+      'SECTIONC': 'SECTION - C (GRAMMER)',
+      'SECTIOND': 'SECTION - D (TEXTUAL QUESTIONS)'
+    };
+    return sectionMap[sectionUpper] || null;
+  };
+
+  // Check if subject is English (case-insensitive)
+  const isEnglishSubject = paper.subject && paper.subject.toLowerCase() === 'english';
+
+  // Logic to group questions by section (for English) or qtitle (for others)
   const groupedQuestions = React.useMemo(() => {
     if (!paper.questions || !Array.isArray(paper.questions)) return [];
 
-    // Group by qtitle
-    const groups: Record<string, any[]> = {};
-    const titlesOrder: string[] = [];
+    if (isEnglishSubject) {
+      // For English: Group by section first, then by qtitle within each section
+      const sectionGroups: Record<string, Record<string, any[]>> = {};
+      const sectionOrder: string[] = [];
+      const sectionTitleOrder: Record<string, string[]> = {};
 
-    paper.questions.forEach((q: any) => {
-      const title = q.qtitle || "Miscellaneous"; // Fallback title
-      if (!groups[title]) {
-        groups[title] = [];
-        titlesOrder.push(title);
-      }
-      groups[title].push(q);
-    });
+      paper.questions.forEach((q: any) => {
+        const section = q.section || 'Miscellaneous';
+        const title = q.qtitle || "Miscellaneous";
+        
+        if (!sectionGroups[section]) {
+          sectionGroups[section] = {};
+          sectionOrder.push(section);
+          sectionTitleOrder[section] = [];
+        }
+        
+        if (!sectionGroups[section][title]) {
+          sectionGroups[section][title] = [];
+          sectionTitleOrder[section].push(title);
+        }
+        
+        sectionGroups[section][title].push(q);
+      });
 
-    return titlesOrder.map(title => ({
-      title,
-      questions: groups[title]
-    }));
-  }, [paper.questions]);
+      // Sort sections in order: A, B, C, D
+      const sectionPriority: Record<string, number> = {
+        'SectionA': 1,
+        'SectionB': 2,
+        'SectionC': 3,
+        'SectionD': 4
+      };
+      const sortedSectionOrder = sectionOrder.sort((a, b) => {
+        const priorityA = sectionPriority[a] || 999;
+        const priorityB = sectionPriority[b] || 999;
+        return priorityA - priorityB;
+      });
+
+      // Flatten into array with section info
+      const result: Array<{ section?: string, sectionDisplay?: string, title: string, questions: any[] }> = [];
+      sortedSectionOrder.forEach(section => {
+        const sectionDisplay = getSectionDisplayName(section);
+        sectionTitleOrder[section].forEach(title => {
+          result.push({
+            section,
+            sectionDisplay: sectionDisplay || undefined,
+            title,
+            questions: sectionGroups[section][title]
+          });
+        });
+      });
+
+      return result;
+    } else {
+      // For other subjects: Group by qtitle only
+      const groups: Record<string, any[]> = {};
+      const titlesOrder: string[] = [];
+
+      paper.questions.forEach((q: any) => {
+        const title = q.qtitle || "Miscellaneous";
+        if (!groups[title]) {
+          groups[title] = [];
+          titlesOrder.push(title);
+        }
+        groups[title].push(q);
+      });
+
+      return titlesOrder.map(title => ({
+        title,
+        questions: groups[title]
+      }));
+    }
+  }, [paper.questions, isEnglishSubject]);
 
 
   // Helper to resolve Roman numerals for sub-questions
@@ -160,9 +270,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     (paper.questions ? paper.questions.reduce((sum: number, q: any) => sum + (q.mark || q.marks || 0), 0) : 0);
 
 
-  const renderQuestionSection = (group: { title: string, questions: any[] }, groupIndex: number) => {
-    const { title, questions } = group;
+  const renderQuestionSection = (group: { section?: string, sectionDisplay?: string, title: string, questions: any[] }, groupIndex: number, previousSection?: string) => {
+    const { section, sectionDisplay, title, questions } = group;
     const sectionRoman = toRomanNumeral(groupIndex + 1);
+    
+    // Show section header if section changed and it's English subject
+    const showSectionHeader = isEnglishSubject && sectionDisplay && section !== previousSection;
 
     // Calculate marks breakdown
     let markBreakdown = "";
@@ -170,7 +283,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       const firstMark = questions[0].mark || questions[0].marks || 0;
       const allSame = questions.every((q: any) => (q.mark || q.marks || 0) === firstMark);
       if (allSame && firstMark > 0) {
-        markBreakdown = `[${firstMark} x ${questions.length} = ${firstMark * questions.length}]`;
+        const totalMarks = firstMark * questions.length;
+        markBreakdown = `[${formatMarks(firstMark)} x ${questions.length} = ${formatMarks(totalMarks)}]`;
       }
     }
     const showIndividualMarks = !markBreakdown;
@@ -188,7 +302,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
     if (pictureTitles.some(t => cleanLowerTitle === t || cleanLowerTitle.startsWith(t))) {
       return (
-        <div key={title} className="mb-6">
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
@@ -198,7 +317,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   <span className="mr-2">{getRomanSubIndex(idx)})</span>
                 </div>
                 <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                  {showIndividualMarks && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                  {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                 </div>
               </div>
 
@@ -231,7 +350,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     // Case 1: "Choose the correct answer from the brackets and fill in the blanks"
     if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
       return (
-        <div key={title} className="mb-6">
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
@@ -252,7 +376,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     )}
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                   </div>
                 </div>
               ))}
@@ -265,7 +389,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     // Case 2: "Tick the correct answers"
     if (title.trim() === "Tick the correct answers") {
       return (
-        <div key={title} className="mb-6">
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
@@ -290,7 +419,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   </div>
 
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                   </div>
                 </div>
               ))}
@@ -303,7 +432,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     // Case 3: "Choose the correct answers"
     if (title.trim() === "Choose the correct answers") {
       return (
-        <div key={title} className="mb-6">
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
 
           {questions.map((q, idx) => (
@@ -324,7 +458,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     <span>{subQ.text || q.question}</span>
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                   </div>
                 </div>
               ))}
@@ -337,7 +471,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     // Case 4: "Tick the odd one in the following"
     if (title.trim() === "Tick the odd one in the following") {
       return (
-        <div key={title} className="mb-6">
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
@@ -357,7 +496,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     )}
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                   </div>
                 </div>
               ))}
@@ -370,7 +509,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
     // Case 5: "Match the following"
     if (title.trim() === "Match the following") {
       return (
-        <div key={title} className="mb-6">
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
           <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
           {questions.map((q, idx) => (
             <div key={idx} className="mb-4 ml-5">
@@ -382,7 +526,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                       <span>{subQ.text || q.question}</span>
                     </div>
                     <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                      {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                      {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                     </div>
                   </div>
                   {/* Render Image */}
@@ -401,7 +545,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
     // Default Fallback Rendering
     return (
-      <div key={title} className="mb-6">
+      <div key={`${section || ''}-${title}`} className="mb-6">
+        {showSectionHeader && (
+          <div className="text-center mb-4 mt-4">
+            <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+          </div>
+        )}
         <h3 className="text-lg font-semibold text-black mb-2 font-local2">{sectionRoman}. {title} <span className="float-right">{markBreakdown}</span></h3>
         {questions.map((q, idx) => (
           <div key={idx} className="mb-4 ml-8">
@@ -411,7 +560,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <span>{q.question}</span>
               </div>
               <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                {showIndividualMarks && (q.mark || q.marks) ? `[${q.mark || q.marks}]` : null}
+                {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
               </div>
             </div>
             {q.options && (
@@ -454,24 +603,22 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       const docChildren: any[] = [];
 
       // Header
-      if (isClassFourOrBelow(paper.class)) {
-        docChildren.push(
-          new Paragraph({
-            children: [
-              new TextRun({ text: "NAME: .............................................................................................", bold: true }),
-              new TextRun({ text: " ROLL NO: .....................", bold: true })
-            ],
-            spacing: { after: 200 }
-          })
-        );
-      }
+      docChildren.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: "NAME: .............................................................................................", bold: true }),
+            new TextRun({ text: " ROLL NO: .....................", bold: true })
+          ],
+          spacing: { after: 200 }
+        })
+      );
 
       docChildren.push(
         new Paragraph({
           heading: HeadingLevel.HEADING1,
           alignment: AlignmentType.CENTER,
           spacing: { after: 200 },
-          children: [new TextRun({ text: paperTitle, bold: true })]
+          children: [new TextRun({ text: paperTitle, bold: true,size: 32,})]
         })
       );
       docChildren.push(createHeaderTable(stdLabel || '-', subjectDisplayUpper || '-', currentSumMarks, formatDuration(paper.duration || 60)));
@@ -481,8 +628,25 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       // Content Logic grouped by Title
       for (let i = 0; i < groupedQuestions.length; i++) {
         const group = groupedQuestions[i];
-        const { title, questions } = group;
+        const { section, sectionDisplay, title, questions } = group;
         const sectionRoman = toRomanNumeral(i + 1);
+        
+        // Show section header if section changed and it's English subject
+        const previousSection = i > 0 ? groupedQuestions[i - 1].section : undefined;
+        const showSectionHeader = isEnglishSubject && sectionDisplay && section !== previousSection;
+        
+        // Add section header for Word document
+        if (showSectionHeader) {
+          docChildren.push(
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 200, after: 200 },
+              children: [
+                new TextRun({ text: sectionDisplay, bold: true, size: 28, underline: {} })
+              ]
+            })
+          );
+        }
 
         // Calculate marks breakdown for Word
         let markBreakdown = "";
@@ -490,7 +654,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           const firstMark = questions[0].mark || questions[0].marks || 0;
           const allSame = questions.every((q: any) => (q.mark || q.marks || 0) === firstMark);
           if (allSame && firstMark > 0) {
-            markBreakdown = `\t[${firstMark} x ${questions.length} = ${firstMark * questions.length}]`;
+            const totalMarks = firstMark * questions.length;
+            markBreakdown = `\t[${formatMarksForWord(firstMark)} x ${questions.length} = ${formatMarksForWord(totalMarks)}]`;
           }
         }
         const showIndividualMarksWord = !markBreakdown;
@@ -526,7 +691,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           if (pictureTitles.some(t => cleanLowerTitle === t || cleanLowerTitle.startsWith(t))) {
             // 1. Render Main Question Line: i) Question Text [Marks]
             const prefix = `${getRomanSubIndex(i)})`;
-            const marks = (q.mark || q.marks) ? ` [${q.mark || q.marks}]` : '';
+            const marks = (q.mark || q.marks) ? ` [${formatMarksForWord(q.mark || q.marks)}]` : '';
 
             docChildren.push(new Paragraph({
               tabStops: [
@@ -583,7 +748,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           if (title.trim() === "Tick the odd one in the following") {
             subQuestions.forEach((subQ: any, subIdx: number) => {
               const prefix = `${getRomanSubIndex(i)})`;
-              const marks = (showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
+              const marks = (showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${formatMarksForWord(q.mark || q.marks)}]` : '';
 
               const optsText = options.map((opt: string) => `☐ ${opt}`).join('    ');
               const fullText = `${prefix} ${optsText}`;
@@ -929,20 +1094,18 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       <Card className="shadow-sm print:shadow-none" id="print-area">
         <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
           {/* Header Section */}
-          {isClassFourOrBelow(paper.class) && (
-            <div className="mb-4 text-lg font-local2 text-black">
-              <div className="flex items-end justify-between gap-2">
-                <div className="flex items-end flex-1 min-w-0">
-                  <span className="font-semibold whitespace-nowrap">NAME:</span>
-                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden border-b border-dotted border-black flex-1"></span>
-                </div>
-                <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
-                  <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
-                  <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden border-b border-dotted border-black flex-1"></span>
-                </div>
+          <div className="mb-4 text-lg font-local2 text-black">
+            <div className="flex items-end justify-between gap-2">
+              <div className="flex items-end flex-1 min-w-0">
+                <span className="font-semibold whitespace-nowrap">NAME:</span>
+                <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden border-b border-dotted border-black flex-1"></span>
+              </div>
+              <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
+                <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
+                <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden border-b border-dotted border-black flex-1"></span>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="text-center mb-3">
             <h1 className="text-2xl font-bold uppercase font-local2">
@@ -976,7 +1139,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           {/* Questions Grouped by Title */}
           <div className="space-y-6">
             {groupedQuestions.length > 0 ? (
-              groupedQuestions.map((group, index) => renderQuestionSection(group, index))
+              groupedQuestions.map((group, index) => {
+                const previousSection = index > 0 ? groupedQuestions[index - 1].section : undefined;
+                return renderQuestionSection(group, index, previousSection);
+              })
             ) : (
               <div className="text-center text-gray-500">No questions found.</div>
             )}
