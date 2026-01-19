@@ -884,13 +884,13 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       <div className="mb-6">
         <Card className="shadow-sm">
           <div className="flex flex-col sm:flex-row sm:justify-between items-center">
-            <Button
+            {/* <Button
               onClick={() => window.print()}
               className="flex items-center gap-2 bg-green-500 text-white hover:bg-green-600 print:hidden"
             >
               <Printer size={16} />
               Print
-            </Button>
+            </Button> */}
 
             <div className="flex gap-3">
               <Button
@@ -902,7 +902,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 Download Word
               </Button>
 
-              <Popconfirm
+              
+            </div>
+<div>
+<Popconfirm
                 title="Are you sure you want to delete this paper?"
                 onConfirm={() => onDelete && onDelete(paper.id || paper._id)}
                 okText="Yes, Delete"
@@ -917,8 +920,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   className="print:hidden"
                 />
               </Popconfirm>
-            </div>
-
+</div>
           </div>
         </Card>
       </div>
