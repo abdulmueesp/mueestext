@@ -13,6 +13,7 @@ import paperDummy from "../../../../assets/paperdummy.webp"
 import { API, GET, DELETE } from "../../../../Components/common/api";
 import { Popconfirm } from "antd";
 import { MdDeleteOutline } from "react-icons/md";
+import { latexToDocxMath } from "@/utils/mathExport";
 const { Title, Text } = Typography;
 
 // Class options (same as Books module)
@@ -184,6 +185,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
   // Check if subject is English (case-insensitive)
   const isEnglishSubject = paper.subject && paper.subject.toLowerCase() === 'english';
+
+  // Check if subject is Mathematics (case-insensitive)
+  const isMathSubject = paper.subject &&
+    ['math', 'maths', 'mathematics'].includes(String(paper.subject).trim().toLowerCase());
 
   // Logic to group questions by section (for English) or qtitle (for others)
   const groupedQuestions = React.useMemo(() => {
@@ -888,14 +893,28 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               }
             }
 
+            const paragraphChildren: any[] = [];
+
+            // For Math subject, attempt to render the full question text as a Word math object.
+            if (isMathSubject && qText) {
+              const mathObj = latexToDocxMath(qText, false);
+              if (mathObj) {
+                paragraphChildren.push(mathObj);
+              } else {
+                paragraphChildren.push(new TextRun({ text: qText }));
+              }
+            } else {
+              paragraphChildren.push(new TextRun({ text: qText }));
+            }
+
+            // Marks stay as normal text on the right.
+            paragraphChildren.push(new TextRun({ text: `\t${marks}`, bold: true }));
+
             docChildren.push(new Paragraph({
               tabStops: [
                 { type: TabStopType.RIGHT, position: 9500 }
               ],
-              children: [
-                new TextRun({ text: qText }),
-                new TextRun({ text: `\t${marks}`, bold: true })
-              ],
+              children: paragraphChildren,
               spacing: { after: title.trim() === "Tick the correct answers" ? 50 : 100 },
               indent: { left: title.trim() === "Choose the correct answers" ? 500 : 250 }
             }));
@@ -906,8 +925,21 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
             if (title.trim() === "Tick the correct answers") {
               const optsText = options.map((opt: string, i: number) => `${String.fromCharCode(97 + i)}. ☐ ${opt}`).join('    ');
+
+              const optionChildren: any[] = [];
+              if (isMathSubject && optsText) {
+                const mathObj = latexToDocxMath(optsText, false);
+                if (mathObj) {
+                  optionChildren.push(mathObj);
+                } else {
+                  optionChildren.push(new TextRun({ text: optsText }));
+                }
+              } else {
+                optionChildren.push(new TextRun({ text: optsText }));
+              }
+
               docChildren.push(new Paragraph({
-                children: [new TextRun({ text: optsText })],
+                children: optionChildren,
                 spacing: { after: 150 },
                 indent: { left: 500 }
               }));

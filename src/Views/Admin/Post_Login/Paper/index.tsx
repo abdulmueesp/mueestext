@@ -675,6 +675,441 @@ const Paper = () => {
 
   const currentSumMarks = useMemo(() => Object.values(selectedQuestions).reduce((a, b) => a + (Number(b) || 0), 0), [selectedQuestions]);
 
+  // --- Preview rendering helpers (match My Papers preview behaviour) ---
+  const formatMarks = (marks: number | undefined | null): string => {
+    if (marks === undefined || marks === null) return '0';
+    const num = Number(marks);
+    if (Number.isNaN(num)) return String(marks);
+    if (num % 1 === 0) return String(num);
+    const decimalPart = num % 1;
+    if (Math.abs(decimalPart - 0.5) < 0.001) {
+      const wholePart = Math.floor(num);
+      return wholePart === 0 ? '½' : `${wholePart} ½`;
+    }
+    return String(num);
+  };
+
+  const renderMaybeMath = (text?: string) => {
+    if (!text) return null;
+    if (isMathSubjectValue(formValues?.subject)) {
+      return <InlineMath math={`\\mathrm{${unescapeLatex(String(text))}}`} />;
+    }
+    return text;
+  };
+
+  const getRomanSubIndex = (index: number) => {
+    const romans = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"];
+    return romans[index] || `${index + 1}`;
+  };
+
+  // Build a "paper-like" questions array from currently selected questions
+  const selectedPreviewQuestions = useMemo(() => {
+    return Object.entries(selectedQuestions)
+      .map(([id, marks]) => {
+        const q = selectedQuestionsData[id] || questionsData.find((qq) => qq.id === id);
+        if (!q) return null;
+        const optionsArray = Array.isArray(q.options)
+          ? q.options.map((o: any) => (o?.text ?? o)).filter(Boolean).map((v: any) => String(v))
+          : [];
+        const subQuestionsArray = Array.isArray(q.subQuestions) ? q.subQuestions : [];
+        return {
+          id: q.id,
+          qtitle: q.qtitle || '',
+          question: q.text || '',
+          mark: Number(marks) || 0,
+          marks: Number(marks) || 0,
+          options: optionsArray,
+          imageUrl: q.imageUrl,
+          section: q.section,
+          // My Papers expects subQuestions as array of { text }
+          subQuestions: subQuestionsArray.map((t: string) => ({ text: t })),
+        };
+      })
+      .filter(Boolean);
+  }, [selectedQuestions, selectedQuestionsData, questionsData]);
+
+  const groupedQuestionsForPreview = useMemo(() => {
+    const subject = String(formValues?.subject || '').trim().toLowerCase();
+    const isEnglish = subject === 'english';
+    const list: any[] = Array.isArray(selectedPreviewQuestions) ? selectedPreviewQuestions : [];
+    if (!list.length) return [];
+
+    if (isEnglish) {
+      const sectionGroups: Record<string, Record<string, any[]>> = {};
+      const sectionOrder: string[] = [];
+      const sectionTitleOrder: Record<string, string[]> = {};
+
+      list.forEach((q: any) => {
+        const section = q.section || 'Miscellaneous';
+        const title = q.qtitle || 'Miscellaneous';
+        if (!sectionGroups[section]) {
+          sectionGroups[section] = {};
+          sectionOrder.push(section);
+          sectionTitleOrder[section] = [];
+        }
+        if (!sectionGroups[section][title]) {
+          sectionGroups[section][title] = [];
+          sectionTitleOrder[section].push(title);
+        }
+        sectionGroups[section][title].push(q);
+      });
+
+      const sectionPriority: Record<string, number> = {
+        SectionA: 1,
+        SectionB: 2,
+        SectionC: 3,
+        SectionD: 4,
+      };
+
+      const sortedSectionOrder = sectionOrder.sort((a, b) => (sectionPriority[a] || 999) - (sectionPriority[b] || 999));
+
+      const sectionMap: Record<string, string> = {
+        SectionA: 'SECTION - A (READING)',
+        SectionB: 'SECTION - B (WRITING)',
+        SectionC: 'SECTION - C (GRAMMER)',
+        SectionD: 'SECTION - D (TEXTUAL QUESTIONS)',
+      };
+
+      const result: Array<{ section?: string; sectionDisplay?: string; title: string; questions: any[] }> = [];
+      sortedSectionOrder.forEach((section) => {
+        const sectionDisplay = sectionMap[section] || undefined;
+        sectionTitleOrder[section].forEach((title) => {
+          result.push({
+            section,
+            sectionDisplay,
+            title,
+            questions: sectionGroups[section][title],
+          });
+        });
+      });
+      return result;
+    }
+
+    const groups: Record<string, any[]> = {};
+    const titlesOrder: string[] = [];
+    list.forEach((q: any) => {
+      const title = q.qtitle || 'Miscellaneous';
+      if (!groups[title]) {
+        groups[title] = [];
+        titlesOrder.push(title);
+      }
+      groups[title].push(q);
+    });
+
+    return titlesOrder.map((title) => ({ title, questions: groups[title] }));
+  }, [selectedPreviewQuestions, formValues?.subject]);
+
+  const renderQuestionSectionLikeMyPapers = (
+    group: { section?: string; sectionDisplay?: string; title: string; questions: any[] },
+    groupIndex: number,
+    previousSection?: string,
+  ) => {
+    const { section, sectionDisplay, title, questions } = group;
+    const sectionRoman = toRomanNumeral(groupIndex + 1);
+
+    const subject = String(formValues?.subject || '').trim().toLowerCase();
+    const isEnglish = subject === 'english';
+    const showSectionHeader = isEnglish && sectionDisplay && section !== previousSection;
+
+    // Marks breakdown like My Papers
+    let markBreakdown = "";
+    if (questions.length > 0) {
+      const firstMark = questions[0].mark || questions[0].marks || 0;
+      const allSame = questions.every((q: any) => (q.mark || q.marks || 0) === firstMark);
+      if (allSame && firstMark > 0) {
+        const totalMarks = firstMark * questions.length;
+        markBreakdown = `[${formatMarks(firstMark)} x ${questions.length} = ${formatMarks(totalMarks)}]`;
+      }
+    }
+    const showIndividualMarks = !markBreakdown;
+
+    const pictureTitles = [
+      "describe the following picture",
+      "look at the pictures and answer the following",
+      "identify the pictures",
+      "identity the pictures",
+    ];
+    const cleanLowerTitle = String(title || '').trim().toLowerCase().replace(/\.$/, '');
+
+    // Picture questions
+    if (pictureTitles.some((t) => cleanLowerTitle === t || cleanLowerTitle.startsWith(t))) {
+      return (
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+            {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+          </h3>
+          {questions.map((q: any, idx: number) => (
+            <div key={idx} className="mb-4 ml-5">
+              <div className="flex justify-between items-start text-lg text-black font-local2 mb-2">
+                <div className="flex-1 pr-4">
+                  <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                </div>
+                <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                  {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+                </div>
+              </div>
+              {q.imageUrl && (
+                <div className="mb-3 ml-6">
+                  <img
+                    src={q.imageUrl}
+                    alt="Question"
+                    className="max-w-full h-auto max-h-[200px] object-contain border border-gray-200 rounded"
+                  />
+                </div>
+              )}
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : []).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 ml-6 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
+                    <span>{renderMaybeMath(subQ.text || '')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Choose from brackets
+    if (String(title).trim() === "Choose the correct answer from the brackets and fill in the blanks") {
+      return (
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+            {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+          </h3>
+          {questions.map((q: any, idx: number) => (
+            <div key={idx} className="mb-4 ml-5">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                    <span>{renderMaybeMath(subQ.text || q.question)}</span>
+                    {q.options && q.options.length > 0 && (
+                      <span className="ml-4 font-semibold">
+                        ({q.options.join(', ')})
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Tick correct answers
+    if (String(title).trim() === "Tick the correct answers") {
+      return (
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+            {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+          </h3>
+          {questions.map((q: any, idx: number) => (
+            <div key={idx} className="mb-4 ml-5">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                    <span>{renderMaybeMath(subQ.text || q.question)}</span>
+                    {q.options && q.options.length > 0 && (
+                      <div className="mt-2 ml-4">
+                        {q.options.map((opt: string, optIdx: number) => (
+                          <span key={optIdx} className="inline-flex items-center gap-2 mr-6">
+                            <span className="font-semibold">{String.fromCharCode(97 + optIdx)}.</span>
+                            <span className="text-2xl leading-none">☐</span>
+                            <span>{renderMaybeMath(opt)}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Choose the correct answers (options block + a,b,c)
+    if (String(title).trim() === "Choose the correct answers") {
+      return (
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+            {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+          </h3>
+          {questions.map((q: any, idx: number) => (
+            <div key={idx} className="mb-6 ml-5">
+              <div className="mb-3 font-local2 text-black">
+                <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
+                <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
+                  <span className="font-semibold">({q.options && q.options.join(', ')})</span>
+                </div>
+              </div>
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 ml-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
+                    <span>{renderMaybeMath(subQ.text || q.question)}</span>
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Tick odd one
+    if (String(title).trim() === "Tick the odd one in the following") {
+      return (
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+            {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+          </h3>
+          {questions.map((q: any, idx: number) => (
+            <div key={idx} className="mb-4 ml-5">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2 flex justify-between items-start">
+                  <div className="flex-1 text-lg text-black font-local2 pr-4">
+                    <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                    {q.options && q.options.length > 0 && (
+                      <span className="inline-flex flex-wrap gap-4">
+                        {q.options.map((opt: string, optIdx: number) => (
+                          <span key={optIdx} className="inline-flex items-center gap-1">
+                            <span className="text-2xl leading-none">☐</span>
+                            <span>{renderMaybeMath(opt)}</span>
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Match the following
+    if (String(title).trim() === "Match the following") {
+      return (
+        <div key={`${section || ''}-${title}`} className="mb-6">
+          {showSectionHeader && (
+            <div className="text-center mb-4 mt-4">
+              <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+            </div>
+          )}
+          <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+            {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+          </h3>
+          {questions.map((q: any, idx: number) => (
+            <div key={idx} className="mb-4 ml-5">
+              {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
+                <div key={subIdx} className="mb-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 text-lg text-black font-local2 pr-4">
+                      <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                      <span>{renderMaybeMath(subQ.text || q.question)}</span>
+                    </div>
+                    <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                      {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+                    </div>
+                  </div>
+                  {q.imageUrl && (
+                    <div className="mt-2 ml-6">
+                      <img
+                        src={q.imageUrl}
+                        alt="Match"
+                        className="max-w-full h-auto max-h-[200px] object-contain border border-gray-200 rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Default
+    return (
+      <div key={`${section || ''}-${title}`} className="mb-6">
+        {showSectionHeader && (
+          <div className="text-center mb-4 mt-4">
+            <h2 className="text-xl font-bold text-black font-local2 underline">{sectionDisplay}</h2>
+          </div>
+        )}
+        <h3 className="text-lg font-semibold text-black mb-2 font-local2">
+          {sectionRoman}. {title} <span className="float-right">{markBreakdown}</span>
+        </h3>
+        {questions.map((q: any, idx: number) => (
+          <div key={idx} className="mb-4 ml-8">
+            <div className="flex justify-between items-start text-lg text-black font-local2">
+              <div className="flex-1 pr-4">
+                <span className="mr-2">{getRomanSubIndex(idx)})</span>
+                <span>{renderMaybeMath(q.question)}</span>
+              </div>
+              <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
+              </div>
+            </div>
+            {q.options && (
+              <div className="ml-6 mt-1 text-sm text-gray-700">
+                {q.options.map((opt: string, i: number) => (
+                  <div key={i}>
+                    {String.fromCharCode(65 + i)}. {renderMaybeMath(opt)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const handleChooseQuestions = async () => {
     // Check if required fields are filled
     const formValues = form.getFieldsValue();
@@ -750,6 +1185,19 @@ const Paper = () => {
       message.error('Please select at least one question');
       return;
     }
+
+    // Debug: log all selected question details when "Generate Paper" is clicked
+    const selectedDetails = Object.entries(selectedQuestions).map(([questionId, marks]) => {
+      const question = selectedQuestionsData[questionId] || questionsData.find(q => q.id === questionId);
+      return {
+        id: questionId,
+        marks,
+        question,
+      };
+    });
+    // eslint-disable-next-line no-console
+    console.log('GENERATE PAPER - SELECTED QUESTIONS:', selectedDetails);
+
     setPreviewOpen(true);
   };
 
@@ -1611,78 +2059,16 @@ const Paper = () => {
                 </div>
               </div>
 
-              {/* Sections and Questions */}
-              <div className="space-y-8">
-                {(['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[])
-                  .filter(type => organizedQuestions[type].length > 0)
-                  .map((type, sectionIndex) => {
-                    const questionsOfType = organizedQuestions[type];
-                    const romanNumeral = toRomanNumeral(sectionIndex + 1);
-                    const allMarks = questionsOfType.map(q => q.marks);
-                    const allSameMarks = allMarks.length > 0 && allMarks.every(mark => mark === allMarks[0]);
-                    const questionCount = questionsOfType.length;
-                    const sectionMarks = allSameMarks ? allMarks[0] : null;
-                    const sectionTotal = allSameMarks ? questionCount * sectionMarks : null;
-
-                    const typeLabels: Record<QuestionType, string> = {
-                      'multiplechoice': 'Multiple Choice Questions',
-                      'direct': 'Direct Questions',
-                      'answerthefollowing': 'Answer the following questions',
-                      'picture': 'Picture Questions'
-                    };
-
-                    return (
-                      <div key={type} className="section">
-                        <div className="text-left mb-4 border-b pb-2">
-                          <h3 className="text-lg font-semibold text-black font-local2 flex justify-between items-center">
-                            <span>{romanNumeral}. {typeLabels[type] || type}</span>
-                            {allSameMarks && <span className="text-base font-bold text-black">({questionCount} × {sectionMarks} = {sectionTotal})</span>}
-                          </h3>
-                        </div>
-
-                        <div className="space-y-4">
-                          {questionsOfType.map(({ question, marks }, questionIndex) => (
-                            <div key={question.id} className="flex items-start gap-3 py-2" style={{ marginLeft: '8px' }}>
-                              <div className="w-8 flex-shrink-0">
-                                <span className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>{questionIndex + 1})</span>
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-local2 text-lg" style={{ color: '#000', fontWeight: 400 }}>
-                                  {isMathSubjectValue(formValues.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(question.text)}}`} /> : question.text}
-                                </div>
-                                {question.type === 'picture' && question.imageUrl && (
-                                  <div className="mt-2">
-                                    <img
-                                      src={question.imageUrl}
-                                      alt="Question Image"
-                                      className="w-48 h-32 object-contain rounded border border-gray-300 shadow-sm"
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                {question.type === 'multiplechoice' && question.options && question.options.length > 0 && (
-                                  <div className="mt-2 space-y-1">
-                                    {question.options.map((option: any, optIndex: number) => (
-                                      <div key={optIndex} className="text-sm font-local2" style={{ color: '#000' }}>
-                                        {String.fromCharCode(65 + optIndex)}. {isMathSubjectValue(formValues.subject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} /> : (option.text || option)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              {!allSameMarks && (
-                                <div className="w-12 flex-shrink-0 text-right">
-                                  <span className="text-lg font-local2" style={{ color: '#000', fontWeight: 400 }}>[{marks}]</span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Questions (grouped by Title like My Papers preview) */}
+              <div className="space-y-6">
+                {groupedQuestionsForPreview.length > 0 ? (
+                  groupedQuestionsForPreview.map((group: any, index: number) => {
+                    const previousSection = index > 0 ? groupedQuestionsForPreview[index - 1].section : undefined;
+                    return renderQuestionSectionLikeMyPapers(group, index, previousSection);
+                  })
+                ) : (
+                  <div className="text-center text-gray-500">No questions found.</div>
+                )}
               </div>
             </div>
           </div>
