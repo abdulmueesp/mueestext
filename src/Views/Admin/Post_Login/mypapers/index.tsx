@@ -177,8 +177,92 @@ const formatMarksForWord = (marks: number | undefined | null): string => {
     return wholePart === 0 ? '½' : `${wholePart} ½`;
   }
 
-  // Other decimals
   return String(num);
+};
+
+// Helper to render text mixed with math for Word
+// Splits content so that English words use standard font (Times New Roman)
+// and only actual math/numbers use Math formatting
+const renderMixedTextForWord = (text: string, isMathSubject: boolean) => {
+  if (!text) return [];
+  if (!isMathSubject) return [new TextRun({ text })];
+
+  // Clean standard LaTeX escaped spaces and handle special symbols
+  const cleanText = text
+    .replace(/\\ /g, ' ')
+    .replace(/[口☐□]/g, ' \\square ');
+
+  const tokens = cleanText.split(/(\s+)/);
+  const runs: any[] = [];
+
+  let mathBuffer = "";
+
+  // Helper to check if buffer is properly balanced
+  const isBalanced = (str: string) => {
+    let brace = 0; // {}
+    let paren = 0; // ()
+    let brack = 0; // []
+    // Simple checks for delimiters - not perfect but catches most split cases like \left( ... \right)
+    for (const char of str) {
+      if (char === '{') brace++;
+      else if (char === '}') brace--;
+      else if (char === '(') paren++;
+      else if (char === ')') paren--;
+      else if (char === '[') brack++;
+      else if (char === ']') brack--;
+    }
+    return brace === 0 && paren === 0 && brack === 0;
+  };
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (!token) continue;
+
+    // Check if token is purely text (letters, punctuation, brackets that are not part of math cmds)
+    // If we are already buffering math, we treat this as part of math unless balanced.
+
+    // If buffer is empty, check if this token starts a math block
+    if (!mathBuffer) {
+      const isText = /^[a-zA-Z\.,!?'":;()\[\]<>\s-]+$/.test(token) &&
+        !token.includes('\\') && !token.includes('^') && !token.includes('_') &&
+        !/\d/.test(token); // numbers are math
+
+      if (isText) {
+        runs.push(new TextRun({ text: token, font: 'Times New Roman' }));
+        continue;
+      }
+    }
+
+    // It is math or part of math. Add to buffer.
+    mathBuffer += token;
+
+    // Check balance
+    if (isBalanced(mathBuffer)) {
+      // Attempt to convert
+      const mathObj = latexToDocxMath(mathBuffer, false);
+      if (mathObj) {
+        runs.push(mathObj);
+        mathBuffer = "";
+      } else {
+        // Fallback: If conversion fails (e.g. non-math text that looked like math, or CJK chars),
+        // output as standard text and clear buffer to proceed.
+        runs.push(new TextRun({ text: mathBuffer, font: 'Times New Roman' }));
+        mathBuffer = "";
+      }
+    }
+  }
+
+  // Flush remaining buffer
+  if (mathBuffer) {
+    const mathObj = latexToDocxMath(mathBuffer, false);
+    if (mathObj) {
+      runs.push(mathObj);
+    } else {
+      runs.push(new TextRun({ text: mathBuffer, font: 'Times New Roman' }));
+    }
+  }
+
+  return runs;
 };
 
 // Check if class is 4 or below
@@ -845,17 +929,28 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               const prefix = `${getRomanSubIndex(i)})`;
               const marks = (showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${formatMarksForWord(q.mark || q.marks)}]` : '';
 
-              const optsText = options.map((opt: string) => `☐ ${opt}`).join('    ');
-              const fullText = `${prefix} ${optsText}`;
+              const runChildren: any[] = [];
+              runChildren.push(new TextRun({ text: `${prefix} ` }));
+
+              if (q.options && q.options.length > 0) {
+                q.options.forEach((opt: string, optIdx: number) => {
+                  runChildren.push(new TextRun({ text: `\u2610 ` })); // Checkbox
+                  const mixedRuns = renderMixedTextForWord(opt, isMathSubject);
+                  runChildren.push(...mixedRuns);
+
+                  if (optIdx < q.options.length - 1) {
+                    runChildren.push(new TextRun({ text: "    " }));
+                  }
+                });
+              }
+
+              runChildren.push(new TextRun({ text: `\t${marks}`, bold: true }));
 
               docChildren.push(new Paragraph({
                 tabStops: [
                   { type: TabStopType.RIGHT, position: 9500 }
                 ],
-                children: [
-                  new TextRun({ text: fullText }),
-                  new TextRun({ text: `\t${marks}`, bold: true })
-                ],
+                children: runChildren,
                 spacing: { after: 100 },
                 indent: { left: 250 }
               }));
@@ -869,16 +964,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             optionsChildren.push(new TextRun({ text: `${getRomanSubIndex(i)}) (` }));
 
             options.forEach((opt: string, optIdx: number) => {
-              if (isMathSubject) {
-                const mathObj = latexToDocxMath(opt.replace(/ /g, '\\ '), false);
-                if (mathObj) {
-                  optionsChildren.push(mathObj);
-                } else {
-                  optionsChildren.push(new TextRun({ text: opt }));
-                }
-              } else {
-                optionsChildren.push(new TextRun({ text: opt }));
-              }
+              const mixedRuns = renderMixedTextForWord(opt, isMathSubject);
+              optionsChildren.push(...mixedRuns);
 
               if (optIdx < options.length - 1) {
                 optionsChildren.push(new TextRun({ text: ", " }));
@@ -944,9 +1031,8 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 // Let's create an options paragraph always for Math to ensure proper rendering
                 const optsChildren: any[] = [new TextRun({ text: "(" })];
                 options.forEach((opt: string, optIdx: number) => {
-                  const mathObj = latexToDocxMath(opt.replace(/ /g, '\\ '), false);
-                  if (mathObj) optsChildren.push(mathObj);
-                  else optsChildren.push(new TextRun({ text: opt }));
+                  const mixedRuns = renderMixedTextForWord(opt, isMathSubject);
+                  optsChildren.push(...mixedRuns);
 
                   if (optIdx < options.length - 1) optsChildren.push(new TextRun({ text: ", " }));
                 });
@@ -974,17 +1060,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
             const paragraphChildren: any[] = [];
 
-            // For Math subject, attempt to render the full question text as a Word math object.
-            if (isMathSubject && qText) {
-              const mathObj = latexToDocxMath(qText.replace(/ /g, '\\ '), false);
-              if (mathObj) {
-                paragraphChildren.push(mathObj);
-              } else {
-                paragraphChildren.push(new TextRun({ text: qText }));
-              }
-            } else {
-              paragraphChildren.push(new TextRun({ text: qText }));
-            }
+            // Add prefix
+            paragraphChildren.push(new TextRun({ text: prefix + " " }));
+
+            const content = subQ.text || q.question || '';
+            const contentRuns = renderMixedTextForWord(content, isMathSubject);
+            paragraphChildren.push(...contentRuns);
 
             // Marks stay as normal text on the right.
             paragraphChildren.push(new TextRun({ text: `\t${marks}`, bold: true }));
@@ -1003,19 +1084,16 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             }
 
             if (title.trim() === "Tick the correct answers") {
-              const optsText = options.map((opt: string, i: number) => `${String.fromCharCode(97 + i)}. ☐ ${opt}`).join('    ');
-
               const optionChildren: any[] = [];
-              if (isMathSubject && optsText) {
-                const mathObj = latexToDocxMath(optsText.replace(/ /g, '\\ '), false);
-                if (mathObj) {
-                  optionChildren.push(mathObj);
-                } else {
-                  optionChildren.push(new TextRun({ text: optsText }));
+              options.forEach((opt: string, i: number) => {
+                optionChildren.push(new TextRun({ text: `${String.fromCharCode(97 + i)}. \u2610 ` }));
+                const mixedRuns = renderMixedTextForWord(opt, isMathSubject);
+                optionChildren.push(...mixedRuns);
+
+                if (i < options.length - 1) {
+                  optionChildren.push(new TextRun({ text: "    " }));
                 }
-              } else {
-                optionChildren.push(new TextRun({ text: optsText }));
-              }
+              });
 
               docChildren.push(new Paragraph({
                 children: optionChildren,
