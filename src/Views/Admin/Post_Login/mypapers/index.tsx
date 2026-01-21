@@ -125,11 +125,12 @@ const unescapeLatex = (text: string | undefined): string => {
   return text.replace(/\\\\/g, '\\');
 };
 
-const RenderMath = ({ text, isMath }: { text: string; isMath: boolean }) => {
+const renderMath = (text: string, isMath: boolean) => {
   if (!text) return null;
   if (isMath) {
     // Escape spaces to ensure they are preserved in \\mathrm environment
-    const mathText = unescapeLatex(text).replace(/ /g, '\\ ');
+    // Using String(text) to match Paper component's safety check
+    const mathText = unescapeLatex(String(text));
     return (
       <InlineMath
         math={`\\mathrm{${mathText}}`}
@@ -137,7 +138,7 @@ const RenderMath = ({ text, isMath }: { text: string; isMath: boolean }) => {
       />
     );
   }
-  return <span>{text}</span>;
+  return text;
 };
 
 // Helper to format marks - converts .5 decimals to unicode fraction format (½)
@@ -365,7 +366,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 ml-6 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
-                    <span><RenderMath text={subQ.text || ''} isMath={isMathSubject} /></span>
+                    <span>{renderMath(subQ.text || '', isMathSubject)}</span>
                   </div>
                 </div>
               ))}
@@ -396,12 +397,12 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                    <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
+                    <span>{renderMath(subQ.text || q.question, isMathSubject)}</span>
                     {q.options && q.options.length > 0 && (
                       <span className="ml-4 font-semibold">
                         ({q.options.map((opt: string, i: number) => (
                           <span key={i}>
-                            <RenderMath text={opt} isMath={isMathSubject} />
+                            {renderMath(opt, isMathSubject)}
                             {i < q.options.length - 1 ? ', ' : ''}
                           </span>
                         ))})
@@ -435,7 +436,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                    <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
+                    <span>{renderMath(subQ.text || q.question, isMathSubject)}</span>
 
                     {/* Options with Checkboxes - Block below question */}
                     {q.options && q.options.length > 0 && (
@@ -444,7 +445,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                           <span key={optIdx} className="inline-flex items-center gap-2 mr-6">
                             <span className="font-semibold">{String.fromCharCode(97 + optIdx)}.</span>
                             <span className="text-2xl leading-none">☐</span>
-                            <span><RenderMath text={opt} isMath={isMathSubject} /></span>
+                            <span>{renderMath(opt, isMathSubject)}</span>
                           </span>
                         ))}
                       </div>
@@ -482,7 +483,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   <span className="font-semibold">
                     ({q.options && q.options.map((opt: string, i: number) => (
                       <span key={i}>
-                        <RenderMath text={opt} isMath={isMathSubject} />
+                        {renderMath(opt, isMathSubject)}
                         {i < (q.options?.length || 0) - 1 ? ', ' : ''}
                       </span>
                     ))})
@@ -495,7 +496,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 ml-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
-                    <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
+                    <span>{renderMath(subQ.text || q.question, isMathSubject)}</span>
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
                     {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
@@ -529,7 +530,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                         {q.options.map((opt: string, optIdx: number) => (
                           <span key={optIdx} className="inline-flex items-center gap-1">
                             <span className="text-2xl leading-none">☐</span>
-                            <span><RenderMath text={opt} isMath={isMathSubject} /></span>
+                            <span>{renderMath(opt, isMathSubject)}</span>
                           </span>
                         ))}
                       </span>
@@ -563,7 +564,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 text-lg text-black font-local2 pr-4">
                       <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                      <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
+                      <span>{renderMath(subQ.text || q.question, isMathSubject)}</span>
                     </div>
                     <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
                       {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
@@ -597,7 +598,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             <div className="flex justify-between items-start text-lg text-black font-local2">
               <div className="flex-1 pr-4">
                 <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                <span><RenderMath text={q.question} isMath={isMathSubject} /></span>
+                <span>{renderMath(q.question, isMathSubject)}</span>
               </div>
               <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
                 {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
@@ -605,7 +606,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             </div>
             {q.options && (
               <div className="ml-6 mt-1 text-sm text-gray-700">
-                {q.options.map((opt: string, i: number) => <div key={i}>{String.fromCharCode(65 + i)}. <RenderMath text={opt} isMath={isMathSubject} /></div>)}
+                {q.options.map((opt: string, i: number) => <div key={i}>{String.fromCharCode(65 + i)}. {renderMath(opt, isMathSubject)}</div>)}
               </div>
             )}
           </div>
