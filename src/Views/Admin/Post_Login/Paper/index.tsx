@@ -172,13 +172,7 @@ const getSubjectDisplay = (subject?: string, book?: string) => {
 };
 
 // Check if class is 4 or below
-const isClassFourOrBelow = (classValue?: string | number): boolean => {
-  if (classValue === undefined || classValue === null || classValue === '') return false;
-  const classStr = String(classValue);
-  // Classes 4 and below: "0", "LKG", "UKG", "1", "2", "3", "4"
-  const classesFourOrBelow = ['0', 'LKG', 'UKG', '1', '2', '3', '4'];
-  return classesFourOrBelow.includes(classStr);
-};
+
 
 const Paper = () => {
   const navigate = useNavigate();
@@ -692,7 +686,12 @@ const Paper = () => {
   const renderMaybeMath = (text?: string) => {
     if (!text) return null;
     if (isMathSubjectValue(formValues?.subject)) {
-      return <InlineMath math={`\\mathrm{${unescapeLatex(String(text))}}`} />;
+      return (
+        <InlineMath
+          math={`\\mathrm{${unescapeLatex(String(text))}}`}
+          renderError={(error) => <span>{text}</span>}
+        />
+      );
     }
     return text;
   };
@@ -897,7 +896,12 @@ const Paper = () => {
                     <span>{renderMaybeMath(subQ.text || q.question)}</span>
                     {q.options && q.options.length > 0 && (
                       <span className="ml-4 font-semibold">
-                        ({q.options.join(', ')})
+                        ({q.options.map((opt: string, i: number) => (
+                          <span key={i}>
+                            {renderMaybeMath(opt)}
+                            {i < q.options.length - 1 ? ', ' : ''}
+                          </span>
+                        ))})
                       </span>
                     )}
                   </div>
@@ -971,7 +975,14 @@ const Paper = () => {
               <div className="mb-3 font-local2 text-black">
                 <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
                 <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
-                  <span className="font-semibold">({q.options && q.options.join(', ')})</span>
+                  <span className="font-semibold">
+                    ({q.options && q.options.map((opt: string, i: number) => (
+                      <span key={i}>
+                        {renderMaybeMath(opt)}
+                        {i < q.options.length - 1 ? ', ' : ''}
+                      </span>
+                    ))})
+                  </span>
                 </div>
               </div>
               {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
@@ -1919,7 +1930,7 @@ const Paper = () => {
                                 <div className="space-y-1">
                                   {q.options.map((option: any, index: number) => (
                                     <div key={index} className="text-sm">
-                                      {String.fromCharCode(65 + index)}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} /> : (option.text || option)}
+                                      {String.fromCharCode(65 + index)}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} renderError={() => <span>{option.text || option}</span>} /> : (option.text || option)}
                                     </div>
                                   ))}
                                 </div>
@@ -1932,7 +1943,7 @@ const Paper = () => {
                                 <div className="space-y-1">
                                   {q.options.map((option: any, index: number) => (
                                     <div key={index} className="text-sm">
-                                      {String.fromCharCode(65 + index)}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} /> : (option.text || option)}
+                                      {String.fromCharCode(65 + index)}. {isMathSubjectValue(selectedSubject) ? <InlineMath math={`\\mathrm{${unescapeLatex(option.text || option)}}`} renderError={() => <span>{option.text || option}</span>} /> : (option.text || option)}
                                     </div>
                                   ))}
                                 </div>
@@ -2016,20 +2027,18 @@ const Paper = () => {
           <div className="max-h-[70vh] overflow-y-auto">
             <div className="max-w-4xl mx-auto" style={{ fontFamily: 'Times, serif' }}>
               {/* Header */}
-              {isClassFourOrBelow(formValues?.class) && (
-                <div className="mb-4 text-lg font-local2 text-black">
-                  <div className="flex items-end justify-between gap-2">
-                    <div className="flex items-end flex-1 min-w-0">
-                      <span className="font-semibold whitespace-nowrap">NAME:</span>
-                      <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">................................................................................................................................................................................................................................................</span>
-                    </div>
-                    <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
-                      <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
-                      <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">........................................................</span>
-                    </div>
+              <div className="mb-4 text-lg font-local2 text-black">
+                <div className="flex items-end justify-between gap-2">
+                  <div className="flex items-end flex-1 min-w-0">
+                    <span className="font-semibold whitespace-nowrap">NAME:</span>
+                    <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">......................................................................................................</span>
+                  </div>
+                  <div className="flex items-end flex-shrink-0 w-[200px] max-w-[200px]">
+                    <span className="font-semibold whitespace-nowrap">ROLL NO:</span>
+                    <span className="text-[20px] leading-none tracking-wider ml-1 overflow-hidden">.................</span>
                   </div>
                 </div>
-              )}
+              </div>
               <div className="text-center mb-3">
                 <h1 className="text-2xl font-bold uppercase font-local2">
                   {formValues?.examType || 'Examination'} EXAMINATION - 2025-26

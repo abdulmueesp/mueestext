@@ -15,6 +15,8 @@ import { Popconfirm } from "antd";
 import { MdDeleteOutline } from "react-icons/md";
 import { latexToDocxMath } from "@/utils/mathExport";
 const { Title, Text } = Typography;
+import { InlineMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
 
 // Class options (same as Books module)
 const CLASS_OPTIONS = [
@@ -112,7 +114,30 @@ const getSubjectDisplay = (subject?: string, code?: string) => {
   if (cleanSubject && cleanCode) return `${cleanSubject} (${cleanCode})`;
   if (cleanSubject) return cleanSubject;
   if (cleanCode) return cleanCode;
+  if (cleanCode) return cleanCode;
   return '';
+};
+
+// Helper to unescape LaTeX backslashes from API response
+const unescapeLatex = (text: string | undefined): string => {
+  if (!text || typeof text !== 'string') return text || '';
+  // Replace double backslashes with single backslash
+  return text.replace(/\\\\/g, '\\');
+};
+
+const RenderMath = ({ text, isMath }: { text: string; isMath: boolean }) => {
+  if (!text) return null;
+  if (isMath) {
+    // Escape spaces to ensure they are preserved in \\mathrm environment
+    const mathText = unescapeLatex(text).replace(/ /g, '\\ ');
+    return (
+      <InlineMath
+        math={`\\mathrm{${mathText}}`}
+        renderError={(error) => <span>{text}</span>}
+      />
+    );
+  }
+  return <span>{text}</span>;
 };
 
 // Helper to format marks - converts .5 decimals to unicode fraction format (½)
@@ -156,13 +181,7 @@ const formatMarksForWord = (marks: number | undefined | null): string => {
 };
 
 // Check if class is 4 or below
-const isClassFourOrBelow = (classValue?: string | number): boolean => {
-  if (classValue === undefined || classValue === null || classValue === '') return false;
-  const classStr = String(classValue);
-  // Classes 4 and below: "0", "LKG", "UKG", "1", "2", "3", "4"
-  const classesFourOrBelow = ['0', 'LKG', 'UKG', '1', '2', '3', '4'];
-  return classesFourOrBelow.includes(classStr);
-};
+
 
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [wordLoading, setWordLoading] = useState(false);
@@ -346,7 +365,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 ml-6 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
-                    <span>{subQ.text || ''}</span>
+                    <span><RenderMath text={subQ.text || ''} isMath={isMathSubject} /></span>
                   </div>
                 </div>
               ))}
@@ -377,10 +396,15 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                    <span>{subQ.text || q.question}</span>
+                    <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
                     {q.options && q.options.length > 0 && (
                       <span className="ml-4 font-semibold">
-                        ({q.options.join(', ')})
+                        ({q.options.map((opt: string, i: number) => (
+                          <span key={i}>
+                            <RenderMath text={opt} isMath={isMathSubject} />
+                            {i < q.options.length - 1 ? ', ' : ''}
+                          </span>
+                        ))})
                       </span>
                     )}
                   </div>
@@ -411,7 +435,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                    <span>{subQ.text || q.question}</span>
+                    <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
 
                     {/* Options with Checkboxes - Block below question */}
                     {q.options && q.options.length > 0 && (
@@ -420,7 +444,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                           <span key={optIdx} className="inline-flex items-center gap-2 mr-6">
                             <span className="font-semibold">{String.fromCharCode(97 + optIdx)}.</span>
                             <span className="text-2xl leading-none">☐</span>
-                            <span>{opt}</span>
+                            <span><RenderMath text={opt} isMath={isMathSubject} /></span>
                           </span>
                         ))}
                       </div>
@@ -455,7 +479,14 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               <div className="mb-3 font-local2 text-black">
                 <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
                 <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
-                  <span className="font-semibold">({q.options && q.options.join(', ')})</span>
+                  <span className="font-semibold">
+                    ({q.options && q.options.map((opt: string, i: number) => (
+                      <span key={i}>
+                        <RenderMath text={opt} isMath={isMathSubject} />
+                        {i < (q.options?.length || 0) - 1 ? ', ' : ''}
+                      </span>
+                    ))})
+                  </span>
                 </div>
               </div>
 
@@ -464,7 +495,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 <div key={subIdx} className="mb-2 ml-2 flex justify-between items-start">
                   <div className="flex-1 text-lg text-black font-local2 pr-4">
                     <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
-                    <span>{subQ.text || q.question}</span>
+                    <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
                   </div>
                   <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
                     {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
@@ -498,7 +529,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                         {q.options.map((opt: string, optIdx: number) => (
                           <span key={optIdx} className="inline-flex items-center gap-1">
                             <span className="text-2xl leading-none">☐</span>
-                            <span>{opt}</span>
+                            <span><RenderMath text={opt} isMath={isMathSubject} /></span>
                           </span>
                         ))}
                       </span>
@@ -532,7 +563,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   <div className="flex justify-between items-start">
                     <div className="flex-1 text-lg text-black font-local2 pr-4">
                       <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                      <span>{subQ.text || q.question}</span>
+                      <span><RenderMath text={subQ.text || q.question} isMath={isMathSubject} /></span>
                     </div>
                     <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
                       {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
@@ -566,7 +597,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             <div className="flex justify-between items-start text-lg text-black font-local2">
               <div className="flex-1 pr-4">
                 <span className="mr-2">{getRomanSubIndex(idx)})</span>
-                <span>{q.question}</span>
+                <span><RenderMath text={q.question} isMath={isMathSubject} /></span>
               </div>
               <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
                 {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
@@ -574,7 +605,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             </div>
             {q.options && (
               <div className="ml-6 mt-1 text-sm text-gray-700">
-                {q.options.map((opt: string, i: number) => <div key={i}>{String.fromCharCode(65 + i)}. {opt}</div>)}
+                {q.options.map((opt: string, i: number) => <div key={i}>{String.fromCharCode(65 + i)}. <RenderMath text={opt} isMath={isMathSubject} /></div>)}
               </div>
             )}
           </div>
@@ -833,10 +864,30 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
           if (title.trim() === "Choose the correct answers") {
             // Logic: i) Options block
+            const optionsChildren: any[] = [];
+            optionsChildren.push(new TextRun({ text: `${getRomanSubIndex(i)}) (` }));
+
+            options.forEach((opt: string, optIdx: number) => {
+              if (isMathSubject) {
+                const mathObj = latexToDocxMath(opt.replace(/ /g, '\\ '), false);
+                if (mathObj) {
+                  optionsChildren.push(mathObj);
+                } else {
+                  optionsChildren.push(new TextRun({ text: opt }));
+                }
+              } else {
+                optionsChildren.push(new TextRun({ text: opt }));
+              }
+
+              if (optIdx < options.length - 1) {
+                optionsChildren.push(new TextRun({ text: ", " }));
+              }
+            });
+
+            optionsChildren.push(new TextRun({ text: ")" }));
+
             docChildren.push(new Paragraph({
-              children: [
-                new TextRun({ text: `${getRomanSubIndex(i)}) (${options.join(', ')})`, })
-              ],
+              children: optionsChildren,
               spacing: { after: 100 },
               indent: { left: 250 }
             }));
@@ -880,16 +931,43 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             let optionsParagraph = null;
 
             if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
-              const optsStr = ` (${options.join(', ')})`;
-              // Heuristic: 75 chars limit for inline
-              if ((qText.length + optsStr.length) <= 75) {
-                qText += optsStr;
-              } else {
+              // We want to append options to qText if short enough, or create new paragraph
+              // But constructing qText string prevents Math rendering for options.
+              // So we will ALWAYS append separate children or paragraph if it's Math.
+
+              if (isMathSubject) {
+                // If math, create a separate options paragraph for safety/cleanliness or append if we can mixed-line
+                // To keep logic simple and Math working: Create a NEW paragraph for options if we can't easily append to "qText"
+                // actually qText is used to create paragraphChildren.
+
+                // Let's create an options paragraph always for Math to ensure proper rendering
+                const optsChildren: any[] = [new TextRun({ text: "(" })];
+                options.forEach((opt: string, optIdx: number) => {
+                  const mathObj = latexToDocxMath(opt.replace(/ /g, '\\ '), false);
+                  if (mathObj) optsChildren.push(mathObj);
+                  else optsChildren.push(new TextRun({ text: opt }));
+
+                  if (optIdx < options.length - 1) optsChildren.push(new TextRun({ text: ", " }));
+                });
+                optsChildren.push(new TextRun({ text: ")" }));
+
                 optionsParagraph = new Paragraph({
-                  children: [new TextRun({ text: optsStr })],
+                  children: optsChildren,
                   indent: { left: 500 },
                   spacing: { after: 150 }
                 });
+              } else {
+                // Plain text logic
+                const optsStr = ` (${options.join(', ')})`;
+                if ((qText.length + optsStr.length) <= 75) {
+                  qText += optsStr;
+                } else {
+                  optionsParagraph = new Paragraph({
+                    children: [new TextRun({ text: optsStr })],
+                    indent: { left: 500 },
+                    spacing: { after: 150 }
+                  });
+                }
               }
             }
 
@@ -897,7 +975,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
             // For Math subject, attempt to render the full question text as a Word math object.
             if (isMathSubject && qText) {
-              const mathObj = latexToDocxMath(qText, false);
+              const mathObj = latexToDocxMath(qText.replace(/ /g, '\\ '), false);
               if (mathObj) {
                 paragraphChildren.push(mathObj);
               } else {
@@ -928,7 +1006,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
               const optionChildren: any[] = [];
               if (isMathSubject && optsText) {
-                const mathObj = latexToDocxMath(optsText, false);
+                const mathObj = latexToDocxMath(optsText.replace(/ /g, '\\ '), false);
                 if (mathObj) {
                   optionChildren.push(mathObj);
                 } else {
