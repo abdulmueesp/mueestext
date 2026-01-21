@@ -52,7 +52,7 @@ function App() {
     );
   }
 
-  console.log('Authenticated, showing main app for user:', user);
+  // console.log('Authenticated, showing main app for user:', user);
 
 
   return (
@@ -61,7 +61,7 @@ function App() {
       <>
         <Route path="/" element={<AdminLayout onLogout={handleLogout} />}>
           <Route index element={<Navigate to={getDefaultRoute()} replace />} />
-          
+
           {/* Admin-only routes */}
           <Route path="dashboard" element={
             <RoleGuard allowedRoles={['admin']}>
@@ -105,7 +105,7 @@ function App() {
           } />
           <Route path="/questionform/:id" element={
             <RoleGuard allowedRoles={['admin']}>
-              <QuestionForm/>
+              <QuestionForm />
             </RoleGuard>
           } />
           <Route path="/subjects" element={
@@ -113,7 +113,7 @@ function App() {
               <Subject />
             </RoleGuard>
           } />
-          
+
           {/* Routes accessible by both admin and school */}
           <Route path="paper" element={<Paper />} />
           <Route path="/mypapers" element={<MyPapers />} />

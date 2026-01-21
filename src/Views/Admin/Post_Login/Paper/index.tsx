@@ -2041,7 +2041,7 @@ const Paper = () => {
                     Std: {getStdLabel(formValues?.class) || '-'}
                   </div>
                   <div className="flex-1 text-center font-semibold text-lg sm:px-2">
-                    {getSubjectDisplay(formValues?.subject, booksOptions.find(book => book.value === formValues?.book)?.label || formValues?.book)?.toUpperCase() || ''}
+                    {getSubjectDisplay(formValues?.subject, booksOptions.find(book => book.value === formValues?.book)?.code || booksOptions.find(book => book.value === formValues?.book)?.label || formValues?.book)?.toUpperCase() || ''}
                   </div>
                   <div className="font-semibold text-lg text-right whitespace-nowrap sm:flex-[0_0_140px]">
                     Marks: {totalMarksField || currentSumMarks}

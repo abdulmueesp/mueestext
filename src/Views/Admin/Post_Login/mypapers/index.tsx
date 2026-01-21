@@ -203,18 +203,18 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       paper.questions.forEach((q: any) => {
         const section = q.section || 'Miscellaneous';
         const title = q.qtitle || "Miscellaneous";
-        
+
         if (!sectionGroups[section]) {
           sectionGroups[section] = {};
           sectionOrder.push(section);
           sectionTitleOrder[section] = [];
         }
-        
+
         if (!sectionGroups[section][title]) {
           sectionGroups[section][title] = [];
           sectionTitleOrder[section].push(title);
         }
-        
+
         sectionGroups[section][title].push(q);
       });
 
@@ -282,7 +282,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const renderQuestionSection = (group: { section?: string, sectionDisplay?: string, title: string, questions: any[] }, groupIndex: number, previousSection?: string) => {
     const { section, sectionDisplay, title, questions } = group;
     const sectionRoman = toRomanNumeral(groupIndex + 1);
-    
+
     // Show section header if section changed and it's English subject
     const showSectionHeader = isEnglishSubject && sectionDisplay && section !== previousSection;
 
@@ -669,7 +669,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           heading: HeadingLevel.HEADING1,
           alignment: AlignmentType.CENTER,
           spacing: { after: 200 },
-          children: [new TextRun({ text: paperTitle, bold: true,size: 32,})]
+          children: [new TextRun({ text: paperTitle, bold: true, size: 32, })]
         })
       );
       docChildren.push(createHeaderTable(stdLabel || '-', subjectDisplayUpper || '-', currentSumMarks, formatDuration(paper.duration || 60)));
@@ -693,11 +693,11 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
         const group = groupedQuestions[i];
         const { section, sectionDisplay, title, questions } = group;
         const sectionRoman = toRomanNumeral(i + 1);
-        
+
         // Show section header if section changed and it's English subject
         const previousSection = i > 0 ? groupedQuestions[i - 1].section : undefined;
         const showSectionHeader = isEnglishSubject && sectionDisplay && section !== previousSection;
-        
+
         // Add section header for Word document
         if (showSectionHeader) {
           docChildren.push(
@@ -754,7 +754,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           if (pictureTitles.some(t => cleanLowerTitle === t || cleanLowerTitle.startsWith(t))) {
             // 1. Render Main Question Line: i) Question Text [Marks]
             const prefix = `${getRomanSubIndex(i)})`;
-            const marks = (q.mark || q.marks) ? ` [${formatMarksForWord(q.mark || q.marks)}]` : '';
+            const marks = (showIndividualMarksWord && (q.mark || q.marks)) ? ` [${formatMarksForWord(q.mark || q.marks)}]` : '';
 
             docChildren.push(new Paragraph({
               tabStops: [
@@ -1084,27 +1084,27 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             new TableCell({
               borders: cellBorders,
               width: { size: 20, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ 
+              children: [new Paragraph({
                 children: [new TextRun({ text: `Std: ${stdValue || '-'}`, bold: true, font: 'Times New Roman', size: 24 })],
-                spacing: { before: 0, after: 0 } 
+                spacing: { before: 0, after: 0 }
               })]
             }),
             new TableCell({
               borders: cellBorders,
               width: { size: 60, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ 
+              children: [new Paragraph({
                 children: [new TextRun({ text: subjectValue || '', bold: true, font: 'Times New Roman', size: 24 })],
-                alignment: AlignmentType.CENTER, 
-                spacing: { before: 0, after: 0 } 
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 0 }
               })]
             }),
             new TableCell({
               borders: cellBorders,
               width: { size: 20, type: WidthType.PERCENTAGE },
-              children: [new Paragraph({ 
+              children: [new Paragraph({
                 children: [new TextRun({ text: `Marks: ${marksValue}`, bold: true, font: 'Times New Roman', size: 24 })],
-                alignment: AlignmentType.RIGHT, 
-                spacing: { before: 0, after: 0 } 
+                alignment: AlignmentType.RIGHT,
+                spacing: { before: 0, after: 0 }
               })]
             })
           ]
@@ -1113,25 +1113,25 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           children: [
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ 
+              children: [new Paragraph({
                 children: [new TextRun({ text: 'HM', bold: true, font: 'Times New Roman', size: 24 })],
                 spacing: { before: 0, after: 0 },
-                lineSpacing: { line:0, lineRule: "auto" }
+                lineSpacing: { line: 0, lineRule: "auto" }
               })]
             }),
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ 
-                text: '', 
+              children: [new Paragraph({
+                text: '',
                 spacing: { before: 0, after: 0 },
-                lineSpacing: { line:0, lineRule: "auto" }
+                lineSpacing: { line: 0, lineRule: "auto" }
               })]
             }),
             new TableCell({
               borders: cellBorders,
-              children: [new Paragraph({ 
+              children: [new Paragraph({
                 children: [new TextRun({ text: `Time: ${durationValue}`, bold: true, font: 'Times New Roman', size: 24 })],
-                alignment: AlignmentType.RIGHT, 
+                alignment: AlignmentType.RIGHT,
                 spacing: { before: 0, after: 0 },
                 lineSpacing: { line: 0, lineRule: "auto" }
               })]
@@ -1181,10 +1181,10 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                 Download Word
               </Button>
 
-              
+
             </div>
-<div>
-<Popconfirm
+            <div>
+              <Popconfirm
                 title="Are you sure you want to delete this paper?"
                 onConfirm={() => onDelete && onDelete(paper.id || paper._id)}
                 okText="Yes, Delete"
@@ -1199,7 +1199,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                   className="print:hidden"
                 />
               </Popconfirm>
-</div>
+            </div>
           </div>
         </Card>
       </div>
