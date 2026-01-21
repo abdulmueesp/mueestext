@@ -911,10 +911,16 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             // 3. Render Sub-questions: a) Text
             subQuestions.forEach((subQ: any, subIdx: number) => {
               const subPrefix = `${String.fromCharCode(97 + subIdx)})`; // a), b), c)
+
+              const runChildren: any[] = [];
+              runChildren.push(new TextRun({ text: `${subPrefix} ` }));
+
+              const content = subQ.text || '';
+              const mixedRuns = renderMixedTextForWord(content, isMathSubject);
+              runChildren.push(...mixedRuns);
+
               docChildren.push(new Paragraph({
-                children: [
-                  new TextRun({ text: `${subPrefix} ${subQ.text || ''}` })
-                ],
+                children: runChildren,
                 indent: { left: 500 }, // Indent sub-questions
                 spacing: { after: 100 }
               }));
