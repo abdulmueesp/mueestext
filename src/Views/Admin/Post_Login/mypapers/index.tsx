@@ -270,6 +270,9 @@ const renderMixedTextForWord = (text: string, isMathSubject: boolean) => {
 
 const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
   const [wordLoading, setWordLoading] = useState(false);
+  const user = useSelector((state: any) => state.user.user);
+  const schoolCode = user?.schoolCode || paper?.code || '535';
+
   const stdLabel = getStdLabel(paper.class);
   const subjectDisplay = getSubjectDisplay(paper.subject, paper.code);
   const subjectDisplayUpper = subjectDisplay ? subjectDisplay.toUpperCase() : '';
@@ -362,6 +365,45 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           titlesOrder.push(title);
         }
         groups[title].push(q);
+      });
+
+      // Custom Order Logic
+      const titlePriority = [
+        "Choose the correct answer from the brackets and fill in the blanks",
+        "Tick the correct answers",
+        "Choose the correct answers",
+        "Fill in the blanks with correct answers",
+        "Write true or false",
+        "Name the following",
+        "Tick the odd one in the following",
+        "Match the following",
+        "Give one word of the following",
+        "Define the following",
+        "Short Answer Questions",
+        "Long Answer Questions",
+        "Paragraph Writing",
+        "Essay Writing",
+        "Letter Writing",
+        "Identity the pictures",
+        "Look at the pictures and answer the following",
+        "Describe the following picture" // Removed period as per standard clean title logic usually, but user provided with period. I'll stick to a loose match.
+      ].map(t => t.toLowerCase().trim()); // normalize for comparison
+
+      titlesOrder.sort((a, b) => {
+        const lowerA = a.toLowerCase().trim();
+        const lowerB = b.toLowerCase().trim();
+
+        // Check if titles start with any of the priority titles (to handle variations like "Describe the following picture.")
+        const indexA = titlePriority.findIndex(p => lowerA === p || lowerA.startsWith(p));
+        const indexB = titlePriority.findIndex(p => lowerB === p || lowerB.startsWith(p));
+
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+
+        return lowerA.localeCompare(lowerB);
       });
 
       return titlesOrder.map(title => ({
@@ -561,17 +603,23 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           {questions.map((q, idx) => (
             <div key={idx} className="mb-6 ml-5">
               {/* Options at top */}
-              <div className="mb-3 font-local2 text-black">
-                <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
-                <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
-                  <span className="font-semibold">
-                    ({q.options && q.options.map((opt: string, i: number) => (
-                      <span key={i}>
-                        {renderMath(opt, isMathSubject)}
-                        {i < (q.options?.length || 0) - 1 ? ', ' : ''}
-                      </span>
-                    ))})
-                  </span>
+              <div className="mb-3 font-local2 text-black flex justify-between items-start">
+                <div className="flex-1">
+                  <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
+                  <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
+                    <span className="font-semibold">
+                      ({q.options && q.options.map((opt: string, i: number) => (
+                        <span key={i}>
+                          {renderMath(opt, isMathSubject)}
+                          {i < (q.options?.length || 0) - 1 ? ', ' : ''}
+                        </span>
+                      ))})
+                    </span>
+                  </div>
+                </div>
+                {/* Marks relative to the options block, not the first sub-question */}
+                <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                  {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                 </div>
               </div>
 
@@ -582,9 +630,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
                     <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
                     <span>{renderMath(subQ.text || q.question, isMathSubject)}</span>
                   </div>
-                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
-                  </div>
+                  {/* Marks removed from here for this specific question type */}
                 </div>
               ))}
             </div>
@@ -729,7 +775,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
       const docChildren: any[] = [];
 
       // Top-right code box (school code) in Word document (above NAME / ROLL NO)
-      const codeText = (paper.code || '535').toString();
+      const codeText = schoolCode.toString();
       const codeCellBorders = {
         top: { style: BorderStyle.SINGLE, color: '000000', size: 12 },
         bottom: { style: BorderStyle.SINGLE, color: '000000', size: 12 },
@@ -980,7 +1026,21 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
 
             optionsChildren.push(new TextRun({ text: ")" }));
 
+            // Add marks here for this specific type
+            // NOTE: We take marks from the first subquestion or the question object itself if applicable
+            // usually marks are distributed per subquestion but here the group might have a shared mark?
+            // The logic below uses subIdx=0 check, so we should look at q.mark or q.marks
+            // But wait, the loop below iterates subQuestions. q is the question container.
+            // If marks are on 'q', we use them.
+            const marks = (showIndividualMarksWord && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
+            if (marks) {
+              optionsChildren.push(new TextRun({ text: `\t${marks}`, bold: true }));
+            }
+
             docChildren.push(new Paragraph({
+              tabStops: [
+                { type: TabStopType.RIGHT, position: 9500 }
+              ],
               children: optionsChildren,
               spacing: { after: 100 },
               indent: { left: 250 }
@@ -1018,51 +1078,9 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               prefix = `${getRomanSubIndex(subIdx)})`;
             }
 
-            let qText = `${prefix} ${subQ.text || q.question}`;
-            const marks = (showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
-
-            let optionsText = "";
-            let optionsParagraph = null;
-
-            if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks") {
-              // We want to append options to qText if short enough, or create new paragraph
-              // But constructing qText string prevents Math rendering for options.
-              // So we will ALWAYS append separate children or paragraph if it's Math.
-
-              if (isMathSubject) {
-                // If math, create a separate options paragraph for safety/cleanliness or append if we can mixed-line
-                // To keep logic simple and Math working: Create a NEW paragraph for options if we can't easily append to "qText"
-                // actually qText is used to create paragraphChildren.
-
-                // Let's create an options paragraph always for Math to ensure proper rendering
-                const optsChildren: any[] = [new TextRun({ text: "(" })];
-                options.forEach((opt: string, optIdx: number) => {
-                  const mixedRuns = renderMixedTextForWord(opt, isMathSubject);
-                  optsChildren.push(...mixedRuns);
-
-                  if (optIdx < options.length - 1) optsChildren.push(new TextRun({ text: ", " }));
-                });
-                optsChildren.push(new TextRun({ text: ")" }));
-
-                optionsParagraph = new Paragraph({
-                  children: optsChildren,
-                  indent: { left: 500 },
-                  spacing: { after: 150 }
-                });
-              } else {
-                // Plain text logic
-                const optsStr = ` (${options.join(', ')})`;
-                if ((qText.length + optsStr.length) <= 75) {
-                  qText += optsStr;
-                } else {
-                  optionsParagraph = new Paragraph({
-                    children: [new TextRun({ text: optsStr })],
-                    indent: { left: 500 },
-                    spacing: { after: 150 }
-                  });
-                }
-              }
-            }
+            // EXCLUDE marks for "Choose the correct answers" from the sub-question line as they are now in options
+            const shouldShowMarksHere = lowerTitle !== "choose the correct answers";
+            const marks = (shouldShowMarksHere && showIndividualMarksWord && subIdx === 0 && (q.mark || q.marks)) ? ` [${q.mark || q.marks}]` : '';
 
             const paragraphChildren: any[] = [];
 
@@ -1072,6 +1090,19 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
             const content = subQ.text || q.question || '';
             const contentRuns = renderMixedTextForWord(content, isMathSubject);
             paragraphChildren.push(...contentRuns);
+
+            // Handle "Choose the correct answer from the brackets and fill in the blanks" options inline
+            if (title.trim() === "Choose the correct answer from the brackets and fill in the blanks" && options && options.length > 0) {
+              paragraphChildren.push(new TextRun({ text: " (" }));
+              options.forEach((opt: string, optIdx: number) => {
+                const mixedRuns = renderMixedTextForWord(opt, isMathSubject);
+                paragraphChildren.push(...mixedRuns);
+                if (optIdx < options.length - 1) {
+                  paragraphChildren.push(new TextRun({ text: ", " }));
+                }
+              });
+              paragraphChildren.push(new TextRun({ text: ")" }));
+            }
 
             // Marks stay as normal text on the right.
             paragraphChildren.push(new TextRun({ text: `\t${marks}`, bold: true }));
@@ -1084,10 +1115,6 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
               spacing: { after: title.trim() === "Tick the correct answers" ? 50 : 100 },
               indent: { left: title.trim() === "Choose the correct answers" ? 500 : 250 }
             }));
-
-            if (optionsParagraph) {
-              docChildren.push(optionsParagraph);
-            }
 
             if (title.trim() === "Tick the correct answers") {
               const optionChildren: any[] = [];
@@ -1373,7 +1400,7 @@ const ViewQuestionPaper = ({ paper, onBack, onDelete }: any) => {
           {/* Top-right code box (school code) above NAME / ROLL NO */}
           <div className="flex justify-end mb-2">
             <div className="border border-black px-3 min-h-10 inline-flex items-center justify-center text-sm font-local2 font-semibold">
-              {paper.code || '535'}
+              {schoolCode}
             </div>
           </div>
 

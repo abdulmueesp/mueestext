@@ -47,6 +47,7 @@ interface QuestionItem {
   subQuestions?: string[];
   originalQuestionType?: string;
   section?: string;
+  chapter?: string;
 }
 
 const classOptions = ['0', 'LKG', 'UKG', '1', '2', '3', '4', '5', '6', '7', '8'];
@@ -542,7 +543,8 @@ const Paper = () => {
             qtitle: q.qtitle || q.questionTitle || '',
             subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
             originalQuestionType: q.questionType || q.type,
-            section: q.section
+            section: q.section,
+            chapter: q.chapter || q.chapterName || ''
           };
         })
         : Array.isArray(data?.results)
@@ -562,7 +564,8 @@ const Paper = () => {
               qtitle: q.qtitle || q.questionTitle || '',
               subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
               originalQuestionType: q.questionType || q.type,
-              section: q.section
+              section: q.section,
+              chapter: q.chapter || q.chapterName || ''
             };
           })
           : Array.isArray(data?.questions)
@@ -582,7 +585,8 @@ const Paper = () => {
                 qtitle: q.qtitle || q.questionTitle || '',
                 subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
                 originalQuestionType: q.questionType || q.type,
-                section: q.section
+                section: q.section,
+                chapter: q.chapter || q.chapterName || ''
               };
             })
             : Array.isArray(data)
@@ -602,7 +606,8 @@ const Paper = () => {
                   qtitle: q.qtitle || q.questionTitle || '',
                   subQuestions: subQuestions.length > 0 ? subQuestions : undefined,
                   originalQuestionType: q.questionType || q.type,
-                  section: q.section
+                  section: q.section,
+                  chapter: q.chapter || q.chapterName || ''
                 };
               })
               : [];
@@ -795,6 +800,45 @@ const Paper = () => {
       groups[title].push(q);
     });
 
+    // Custom Order Logic
+    const titlePriority = [
+      "Choose the correct answer from the brackets and fill in the blanks",
+      "Tick the correct answers",
+      "Choose the correct answers",
+      "Fill in the blanks with correct answers",
+      "Write true or false",
+      "Name the following",
+      "Tick the odd one in the following",
+      "Match the following",
+      "Give one word of the following",
+      "Define the following",
+      "Short Answer Questions",
+      "Long Answer Questions",
+      "Paragraph Writing",
+      "Essay Writing",
+      "Letter Writing",
+      "Identity the pictures",
+      "Look at the pictures and answer the following",
+      "Describe the following picture"
+    ].map(t => t.toLowerCase().trim());
+
+    titlesOrder.sort((a, b) => {
+      const lowerA = a.toLowerCase().trim();
+      const lowerB = b.toLowerCase().trim();
+
+      // Check if titles start with any of the priority titles
+      const indexA = titlePriority.findIndex(p => lowerA === p || lowerA.startsWith(p));
+      const indexB = titlePriority.findIndex(p => lowerB === p || lowerB.startsWith(p));
+
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+
+      return lowerA.localeCompare(lowerB);
+    });
+
     return titlesOrder.map((title) => ({ title, questions: groups[title] }));
   }, [selectedPreviewQuestions, formValues?.subject]);
 
@@ -972,17 +1016,23 @@ const Paper = () => {
           </h3>
           {questions.map((q: any, idx: number) => (
             <div key={idx} className="mb-6 ml-5">
-              <div className="mb-3 font-local2 text-black">
-                <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
-                <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
-                  <span className="font-semibold">
-                    ({q.options && q.options.map((opt: string, i: number) => (
-                      <span key={i}>
-                        {renderMaybeMath(opt)}
-                        {i < q.options.length - 1 ? ', ' : ''}
-                      </span>
-                    ))})
-                  </span>
+              <div className="mb-3 font-local2 text-black flex justify-between items-start">
+                <div className="flex-1">
+                  <span className="mr-2 font-semibold text-lg">{getRomanSubIndex(idx)})</span>
+                  <div className="inline-block p-3 bg-gray-50 border border-gray-200 rounded">
+                    <span className="font-semibold">
+                      ({q.options && q.options.map((opt: string, i: number) => (
+                        <span key={i}>
+                          {renderMaybeMath(opt)}
+                          {i < q.options.length - 1 ? ', ' : ''}
+                        </span>
+                      ))})
+                    </span>
+                  </div>
+                </div>
+                {/* Marks relative to the options block, not the first sub-question */}
+                <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
+                  {showIndividualMarks && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
                 </div>
               </div>
               {(q.subQuestions && q.subQuestions.length > 0 ? q.subQuestions : [{ text: q.question }]).map((subQ: any, subIdx: number) => (
@@ -991,9 +1041,7 @@ const Paper = () => {
                     <span className="mr-2">{String.fromCharCode(97 + subIdx)})</span>
                     <span>{renderMaybeMath(subQ.text || q.question)}</span>
                   </div>
-                  <div className="font-bold whitespace-nowrap ml-4 text-black text-lg">
-                    {showIndividualMarks && subIdx === 0 && (q.mark || q.marks) ? `[${formatMarks(q.mark || q.marks)}]` : null}
-                  </div>
+                  {/* Marks removed from here for this specific question type */}
                 </div>
               ))}
             </div>
@@ -1869,12 +1917,19 @@ const Paper = () => {
                                 {displaySectionLabel}
                               </div>
                             )}
-                            <div className="text-xs text-gray-700 mb-1">
-                              Question type :- {typeLabel}
+                            <div className="flex flex-wrap gap-4 mb-1">
+                              <div className="text-xs text-gray-700">
+                                Question type :- {typeLabel}
+                              </div>
+                              {q.qtitle && (
+                                <div className="text-xs text-gray-700">
+                                  Question title :- {q.qtitle}
+                                </div>
+                              )}
                             </div>
-                            {q.qtitle && (
+                            {(q.chapter || q.chapterName) && (
                               <div className="text-xs text-gray-700 mb-2">
-                                Question title :- {q.qtitle}
+                                Chapter :- {q.chapter || q.chapterName}
                               </div>
                             )}
                             {/* Handle "Tick the odd one in the following" - don't show question text, only options */}
