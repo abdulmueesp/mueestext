@@ -1,8 +1,8 @@
 
 // @ts-nocheck
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { Button, Card, Checkbox, Col, Divider, Form, Input, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider, Spin } from 'antd';
-import { Download } from 'lucide-react';
+import { Button, Card, Checkbox, Col, Divider, Form, Input, InputNumber, Modal, Pagination, Row, Select, Typography, message, ConfigProvider, Spin, Popover } from 'antd';
+import { Download, ChevronDown } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { API, GET, POST } from "../../../../Components/common/api";
@@ -203,6 +203,9 @@ const Paper = () => {
   const [answerFollowingSubtype, setAnswerFollowingSubtype] = useState<AnswerFollowingSubtype | AnswerFollowingSubtype[] | undefined>(undefined);
   const [pictureSubtype, setPictureSubtype] = useState<PictureSubtype | PictureSubtype[] | undefined>(undefined);
   const [selectedSections, setSelectedSections] = useState<string[]>([]);
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+  const [tempFilterSubtypes, setTempFilterSubtypes] = useState<Record<string, string[]>>({});
+  const [activeFilterSubtypes, setActiveFilterSubtypes] = useState<Record<string, string[]>>({});
   const chooserRef = useRef<HTMLDivElement | null>(null);
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -407,7 +410,7 @@ const Paper = () => {
   }, [modalFilterTypes]);
 
   // Fetch questions from API
-  const fetchQuestions = async (customPage?: number, customPageSize?: number, overrideFilterTypes?: QuestionType[]) => {
+  const fetchQuestions = async (customPage?: number, customPageSize?: number, overrideFilterTypes?: QuestionType[], overrideTitles?: string[]) => {
     const formValues = form.getFieldsValue();
     const english = isEnglishSubjectValue(formValues.subject);
     if (!formValues.class || !formValues.subject || !formValues.book || !formValues.chapters || formValues.chapters.length === 0 || selectedTypes.length === 0) {
@@ -465,6 +468,24 @@ const Paper = () => {
         if (selectedTypes.includes('direct')) collectLabels(directSubtypeOptions, directSubtype);
         if (selectedTypes.includes('answerthefollowing')) collectLabels(answerFollowingSubtypeOptions, answerFollowingSubtype);
         if (selectedTypes.includes('picture')) collectLabels(pictureSubtypeOptions, pictureSubtype);
+
+        // Apply granular filter overrides if present
+        const effectiveTitles = overrideTitles || Object.values(activeFilterSubtypes).flat();
+        if (effectiveTitles.length > 0) {
+          // Apply granular filters
+          // If overrides provided, use them directly (clearing previous)
+          if (overrideTitles) {
+            questionTitleLabels.length = 0;
+            questionTitleLabels.push(...overrideTitles);
+          } else if (Object.keys(activeFilterSubtypes).length > 0) {
+            // Otherwise use active filters if established
+            const activeTitles = Object.values(activeFilterSubtypes).flat();
+            if (activeTitles.length > 0) {
+              questionTitleLabels.length = 0;
+              questionTitleLabels.push(...activeTitles);
+            }
+          }
+        }
       }
 
       const query: any = {
@@ -1820,50 +1841,165 @@ const Paper = () => {
               <div className="space-y-4 font-local2" ref={topRef}>
 
                 <div className=" gap-3 sticky top-0 z-20 bg-gray-50 py-2  p-3 md:p-4 rounded-xl  border-2 border-teal-700">
-                  <div className="text-[#007575] font-medium text-sm">Filter question types</div>
+                  {/* <div className="text-[#007575] font-medium text-sm">Filter question types</div> */}
                   <div className="flex flex-col md:flex-row gap-3">
-                    <div className="w-full md:w-[50%] flex flex-wrap gap-2">
-                      {(['multiplechoice', 'direct', 'answerthefollowing', 'picture'] as QuestionType[]).map(t => {
-                        const typeLabels: Record<QuestionType, string> = {
-                          'multiplechoice': 'Multiple Choice',
-                          'direct': 'Direct Questions',
-                          'answerthefollowing': 'Answer The Following Questions',
-                          'picture': 'Picture Questions'
-                        };
-                        return (
-                          <Button
-                            key={`flt-${t}`}
-                            size="small"
-                            disabled={!selectedTypes.includes(t)}
-                            onClick={async () => {
-                              setPage(1);
-                              const newFilterTypes = modalFilterTypes.includes(t) ? modalFilterTypes.filter(x => x !== t) : [...modalFilterTypes, t];
-                              setModalFilterTypes(newFilterTypes);
+                    <div className="w-full md:w-[60%] flex flex-wrap gap-2">
+                      <Popover
+                        content={
+                          <div className="w-[300px] max-h-[400px] overflow-y-auto">
+                            <div className="space-y-4">
+                              {selectedTypes.includes('multiplechoice') && (
+                                <div>
+                                  <div className="font-semibold text-gray-700 bg-gray-100 px-2 py-1 mb-2 rounded">Multiple Choice</div>
+                                  <div className="pl-2 space-y-1">
+                                    {mcqSubtypeOptions.map(opt => (
+                                      <div key={opt.value}>
+                                        <Checkbox
+                                          checked={tempFilterSubtypes['multiplechoice']?.includes(opt.label)}
+                                          onChange={(e) => {
+                                            const current = tempFilterSubtypes['multiplechoice'] || [];
+                                            const updated = e.target.checked
+                                              ? [...current, opt.label]
+                                              : current.filter(l => l !== opt.label);
+                                            setTempFilterSubtypes({
+                                              ...tempFilterSubtypes,
+                                              'multiplechoice': updated
+                                            });
+                                          }}
+                                        >
+                                          <span className="text-xs">{opt.label}</span>
+                                        </Checkbox>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                              try {
-                                setFilterLoading(true);
-                                // If no filters selected, show all selectedTypes
-                                if (newFilterTypes.length === 0) {
-                                  setModalFilterTypes([]);
-                                  await fetchQuestions(1, pageSize, selectedTypes);
-                                  return;
-                                }
+                              {selectedTypes.includes('direct') && (
+                                <div>
+                                  <div className="font-semibold text-gray-700 bg-gray-100 px-2 py-1 mb-2 rounded">Direct Questions</div>
+                                  <div className="pl-2 space-y-1">
+                                    {directSubtypeOptions.map(opt => (
+                                      <div key={opt.value}>
+                                        <Checkbox
+                                          checked={tempFilterSubtypes['direct']?.includes(opt.label)}
+                                          onChange={(e) => {
+                                            const current = tempFilterSubtypes['direct'] || [];
+                                            const updated = e.target.checked
+                                              ? [...current, opt.label]
+                                              : current.filter(l => l !== opt.label);
+                                            setTempFilterSubtypes({
+                                              ...tempFilterSubtypes,
+                                              'direct': updated
+                                            });
+                                          }}
+                                        >
+                                          <span className="text-xs">{opt.label}</span>
+                                        </Checkbox>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                                // Trigger API call with new filter types explicitly
-                                await fetchQuestions(1, pageSize, newFilterTypes);
-                              } finally {
-                                setFilterLoading(false);
-                              }
-                            }}
-                            className={`font-local2 rounded-full px-3 py-1 text-sm border ${!selectedTypes.includes(t) ? 'opacity-50 cursor-not-allowed' : ''} ${modalFilterTypes.includes(t) ? 'bg-gradient-to-br from-[#007575] to-[#339999] text-white hover:!text-white border-none hover:!bg-gradient-to-br hover:!from-[#007575] hover:!to-[#339999] hover:!opacity-90' : 'bg-white text-gray-700 border-gray-300 hover:!border-[#339999] hover:!text-[#007575]'}`}
-                          >
-                            {typeLabels[t]}
-                          </Button>
-                        );
-                      })}
+                              {selectedTypes.includes('answerthefollowing') && (
+                                <div>
+                                  <div className="font-semibold text-gray-700 bg-gray-100 px-2 py-1 mb-2 rounded">Answer The Following</div>
+                                  <div className="pl-2 space-y-1">
+                                    {answerFollowingSubtypeOptions.map(opt => (
+                                      <div key={opt.value}>
+                                        <Checkbox
+                                          checked={tempFilterSubtypes['answerthefollowing']?.includes(opt.label)}
+                                          onChange={(e) => {
+                                            const current = tempFilterSubtypes['answerthefollowing'] || [];
+                                            const updated = e.target.checked
+                                              ? [...current, opt.label]
+                                              : current.filter(l => l !== opt.label);
+                                            setTempFilterSubtypes({
+                                              ...tempFilterSubtypes,
+                                              'answerthefollowing': updated
+                                            });
+                                          }}
+                                        >
+                                          <span className="text-xs">{opt.label}</span>
+                                        </Checkbox>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
+                              {selectedTypes.includes('picture') && (
+                                <div>
+                                  <div className="font-semibold text-gray-700 bg-gray-100 px-2 py-1 mb-2 rounded">Picture Questions</div>
+                                  <div className="pl-2 space-y-1">
+                                    {pictureSubtypeOptions.map(opt => (
+                                      <div key={opt.value}>
+                                        <Checkbox
+                                          checked={tempFilterSubtypes['picture']?.includes(opt.label)}
+                                          onChange={(e) => {
+                                            const current = tempFilterSubtypes['picture'] || [];
+                                            const updated = e.target.checked
+                                              ? [...current, opt.label]
+                                              : current.filter(l => l !== opt.label);
+                                            setTempFilterSubtypes({
+                                              ...tempFilterSubtypes,
+                                              'picture': updated
+                                            });
+                                          }}
+                                        >
+                                          <span className="text-xs">{opt.label}</span>
+                                        </Checkbox>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="mt-4 pt-3 border-t flex justify-end">
+                              <Button
+                                type="primary"
+                                size="small"
+                                className="bg-[#007575]"
+                                onClick={async () => {
+                                  setFilterPopoverOpen(false);
+                                  setActiveFilterSubtypes(tempFilterSubtypes);
+
+                                  // Collect all selected titles
+                                  const allSelectedTitles = Object.values(tempFilterSubtypes).flat();
+
+                                  setPage(1);
+                                  setFilterLoading(true);
+                                  try {
+                                    await fetchQuestions(1, pageSize, selectedTypes, allSelectedTitles);
+                                  } finally {
+                                    setFilterLoading(false);
+                                  }
+                                }}
+                              >
+                                OK
+                              </Button>
+                            </div>
+                          </div>
+                        }
+                        trigger="click"
+                        open={filterPopoverOpen}
+                        onOpenChange={(visible) => {
+                          setFilterPopoverOpen(visible);
+                          if (visible) {
+                            // Sync temp with active when opening
+                            setTempFilterSubtypes(activeFilterSubtypes);
+                          }
+                        }}
+                        placement="bottomLeft"
+                      >
+                        <div className="cursor-pointer flex items-center gap-1 text-[#007575] font-medium text-sm hover:opacity-80 transition-opacity">
+                          Filter question types
+                          <ChevronDown size={16} />
+                        </div>
+                      </Popover>
                     </div>
-                    <div className="w-full md:w-[50%] flex items-center justify-end gap-4 text-[15px] text-[#007575] ">
+                    <div className="w-full md:w-[40%] flex items-center justify-end gap-4 text-[15px] text-[#007575] ">
                       <span>Selected Questions:{Object.keys(selectedQuestions).length}</span>
                       <span>
                         Total Selected Marks: {currentSumMarks} {totalMarksField ? `(of ${totalMarksField})` : ''}
@@ -2054,7 +2190,8 @@ const Paper = () => {
               </div>
             </Card>
           </div>
-        )}
+        )
+        }
 
         {/* Preview Modal */}
         <Modal
@@ -2160,8 +2297,8 @@ const Paper = () => {
           </div>
         </Modal>
 
-      </div>
-    </ConfigProvider>
+      </div >
+    </ConfigProvider >
   );
 };
 
