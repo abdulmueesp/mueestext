@@ -2,7 +2,7 @@
 // Lightweight API helper
 import { message } from "antd";
 
-export const BASE_URL = import.meta.env.VITE_BASE_URL;
+export const BASE_URL = "https://childcraft-server.onrender.com";
 
 export const API = {
   BASE: "",
